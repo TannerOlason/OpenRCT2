@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Configures the CMake build tree on D. Pass extra -D options through, e.g. `configure -DCMAKE_BUILD_TYPE=Debug`.
+set -e
+basedir="$(readlink -f "$(dirname "$0")/../..")"
+cd "$basedir"
+if [[ -z "$FT_TOOLCHAIN" ]]; then
+    # shellcheck disable=SC1091
+    source scripts/factory-tour/env.sh
+fi
+mkdir -p "$FT_BUILD_DIR"
+if [[ -L build ]]; then
+    ln -sfn "$FT_BUILD_DIR" build
+elif [[ ! -e build ]]; then
+    ln -s "$FT_BUILD_DIR" build
+fi
+cmake -S . -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DWITH_TESTS=ON \
+    -DCMAKE_C_COMPILER="$CC" \
+    -DCMAKE_CXX_COMPILER="$CXX" \
+    -DCMAKE_PREFIX_PATH="$FT_TOOLCHAIN" \
+    -DDISABLE_DISCORD_RPC=ON \
+    -DCMAKE_CXX_FLAGS="-g1 -gz -fno-var-tracking-assignments" \
+    -DCMAKE_EXE_LINKER_FLAGS="-L$FT_TOOLCHAIN/lib" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-L$FT_TOOLCHAIN/lib" \
+    "$@"
+# The -L flag makes the linker pick the environment's libstdc++ (GCC 16 runtime, which conda's gtest and
+# other libraries were built against) over the one bundled with the GCC 13 compiler.
+# -g1 -gz keeps the build tree small on the nearly full root disk (same recipe as upstream CI). Pass
+# -DCMAKE_CXX_FLAGS="-g" for full debug info when stepping through code.

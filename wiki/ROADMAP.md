@@ -1,0 +1,106 @@
+# Roadmap
+
+Epics are the work breakdown; milestones are vertical slices shipped in order. Sizes: S < 1 week, M 1–3
+weeks, L 1–2 months, XL 2+ months for one engineer plus agents. Status legend: `[ ]` not started,
+`[~]` in progress, `[x]` done. Each milestone ends with clang-format clean, `ctest` green, a fork replay
+recorded, a two-client desync soak, a changelog line and an ADR for any new decision.
+
+## Epics
+
+| Id | Epic | Size | Summary |
+|---|---|---|---|
+| E0 | Bootstrap | S | Fork, toolchain, build on D, RCT2 data, docs skeleton, trimmed CI, merge policy |
+| E1 | Factory core simulation | XL | Factory Element, FactoryState and Pools, prototypes, belts, inserters, machines, ore, power, fluids, Fork Chunks, Sync Checksum |
+| E2 | Factory GameActions and multiplayer | M | Reserved command range, own registry, place/remove/rotate/recipe/filter/belt-line/clear/blueprint/wire/cheat actions, permissions |
+| E3 | Rendering and UI | L | Paint for belts, items, inserters, machines, wires, smoke; build and info windows; sprite pack; 5-digit string ids |
+| E4 | Park intertwine | L | Factory Tour ride, Exhibit Paths, guest thoughts, material economy, stocked shops, Market, rating, objectives, parkExt side tables |
+| E5 | Research and progression | M | Technology prototypes in the research system, labs, unified unlock tree, content chain |
+| E6 | Modding surface and combat stub | M | `.parkobj` schemas, `factory` script global, hooks, d.ts, health, damage, Threat, turret |
+| E7 | Logistics at scale | L | Freight railway, loaders, blueprints, production graphs, alerts, pollution overlay |
+| E8 | Multi-world | XL | WorldManager, caches into GameState, Company, Transfer Queue, Portals, guest transfer, Planet Params |
+| E9 | Theme, content, release | L | Theme bible as content packs, vanilla-equivalent chain, packaging, licensing |
+
+## Milestones
+
+### M0 Bootstrap `[x]`
+
+- [x] Fork `OpenRCT2/OpenRCT2` to `TannerOlason/OpenRCT2`; clone with `upstream` and `origin` remotes.
+- [x] Branch `factory-tour/main` off `develop`; `develop` tracks upstream and is never committed to.
+- [x] RCT2 data extracted from the GOG installer to `/media/user/D/rct2-data/app`.
+- [x] User-space toolchain (conda: cmake, ninja, GCC 13, SDL2, OpenSSL, curl, freetype, fontconfig, libzip,
+  zstd, libpng, ICU, nlohmann_json 3.11, FLAC, vorbis, gtest, clang-format, clang-tidy, expat); build tree on
+  `/home/user/Documents/Projects/factory-tour-build` symlinked as `build/` (the NTFS D drive hangs on heavy
+  unlink traffic, so it holds only the read-only RCT2 data).
+- [x] Vanilla build runs (title scene loads, headless `simulate` completes); all 279 upstream tests pass
+  including the replay pack; `game_path` set to the extracted GOG data.
+- [x] Docs skeleton: `CONTEXT.md`, `docs/adr/0001–0008`, `wiki/SCOPE.md`, `wiki/SPEC.md`, `wiki/ROADMAP.md`,
+  `CLAUDE.md`, `AGENTS.md`.
+- [x] CI trimmed: fork-owned `.github/workflows/factory-tour-ci.yml` (clang-format, changelog, Linux noble
+  build + tests, Windows x64 MSBuild) runs on `factory-tour/**`; upstream `ci.yml` and `clang-tidy.yml` ignore
+  those branches (two-line Touch Points).
+- [x] First FactoryElement commit: `TileElementType::factory = 9`, `FactoryElement` struct with the planned
+  payload layout, `asFactory()` accessors, `PaintFactory` stub, `factory` scripting type name, cases in every
+  exhaustive switch, `.vcxproj` entries and `FactoryElementTests`.
+
+### M1 Hello conveyor `[~]`
+
+Chest → inserter → belt → inserter → chest, placeable from a toolbar window with ghost preview, rotatable,
+saved and loaded, multiplayer-synced, with determinism, save/load and throughput gtests. Steps: element type,
+prototype object type with four JSON objects, FactoryState and pools, belts/inserters/containers, actions and
+registry, chunks 0x40/0x41 and the Sync Checksum, paint, UI, `.vcxproj` entries.
+
+### M2 Production chain `[ ]`
+
+Ore Layer and overlay, mining drill, furnace, assembler with recipe window, power (poles, offshore pump,
+boiler, steam engine, power overview), pipes and Fluid Networks, undergrounds, splitters, filters, belt-line
+drag, `factory-bench` CLI and the 8 ms CI gate.
+
+### M3 Park intertwine I `[ ]`
+
+Factory Tour ride type, ratings modifier and tour vehicle object; guest thoughts and watching; pollution and
+noise effects; `parkExt` Side Table chunk. The first moment the two games touch.
+
+### M4 Park intertwine II `[ ]`
+
+Material economy (construction modes, Material Bills, Warehouse, refunds, cost text), Warehouse-stocked shops
+and souvenir items, Market, new expenditure rows, park-rating terms, objectives, scenario editor options,
+Exhibit Paths.
+
+### M5 Progression and modding `[ ]`
+
+Technology prototypes in the research system, labs, unified unlock tree, script bindings, hooks and d.ts,
+object-selection tabs, combat stub (health, damage, Threat, turret), first content pack. A modder can ship a
+`.parkobj` turret.
+
+### M6 Logistics and polish `[ ]`
+
+Freight railway with cargo cars and loader stations, blueprints and copy/paste, production graphs, alerts,
+pollution overlay, machine audio and smoke.
+
+### M7 Multi-world I `[ ]`
+
+E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two worlds with item transfer
+(rocket silo), world selector, nested save, network map and tick changes.
+
+### M8 Multi-world II `[ ]`
+
+E8 stages 3–4: Portal Terminal rides, guest transfer, Planet Params, per-world climate, water and terrain,
+first weird-dimension content pack, `context.worlds` binding.
+
+### M9 Theme and release `[ ]`
+
+Theme bible, full content pass, trailer scenarios, packaging, licensing, naming.
+
+## Verification per milestone
+
+- Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITH_TESTS=on && ninja -C build`;
+  clang-format on changed files; clang-tidy on fork files.
+- Tests (`test/tests/`): `FactoryBeltTests`, `FactoryDeterminismTests`, `FactorySaveLoadTests`,
+  `FactoryActionTests`, pure `FactoryProximityScore` and `BillFromCost` tests, Warehouse, Market, park rating
+  equality with the flag off, research with mocked science points, scripting damage hook. Run with
+  `ctest --test-dir build --output-on-failure`.
+- Vanilla equivalence: upstream replay pack passes in Vanilla Mode; fork replay pack added per milestone.
+- Performance: `openrct2-cli factory-bench 4000` prints per-phase µs and checksum; CI asserts ≤ 8 ms/tick.
+- Multiplayer: headless host plus GUI client, 10-minute concurrent-building soak with no desync.
+- Manual: place the slice, watch items at all zooms and rotations, save/load, run a Factory Tour ride next
+  to machines and confirm excitement rises, toggle construction mode and read "needs N Iron plate".

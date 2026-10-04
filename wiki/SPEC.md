@@ -1,0 +1,210 @@
+# Specification
+
+The engineering design behind [`SCOPE.md`](SCOPE.md). Vocabulary is in [`CONTEXT.md`](../CONTEXT.md);
+decisions are in `docs/adr/`. Paths are upstream `src/openrct2/…` unless stated. Line references were taken
+from upstream commit `5d86c6b` (v0.5.5 / 0.5.6 in development) and drift as upstream moves.
+
+## Upstream facts that shape the design
+
+- Tile elements are 16 bytes with 11 payload bytes; the type field has 16 values and upstream uses 0–7
+  (`world/tile_element/TileElementBase.h`, `TileElementType.h`). Importers use 8, 14 and 15 as corruption
+  markers.
+- Entities are 65 535 fixed 512-byte slots shared with guests (`entity/EntityRegistry.h`); the desync check
+  hashes only Guest, Staff, Vehicle and Litter every 100 ticks (`network/NetworkBase.cpp`).
+- The tick is 40 Hz; `gameStateUpdateLogic` (`GameState.cpp`) runs rides, then `Park::Update`, then
+  research, ratings, news, actions and script hooks.
+- Object images come from a one-million-slot dynamic pool; `SpriteIds.h` is one contiguous enum.
+- The language parser reads `STR_%4d`, leaving about 1 100 free ids; object strings start at 0x2000.
+- `GameCommand` is a serialised `int32` with `custom` near the end; `kStreamVersion`, `kReplayVersion`
+  and `kPluginApiVersion` are the version constants a sim change must bump.
+- Park files are OrcaStream chunks; unknown chunks are skipped. Used ids: 0x01–0x09, 0x20, 0x30–0x39, 0x80.
+- Windows CI builds with MSBuild from explicit `.vcxproj` source lists.
+- Guests only consider rides with track within 10 tiles (`entity/Guest.cpp`); large scenery never animates.
+- `GameState_t` is a plain struct with `getGameState()` / `swapGameState()`; `swapGameState` has no callers.
+
+## E1 Factory core
+
+**Factory Element.** `TileElementType::factory = 9` in `world/tile_element/TileElementType.h`, class in new
+`world/tile_element/FactoryElement.h/.cpp`. Payload: `[5] subtype`, `[6..9] uint32 recordId`,
+`[10] footprintIndex`, `[11..12] ObjectEntryIndex entry`, `[13] shape/tier/connection cache`, `[14] flags`,
+`[15] pad`. Direction in the base type byte. Ghosts carry `recordId = 0xFFFFFFFF`.
+
+**FactoryState** lives in `GameState_t` after `cheats`, reset in `gameStateInitAll`, ticked between
+`Ride::updateAll()` and `Park::Update`. Pools (stable ids, lowest-free allocation, ascending iteration):
+`beltSegments, splitters, inserters, containers, machines, poles, powerNetworks, fluidNetworks`; plus
+`topologyVersion, powerDirty, fluidDirty`, the Ore Layer and the Warehouse.
+
+**Prototypes.** `ObjectType::factoryPrototype`, cap 8192, JSON `properties.kind`. A runtime registry
+(`PrototypeRegistry`) is rebuilt on object-list change and `ensurePrototypesLoaded()` runs on new game and
+load. Identifier strings in JSON resolve to entry indices after load (scenery-group `entries` pattern).
+
+**Belts.** Positions in 1/256 tile, item spacing 64, speeds 12/24/36 units per tick (15/30/45 items/s).
+Segments of ≤ 32 tiles break at splitters, undergrounds and tier changes. Two Lanes of gap-encoded
+`BeltItem {ObjectEntryIndex proto; uint16 gap}`; O(1) amortised per lane per tick. Sideload links into a
+mid-lane position. Splitters round-robin with filter and priority.
+
+**Inserters.** 48-byte records; swing ticks 24/10/10; pickup window on the tile behind, drop to the far lane
+of the tile ahead; source and target re-resolved when `topologyVersion` changes.
+
+**Machines.** Integer work units (`energySeconds * 40 * 256`); `progress += speedQ8 * satisfactionQ16 >> 16`.
+Furnaces auto-select a recipe from `smeltingByInput`. Drills scan their area with a rotating cursor and
+decrement the Ore Layer. Kinds: `drill, furnace, assembler, boiler, engine, pump, lab, turret, exportDepot`.
+
+**Ore Layer.** Dense `OreCell {ore, richness, amount}` (8 bytes) per tile, resized with the map, RLE-saved
+in chunk 0x42, painted as a surface overlay.
+
+**Power.** Poles auto-wire in id order; BFS rebuild when dirty; per-tick 64-bit
+`satisfactionQ16 = supply / demand`; steam chain offshore pump → boiler → engine; accumulators and solar
+later. **Fluids.** One volume per connected component, proportional sharing, pumps bridge networks.
+
+**Persistence.** Chunks `0x40 factoryHeader`, `0x41 factoryPools`, `0x42 factoryOre` registered in
+`park/ParkFile.cpp`, read after the tiles chunk. Each starts with `uint16 factoryVersion`. Pools saved dense
+with alive bytes. `Factory::postLoad` validates element↔record links.
+
+**Sync.** `computeSyncChecksum()` = entity serialisation + `Factory::serialiseForSync` into one
+`ChecksumStream`, replacing the entity-only call sites in `NetworkBase.cpp`, `ReplayManager.cpp` and
+`command_line/SimulateCommands.cpp`; the factory blob is captured and compared in `GameStateSnapshots.cpp`.
+
+**Touch Points.** One `case TileElementType::factory` in `paint/tile_element/Paint.TileElement.cpp`,
+`world/MapAnimation.cpp`, `world/Map.cpp` (clearing frees the record), `world/ConstructionClearance.cpp`,
+`world/TileInspector.cpp` and the UI inspector, `scripting/bindings/world/ScTileElement.cpp`,
+`scenes/editor/EditorController.cpp`, `actions/terraform/ClearAction.cpp`, `park/ParkFile.cpp`.
+
+**Budget.** ≤ 3 ms per tick typical at 50k belts, 10k inserters and 5k machines; CI gate 8 ms on a
+benchmark park; phases wrapped in `PROFILED_FUNCTION()`. Capacity caps, never adaptive throttling.
+
+## E2 GameActions and multiplayer
+
+`src/openrct2/factory/actions/FactoryCommand.h`: `kFactoryCommandBase = 10000`,
+`enum class FactoryCommand : int32_t { place, remove, rotate, setRecipe, setFilter, placeBeltLine, clearArea,
+placeBlueprint, setWire, cheat, end }`. Fork-owned `FactoryActionRegistry` that
+`actions/GameActionRegistry.cpp` defers to for ids ≥ 10000. `Permission::factory` in `network/NetworkAction.*`
+and `openrct2.d.ts`; names in `scripting/ScriptEngine.cpp`. Actions: `FactoryPlaceAction {CoordsXYZ loc;
+uint8 dir; ObjectEntryIndex entry; uint8 variant}` (footprint via `MapCanConstructWithClearAt`, ghosts),
+`FactoryRemoveAction`, `FactoryRotateAction`, `FactorySetRecipeAction`, `FactorySetFilterAction`,
+`FactoryPlaceBeltLineAction` (ExecuteNested per tile), `FactoryClearAreaAction`, `FactoryPlaceBlueprintAction`,
+`FactorySetWireAction`, `FactoryCheatAction`. Bump `kStreamVersion` and `kReplayVersion`; add files to
+`libopenrct2.vcxproj`.
+
+## E3 Rendering and UI
+
+`paint/tile_element/Paint.Factory.h/.cpp`: belts (`image + shape*64 + dir*16 + frame`), items as
+`PaintAddImageAsChild` from lane walks (skipped at zoom > 1), inserter frames from `progress`, multi-tile
+animated machines with a large-scenery-style footprint and frames keyed to progress, ghost palette. Wires v1
+as a `GfxDrawLine` overlay, v2 as quantised half-wire sprites. Smoke via `SteamParticle`.
+`ViewportInteractionItem::factory` plus cases in the UI `ViewportInteraction.cpp`.
+
+Windows in `src/openrct2-ui/windows/factory/` with `WindowClass` ids 142–219, theme rows in
+`interface/Theme.cpp`, factories in `windows/Windows.h`: FactoryBuild (palette, ghost placement, rotate, drag
+belt line), Machine, Container, PowerOverview, FluidInfo, Production, Blueprint library, Alerts. Toolbar
+button in `windows/TopToolbar.cpp`; ore overlay toggle in the view menu.
+
+Art ships as object images in `.parkobj`s under `data/factory/objects/`; UI-only icons go in
+`resources/g3/sprites.json` → `g3.dat` appended after upstream ranges. Strings: patch `LanguagePack.cpp` to
+`STR_%5d`, claim 0x5000–0x9FFF in `FactoryStringIds.h`, fork language file `data/language/factory/en-GB.txt`.
+
+## E4 Park intertwine
+
+Read interface: `FactoryState::infoAt(FactoryElement)` → `{kindClass, working, pollution, noise, photogenic,
+hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / deposit(MaterialBill)`),
+`takeSciencePoints(tech)`, `stats()`.
+
+- **Factory Tour ride**: `RIDE_TYPE_1D` → `RIDE_TYPE_FACTORY_TOUR`; `ride/rtd/gentle/FactoryTour.h` cloned
+  from `CarRide.h` with `interestingToLookAt`, `.Name = "factory_tour"`. `RatingsModifierType::bonusFactoryProximity`
+  applied in `ride/RideRatings.cpp`; track-walking loop gains a radius-2 Factory Element scan; pure
+  `FactoryProximityScore(stats, modifier)` in `ride/RideRatingsFactory.h`; counters in `RideRating::UpdateState`;
+  `factoryMachines/Working` exposed in the `ride.ratings.calculate` hook.
+- **Exhibit Paths**: `FOOTPATH_ENTRY_FLAG_IS_EXHIBIT = 1<<5`, JSON `"isExhibit": true`; ~60% bias in
+  `CalculateNextDestination`, no dead-end culling; guests marked `touredFactory`.
+- **Guest appreciation**: `GuestAssessSurroundings` counts machines, working, pollution and noise via
+  `infoAt`; thoughts 174–181 (`factoryImpressive, factorySmell, factoryNoise, factoryWatching,
+  factoryMadeHere, soldOut, factoryDanger`) in `PeepThoughtType`, `kPeepThoughtIds`, `ThoughtTypeMap`, d.ts.
+  Negative thoughts subtract happiness; smell adds nausea. `GuestFindRideToLookAt` watches working photogenic
+  machines. Per-128-tick pollution penalty in `Guest::update`.
+- **Material economy**: `Scenario::Options` gains `constructionMode ∈ {money, hybrid, materials}` and
+  `shopStockMode ∈ {infinite, warehouse}` (stored in `parkExt`). `GameActions::Result` gains `MaterialBill
+  materials` and `Status::insufficientMaterials`. Hooks in `GameActionRunner.cpp` `QueryInternal` (after
+  `FinanceCheckAffordability`, gated by `Materials::Active`) and `ExecuteInternal` (next to `FinancePayment`).
+  Bills come from optional `"materials"` on object JSON or `Materials::BillFromCost(cost, expenditure)`.
+- **Shops**: `ShopItem` 56–63 for manufactured souvenirs; `Ride::stockMode` side table checked in
+  `GuestDecideAndBuyItem`; Market with saturation decay; `ExpenditureType` appended after `interest`:
+  `factoryConstruction, factoryRunningCosts, goodsSales, rawMaterialPurchase`.
+- **Rating and objectives**: `ParkFlag::factoryEnabled = 32, factoryAffectsRating = 33`; in
+  `CalculateParkRating` pollution near paths up to −150 and uptime ±25. `ObjectiveType` appended:
+  `produceItemsBy, launchRocket, guestsTouredFactory`.
+- **Persistence rule**: guest, ride, scenario and objective fork fields are Side Tables in chunk `0x45 parkExt`.
+
+## E5 Research and progression
+
+Technologies are prototypes of kind `technology` (`prerequisites`, `cost: {packs, time}`, `unlocks:
+{recipes, machines, rideEntries, sceneryGroups}`, `allowFunding`). `Research::EntryType::technology = 2`,
+`ResearchCategory::technology = 7`. `ResearchFinishItem` calls `factory.unlockTechnology`, which also drives
+`RideEntrySetInvented` and `SceneryGroupSetInvented`. `ResearchUpdate` progresses technologies by
+`takeSciencePoints()` from Lab machines unless `allowFunding`. Windows: research icon switch,
+`EditorInventionsList.cpp`. Content: automation → logistics → electricity → steel → oil → modules → rocket,
+interleaved with ride categories, scenery groups, souvenir recipes and tour-ride tiers.
+
+## E6 Modding surface and combat stub
+
+Every prototype is a `.parkobj` (`object.json` + PNGs) of `objectType: "factory_prototype"`. Schemas: item
+`{stackSize, fuelValue, shopItem?, marketPrice, saturation, category}`; recipe `{ingredients, results, time,
+category}`; machine `{kind, size, clearance, power: {consumption, drain}, recipeCategories, speed, pollution,
+noise, photogenic, hazard, health, materials, turret: {range, damage, ammoItem}?}`; technology as above.
+Fork content under `data/factory/objects/**` via an extra `ObjectRepository` root. Object-selection editor
+gets a page with sub-tabs by kind.
+
+Script API: `factory` global (`ScFactory`: `getMachine(x, y)`, `machines`, `warehouse`, `market`,
+`technologies`, `spawnThreat()`), `ScMachine`, `ScItemStack`, `ScThreat`; setters guarded by
+`IsGameStateMutable()` and routed through fork actions. Hooks: `factory.tick`, `factory.damage`,
+`factory.threat.spawn/despawn`, `factory.turret.fire`, `factory.machine.status`, `factory.research.complete`.
+Bump `kPluginApiVersion`; update `openrct2.d.ts`.
+
+Combat stub: `health/maxHealth` on machine records (0xFFFF = indestructible; ride health in `parkExt`);
+`FactoryDamageAction {target variant<tile, RideId, EntityId>, amount, damageType, sourceId}`; destroyed
+machines stop and show a damaged frame; rides get `RideFlag::brokenDown` with `Breakdown::damage`;
+`ThreatEntity` as `EntityType::threat` appended before `count` and added to the park-file type lists,
+checksum, snapshots, paint and `ScEntity`; `ThreatSpawn/DespawnAction`; turret kind consumes `ammoItem`,
+nearest-threat scan, fires the hook. Not built: AI, pathing, waves, evolution, guest reactions, rubble, repair,
+vehicle damage.
+
+## E7 Logistics at scale
+
+Freight: `RIDE_TYPE_1F` → `freightRailway` cloned from Miniature Railway with a `CarEntry` carrying
+`InvSlot[]`; loader and unloader Factory Elements adjacent to stations; vehicle hook on station arrival in
+`ride/Vehicle.cpp`. Later: logistic bots as factory records painted per tile group. Also lane filters,
+priorities, blueprint rotation and flip, copy/paste tool, production graphs, alerts (no power, no ore, output
+full), pollution overlay.
+
+## E8 Multi-world
+
+N `GameState_t` instances ticked in lockstep by `WorldManager` (`src/openrct2/world/WorldManager.h/.cpp`).
+
+- **Stage 0**: `WorldId` strong type; `WorldManager` owning `vector<unique_ptr<GameState_t>>`,
+  `activeIndex`, `viewedIndex`, `withWorld(id, fn)`, `setViewedWorld(id)`; `swapGameState` becomes its
+  private primitive. The viewed world is always active outside the tick loop.
+- **Stage 1** (single world, zero behaviour change, validated by replays): move `_tileIndex`,
+  `_tileElementsInUse`, map-animation sets, researched tables and `_seenRideType`, `_consolidatedPatrolArea`,
+  land-rights counters and `RideUse::_history/_typeHistory` (keyed by `EntityId`, collides across worlds) into
+  `GameState_t` or `EntityRegistry` with forwarding accessors. Split `gameStateUpdateLogic` into
+  `tickWorld(GameState_t&)` plus a master driver. Add `_worldId` to `GameAction` and the action queue.
+- **Stage 2** (two worlds, items only): `CompanyState` with finance, research, scenario options and records,
+  `nextGuestNumber`, `pluginStorage`, `cheats`, master `currentTicks`, shared `date`, `TransferQueue`,
+  `PortalLink` table and world directory. Per world: tiles, banners, entities, rides, weather, own
+  `scenarioRand`, spawns, news, rating. Save: world 0 in the existing top-level chunks; `company = 0x43`,
+  `worlds = 0x44` holding N length-prefixed inner OrcaStreams. Network: multi-world `SaveMap/LoadMap`, tick
+  sync hashes all worlds' `s0`, snapshots loop worlds. Lift `kMaxClimateObjects` and `kMaxWaterObjects`. One
+  superset object list per save. World selector in `TopToolbar.cpp` with a switch procedure mirroring
+  `GameLoadInit`. About 80–100 MiB per world.
+- **Stage 3**: `portalTerminal` RTD (`RIDE_TYPE_22`) linked by `PortalLink` via `PortalLinkAction`; rides
+  never span worlds. `GuestTransfer::capture/apply` keeps world-neutral stats and resets world-local ids;
+  respawn via `Guest::generate` at the paired exit. Items move via the Transfer Queue after all world ticks.
+- **Stage 4**: Planet Params (gravity scale in `Vehicle.TrackMotion.cpp`, guest energy drain, belt speed,
+  ore table), per-world climate, water and terrain objects, allowed-ride mask. Rocket silo = portal with an
+  item-only link. Plugin API gains `context.worlds`.
+
+## E9 Theme, content, release
+
+Theme bible as content packs (terrain surface and edge objects, ore prototypes, machine skins, music,
+scenario text). Content pack `data/factory/` with a vanilla-equivalent chain plus park goods (track segments,
+car bodies, souvenirs). AppImage and Windows zip via trimmed CI; no "Factorio" or "RCT" in the product name;
+GPLv3 code, CC-BY-SA 4.0 original art; upstream changelog convention kept.

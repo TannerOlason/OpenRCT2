@@ -1,6 +1,9 @@
 name: CI
 on:
   push:
+    # FACTORY-TOUR: fork branches use factory-tour-ci.yml
+    branches-ignore:
+      - 'factory-tour/**'
     paths-ignore:
       - '.editorconfig'
       - '.gitattributes'
@@ -9,6 +12,9 @@ on:
       - '.gitignore'
       - '.vscode/**'
   pull_request:
+    # FACTORY-TOUR: fork branches use factory-tour-ci.yml
+    branches-ignore:
+      - 'factory-tour/**'
     paths-ignore:
       - '.editorconfig'
       - '.gitattributes'

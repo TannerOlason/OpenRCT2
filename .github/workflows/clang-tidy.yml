@@ -1,6 +1,9 @@
 name: clang-tidy-check
 on:
   pull_request:
+    # FACTORY-TOUR: fork branches use factory-tour-ci.yml
+    branches-ignore:
+      - 'factory-tour/**'
     paths-ignore:
       - '.editorconfig'
       - '.gitattributes'

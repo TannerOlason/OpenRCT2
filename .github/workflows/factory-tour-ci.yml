@@ -1,0 +1,115 @@
+# Factory Tour fork CI. Upstream's ci.yml is kept untouched apart from a branch filter so that it never
+# runs on factory-tour/** branches; this workflow covers the subset of jobs the fork needs.
+name: Factory Tour CI
+on:
+  push:
+    branches:
+      - 'factory-tour/**'
+    paths-ignore:
+      - '.editorconfig'
+      - '.gitattributes'
+      - '.github/*_TEMPLATE/**'
+      - '.gitignore'
+      - '.vscode/**'
+      - 'docs/**'
+      - 'wiki/**'
+      - '*.md'
+  pull_request:
+    branches:
+      - 'factory-tour/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+env:
+  OPENRCT2_BUILD_SERVER: GitHub
+  OPENRCT2_VERSION: 0.5.5
+
+concurrency:
+  group: factory-tour-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build_variables:
+    name: Get version info
+    runs-on: ubuntu-24.04
+    outputs:
+      describe: ${{ steps.ghd.outputs.describe }}
+      distance: ${{ steps.ghd.outputs.distance }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Git describe
+        id: ghd
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          DESCRIBE=$(git describe --tags)
+          DISTANCE=$(git rev-list --count $TAG..HEAD)
+          echo "describe=$DESCRIBE" >> $GITHUB_OUTPUT
+          echo "distance=$DISTANCE" >> $GITHUB_OUTPUT
+
+  check-code-formatting:
+    name: Check code formatting
+    runs-on: ubuntu-24.04
+    container: ghcr.io/openrct2/openrct2-build:26-format
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - run: git config --global --add safe.directory $PWD
+      - name: Run clang-format
+        run: scripts/check-code-formatting
+
+  check-changelog-formatting:
+    name: Check changelog formatting
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Run check-changelog-formatting
+        run: scripts/check-changelog-formatting
+
+  linux:
+    name: Ubuntu Linux (noble, x86_64, tests)
+    runs-on: ubuntu-24.04
+    needs: [check-code-formatting, build_variables]
+    container: ghcr.io/openrct2/openrct2-build:26-noble
+    env:
+      DISTANCE_FROM_TAG: ${{ needs.build_variables.outputs.distance }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.21
+        with:
+          key: factory-tour-linux-x86_64-noble
+      - name: Install GCC problem matcher
+        uses: ammaraskar/gcc-problem-matcher@master
+      - name: Build OpenRCT2
+        run: |
+          . scripts/setenv -q && build -DWITH_TESTS=on -DCMAKE_BUILD_TYPE=Release -DDISABLE_DISCORD_RPC=ON -DCMAKE_CXX_FLAGS="-g1 -gz -fno-var-tracking-assignments" -DBUILD_SHARED_LIBS=ON -DPORTABLE=ON -DCMAKE_POSITION_INDEPENDENT_CODE=on
+      - name: Run Tests
+        run: . scripts/setenv -q && run-tests
+
+  windows:
+    name: Windows (x64)
+    runs-on: windows-2025-vs2026
+    needs: [check-code-formatting, build_variables]
+    env:
+      PLATFORM: x64
+      CONFIGURATION: Release
+      DISTANCE_FROM_TAG: ${{ needs.build_variables.outputs.distance }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install MSVC problem matcher
+        uses: ammaraskar/msvc-problem-matcher@master
+      - name: Build OpenRCT2
+        run: . scripts/setenv && build
+      - name: Run Tests
+        run: . scripts/setenv -q && run-tests

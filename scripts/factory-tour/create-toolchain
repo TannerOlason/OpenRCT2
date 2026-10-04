@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Creates the conda toolchain used by scripts/factory-tour/env.sh. Idempotent; safe to re-run.
+set -e
+FT_TOOLCHAIN="${FT_TOOLCHAIN:-/home/user/miniconda3/envs/factory-tour}"
+conda create -y -p "$FT_TOOLCHAIN" -c conda-forge --override-channels \
+    cmake ninja ccache pkg-config "gxx_linux-64=13" "gcc_linux-64=13" "sysroot_linux-64>=2.28" \
+    sdl2 openssl libcurl freetype fontconfig libzip zstd zlib libpng icu nlohmann_json libflac libvorbis libogg \
+    gtest gmock clang-format clang-tools libgl-devel
+echo "toolchain ready at $FT_TOOLCHAIN"
