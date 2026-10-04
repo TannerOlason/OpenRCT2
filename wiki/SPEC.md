@@ -188,9 +188,15 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
   or, for a negative cost, depositing the equivalent refund. Bills come from `billFromCost`: one
   `factory-tour.factory_prototype.iron_plate` per 5.00, for `rideConstruction` and `landscaping` only, never for
   fork actions, ghosts, noSpend, the editor or no-money parks. Object JSON `"materials"` bills come later.
+- **Market** (ADR 0011): item prototypes take `marketPrice` and `marketSaturation`. `Factory::Market` (pools chunk
+  version 8) keeps a saturation per item: each unit sold raises it, the price is `marketPrice * (1024 -
+  min(saturation, 896)) / 1024`, and once a day every entry drops an eighth (at least one point). Export depots
+  (`"exportDepot": true` containers) sell whatever is put in and refuse unsellable items; `FactoryMarketSellAction`
+  (command `marketSell`) sells Warehouse stock, returning the income as a negative cost. Income is booked as Shop
+  sales, not as new expenditure rows, because the expenditure table's save layout depends on `ExpenditureType::count`;
+  `Market::goodsSold` keeps the fork-side total.
 - **Shops**: `ShopItem` 56–63 for manufactured souvenirs; `Ride::stockMode` side table checked in
-  `GuestDecideAndBuyItem`; Market with saturation decay; `ExpenditureType` appended after `interest`:
-  `factoryConstruction, factoryRunningCosts, goodsSales, rawMaterialPurchase`.
+  `GuestDecideAndBuyItem`.
 - **Rating and objectives**: `ParkFlag::factoryEnabled = 32, factoryAffectsRating = 33`; in
   `CalculateParkRating` pollution near paths up to −150 and uptime ±25. `ObjectiveType` appended:
   `produceItemsBy, launchRocket, guestsTouredFactory`.

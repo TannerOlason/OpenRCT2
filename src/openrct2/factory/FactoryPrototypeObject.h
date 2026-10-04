@@ -78,8 +78,10 @@ namespace OpenRCT2::Factory
     struct ItemProperties
     {
         uint16_t stackSize = 100;
-        uint32_t fuelTicks = 0; // ticks of burner work one item provides; 0 = not a fuel
-        bool fluid = false;     // fluids live in fluid networks and machine fluid boxes, never on belts
+        uint32_t fuelTicks = 0;        // ticks of burner work one item provides; 0 = not a fuel
+        bool fluid = false;            // fluids live in fluid networks and machine fluid boxes, never on belts
+        money64 marketPrice = 0;       // what the Market pays for one, before saturation; 0 = not sellable
+        uint16_t marketSaturation = 8; // how much each sale floods the Market (out of 1024)
     };
 
     /**
@@ -193,8 +195,9 @@ namespace OpenRCT2::Factory
     struct ContainerProperties
     {
         uint16_t slots = 16;
-        uint8_t rotations = 1;  // 1 or 4 images
-        bool warehouse = false; // items put in go to the park-wide Warehouse instead of its slots
+        uint8_t rotations = 1;    // 1 or 4 images
+        bool warehouse = false;   // items put in go to the park-wide Warehouse instead of its slots
+        bool exportDepot = false; // items put in are sold to the Market at once (unsellable items are refused)
     };
 
     class FactoryPrototypeObject final : public Object

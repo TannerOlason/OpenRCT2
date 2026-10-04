@@ -132,7 +132,10 @@ Exhibit Paths.
 - [x] Construction window cost text: the ride construction, footpath and scenery windows show "$12 + 3 Iron plate"
   in hybrid mode and "Needs 3 Iron plate" in materials mode (`Ui::Factory::constructionCostText`); money mode is
   unchanged. Checked in the GUI with a plugin calling `factorysetparkoption`.
-- [ ] Market, export depot and new expenditure rows.
+- [x] Market and export depot: item `marketPrice`, saturation per sale with daily recovery and a 1/8 price floor;
+  export depots sell what is put in, `FactoryMarketSellAction` sells Warehouse stock (click a stack in the depot
+  window). Money is booked under Shop sales instead of new expenditure rows (ADR 0011: the expenditure table's save
+  format depends on the enum's size).
 - [ ] Warehouse-stocked shops and souvenir shop items.
 - [ ] Park rating terms (pollution near paths, uptime) and park flags.
 - [ ] Objectives and scenario editor options.

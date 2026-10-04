@@ -35,10 +35,12 @@
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
 #include <openrct2/factory/GuestFactory.h>
+#include <openrct2/factory/Market.h>
 #include <openrct2/factory/ParkExt.h>
 #include <openrct2/factory/Pollution.h>
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
+#include <openrct2/factory/actions/FactoryMarketSellAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/management/Research.h>
 #include <openrct2/object/ObjectManager.h>
@@ -1384,4 +1386,76 @@ TEST_F(FactoryTopologyTests, InsertersFillTheWarehouseThroughADepot)
     Tick(48 * 6);
     EXPECT_EQ(state.warehouse.count(_plate), 5u);
     EXPECT_TRUE(state.containers.get(source->getRecordId())->slots[0].isEmpty());
+}
+
+TEST_F(FactoryTopologyTests, MarketPricesFallWithSalesAndRecoverDaily)
+{
+    auto& gameState = getGameState();
+    auto& market = gameState.factory.market;
+    gameState.park.flags.unset(ParkFlag::noMoney);
+    const auto base = getPrototype(_plate)->getItem().marketPrice;
+    ASSERT_GT(base, 0);
+    EXPECT_EQ(market.price(_plate), base);
+    EXPECT_EQ(market.price(_furnace), 0); // not an item
+
+    const auto cashBefore = gameState.park.cash;
+    const auto income = market.sell(_plate, 10, true);
+    EXPECT_GT(income, 0);
+    EXPECT_LT(income, base * 10); // each unit sold for a little less
+    EXPECT_EQ(gameState.park.cash, cashBefore + income);
+    EXPECT_EQ(market.goodsSold, income);
+    EXPECT_EQ(market.saturation(_plate), 10 * getPrototype(_plate)->getItem().marketSaturation);
+    EXPECT_LT(market.price(_plate), base);
+
+    // Flooding the market bottoms out at an eighth of the price.
+    market.sell(_plate, 1000, false);
+    EXPECT_EQ(market.price(_plate), base * (kMarketSaturationMax - kMarketSaturationFloor) / kMarketSaturationMax);
+
+    // A new day recovers an eighth of the saturation.
+    const auto flooded = market.saturation(_plate);
+    market.lastDayIndex = -2;
+    market.update(gameState);
+    EXPECT_EQ(market.saturation(_plate), flooded - flooded / 8);
+    market.update(gameState); // same day: nothing more
+    EXPECT_EQ(market.saturation(_plate), flooded - flooded / 8);
+    gameState.park.flags.set(ParkFlag::noMoney);
+}
+
+TEST_F(FactoryTopologyTests, ExportDepotSellsAndTheWarehouseSellsByAction)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    gameState.park.flags.unset(ParkFlag::noMoney);
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto* exportObject = objectManager.LoadObject("factory-tour.factory_prototype.export_depot");
+    ASSERT_NE(exportObject, nullptr);
+    auto* source = Place(kRowX0, 2, _chest);
+    Place(kRowX0 + 1, 2, _inserter);
+    Place(kRowX0 + 2, 2, objectManager.GetLoadedObjectEntryIndex(exportObject));
+    state.containers.get(source->getRecordId())->slots[0] = { _plate, 4 };
+    state.containers.get(source->getRecordId())->slots[1] = { _furnace, 1 }; // not sellable: refused
+    const auto cashBefore = gameState.park.cash;
+    Tick(48 * 6);
+    EXPECT_EQ(state.market.saturation(_plate), 4 * getPrototype(_plate)->getItem().marketSaturation);
+    EXPECT_GT(gameState.park.cash, cashBefore);
+    // The inserter picked up the furnace too and now waits, unable to drop it.
+    auto* arm = state.inserters.get(findFactoryElement(Tile(kRowX0 + 1))->getRecordId());
+    ASSERT_NE(arm, nullptr);
+    EXPECT_EQ(arm->hand.item, _furnace);
+    EXPECT_EQ(arm->phase, kInserterPhaseWaitingToDrop);
+
+    // Selling from the warehouse by action pays the park through the usual money path.
+    state.warehouse.deposit(_gear, 5);
+    GameActions::FactoryMarketSellAction sell(_gear, 5);
+    const auto cashMid = gameState.park.cash;
+    gInUpdateCode = true;
+    auto res = GameActions::Execute(&sell, gameState);
+    gInUpdateCode = false;
+    ASSERT_EQ(res.error, GameActions::Status::ok);
+    EXPECT_LT(res.cost, 0);
+    EXPECT_EQ(gameState.park.cash, cashMid - res.cost);
+    EXPECT_EQ(state.warehouse.count(_gear), 0u);
+    GameActions::FactoryMarketSellAction nothing(_gear, 1);
+    EXPECT_EQ(GameActions::Query(&nothing, gameState).error, GameActions::Status::invalidParameters);
+    gameState.park.flags.set(ParkFlag::noMoney);
 }

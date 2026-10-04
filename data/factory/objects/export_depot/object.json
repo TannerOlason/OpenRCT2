@@ -1,0 +1,30 @@
+{
+    "id": "factory-tour.factory_prototype.export_depot",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "container",
+        "slots": 1,
+        "rotations": 1,
+        "exportDepot": true,
+        "price": 250,
+        "removalPrice": -180,
+        "clearance": 7
+    },
+    "images": [
+        {
+            "path": "images/depot.png",
+            "x": -32,
+            "y": -22
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Export depot"
+        }
+    }
+}

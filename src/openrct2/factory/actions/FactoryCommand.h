@@ -34,6 +34,7 @@ namespace OpenRCT2::GameActions
         cheat = 9,
         setOre = 10,
         setParkOption = 11,
+        marketSell = 12,
         count,
     };
 

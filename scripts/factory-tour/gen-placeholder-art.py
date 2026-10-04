@@ -164,7 +164,7 @@ def draw_chest():
     return img, h
 
 
-def draw_warehouse():
+def draw_warehouse(body=(120, 130, 110, 255), roof=(150, 160, 140, 255), outline=(50, 55, 45, 255)):
     """A full-tile depot shed with a roller door: where the factory's output joins the park-wide warehouse."""
     def top_detail(draw, cx, cy):
         draw.polygon([(cx - 14, cy - 2), (cx, cy - 9), (cx + 14, cy - 2), (cx, cy + 5)], fill=(150, 150, 160, 255),
@@ -174,8 +174,7 @@ def draw_warehouse():
         for k in range(4):
             draw.line([(cx - 24, cy - 14 + k * 3), (cx - 8, cy - 6 + k * 3)], fill=(90, 90, 100, 255))
 
-    img, h = draw_machine_box(0, (120, 130, 110, 255), (150, 160, 140, 255), (50, 55, 45, 255), 22, top_detail,
-                              side_detail)
+    img, h = draw_machine_box(0, body, roof, outline, 22, top_detail, side_detail)
     return img, h
 
 
@@ -740,9 +739,11 @@ def write_tour_tram():
         fh.write("\n")
 
 
-def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0):
+def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0, market_price=0):
     icon, belt = draw_item_small(colour, dark)
     item_props = {"stackSize": 50}
+    if market_price:
+        item_props["marketPrice"] = market_price
     if fuel_ticks:
         item_props["fuelTicks"] = fuel_ticks
     folder = write_object(item_name, "item", item_props,
@@ -762,8 +763,8 @@ def main():
     os.makedirs(ROOT, exist_ok=True)
 
     # Ores and their items.
-    write_ore_and_item("iron_ore_patch", "iron_ore", "Iron ore", "Iron ore", (110, 120, 140), (60, 70, 90))
-    write_ore_and_item("coal_patch", "coal", "Coal", "Coal", (50, 50, 55), (20, 20, 25), fuel_ticks=1600)
+    write_ore_and_item("iron_ore_patch", "iron_ore", "Iron ore", "Iron ore", (110, 120, 140), (60, 70, 90), market_price=5)
+    write_ore_and_item("coal_patch", "coal", "Coal", "Coal", (50, 50, 55), (20, 20, 25), fuel_ticks=1600, market_price=8)
 
     # Recipes.
     write_object("iron_plate_smelting", "recipe", {
@@ -784,7 +785,7 @@ def main():
         "machineKind": "assembler", "energy": "electric", "speedQ8": 128, "powerUsage": 75,
         "recipeCategories": ["crafting"], "inputSlots": 4, "outputSlots": 1, "pollution": 4, "noise": 20,
         "price": 150, "removalPrice": -110, "clearance": 7}, draw_assembler, 4)
-    write_object("iron_gear", "item", {"stackSize": 100},
+    write_object("iron_gear", "item", {"stackSize": 100, "marketPrice": 60},
                  [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
                  "Iron gear wheel")
     gi, gb = draw_item_small((150, 150, 160), (70, 70, 80))
@@ -834,7 +835,7 @@ def main():
 
     # Item: iron plate.
     folder = write_object(
-        "iron_plate", "item", {"stackSize": 100},
+        "iron_plate", "item", {"stackSize": 100, "marketPrice": 20},
         [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
         "Iron plate")
     save(draw_item_icon(), folder, "icon.png")
@@ -893,6 +894,14 @@ def main():
         "warehouse_depot", "container",
         {"slots": 1, "rotations": 1, "warehouse": True, "price": 200, "removalPrice": -150, "clearance": 7},
         [{"path": "images/depot.png", "x": -32, "y": -h}], "Warehouse depot")
+    save(img, folder, "depot.png")
+
+    # Export depot: what goes in is sold to the off-map Market straight away.
+    img, h = draw_warehouse((140, 110, 80, 255), (175, 140, 100, 255), (60, 45, 30, 255))
+    folder = write_object(
+        "export_depot", "container",
+        {"slots": 1, "rotations": 1, "exportDepot": True, "price": 250, "removalPrice": -180, "clearance": 7},
+        [{"path": "images/depot.png", "x": -32, "y": -h}], "Export depot")
     save(img, folder, "depot.png")
     print("wrote content pack to", os.path.relpath(ROOT))
 

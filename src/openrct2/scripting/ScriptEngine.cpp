@@ -1760,6 +1760,7 @@ const static EnumMap<GameCommand> ActionNameToType = {
     { "factorysetore", GameActions::toGameCommand(GameActions::FactoryCommand::setOre) },
     { "factorysetfilter", GameActions::toGameCommand(GameActions::FactoryCommand::setFilter) },
     { "factorysetparkoption", GameActions::toGameCommand(GameActions::FactoryCommand::setParkOption) },
+    { "factorymarketsell", GameActions::toGameCommand(GameActions::FactoryCommand::marketSell) },
 };
 // clang-format on
 

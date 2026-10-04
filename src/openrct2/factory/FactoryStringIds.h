@@ -84,5 +84,9 @@ namespace OpenRCT2
         STR_FT_WAREHOUSE = 20540,
         STR_FT_COST_AND_MATERIALS = 20541,
         STR_FT_COST_MATERIALS = 20542,
+        STR_FT_NOTHING_TO_SELL = 20543,
+        STR_FT_MARKET_WONT_BUY = 20544,
+        STR_FT_SELL_STACK_TIP = 20545,
+        STR_FT_MARKET_PRICE = 20546,
     };
 } // namespace OpenRCT2

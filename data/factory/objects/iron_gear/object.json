@@ -8,7 +8,8 @@
     "objectType": "factory_prototype",
     "properties": {
         "kind": "item",
-        "stackSize": 100
+        "stackSize": 100,
+        "marketPrice": 60
     },
     "images": [
         {

@@ -43,6 +43,7 @@ namespace OpenRCT2::Factory
         rideProximity.clear();
         pollution.clear();
         warehouse.stock.clear();
+        market = Market{};
         ore.clear();
         parkExt.reset();
         powerDirty = false;
@@ -268,6 +269,8 @@ namespace OpenRCT2::Factory
             state.warehouse.deposit(item, 1);
             return true;
         }
+        if (proto != nullptr && proto->getContainer().exportDepot)
+            return state.market.sell(item, 1, true) > 0;
         auto* itemProto = getPrototype(item);
         return containerInsert(container, item, itemProto != nullptr ? itemProto->getItem().stackSize : 1);
     }
@@ -1106,6 +1109,7 @@ namespace OpenRCT2::Factory
         state.pollution.ensureSize(gameState.mapSize);
         if (gameState.currentTicks % kParkExtPruneTicks == 0)
             pruneParkExt(gameState);
+        state.market.update(gameState);
         if (gameState.currentTicks % PollutionLayer::kSpreadTicks == 0)
             state.pollution.spread();
         // Fixed order: belts move, then inserters pick up and drop, then machines work. Containers have no

@@ -9,6 +9,7 @@
     "properties": {
         "kind": "item",
         "stackSize": 50,
+        "marketPrice": 8,
         "fuelTicks": 1600
     },
     "images": [

@@ -198,6 +198,8 @@ namespace OpenRCT2::Factory
                 _item.stackSize = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["stackSize"], 100));
                 _item.fuelTicks = Json::GetNumber<uint32_t>(properties["fuelTicks"], 0);
                 _item.fluid = Json::GetBoolean(properties["fluid"], false);
+                _item.marketPrice = Json::GetNumber<money64>(properties["marketPrice"], 0);
+                _item.marketSaturation = Json::GetNumber<uint16_t>(properties["marketSaturation"], 8);
                 break;
             case PrototypeKind::ore:
                 _ore.item.identifier = Json::GetString(properties["item"]);
@@ -275,6 +277,7 @@ namespace OpenRCT2::Factory
                 _container.slots = std::clamp<uint16_t>(Json::GetNumber<uint16_t>(properties["slots"], 16), 1, 256);
                 _container.rotations = Json::GetNumber<uint8_t>(properties["rotations"], 1) == 4 ? 4 : 1;
                 _container.warehouse = Json::GetBoolean(properties["warehouse"], false);
+                _container.exportDepot = Json::GetBoolean(properties["exportDepot"], false);
                 break;
             case PrototypeKind::pole:
                 _pole.wireReach = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["wireReach"], 7), 1, 30);

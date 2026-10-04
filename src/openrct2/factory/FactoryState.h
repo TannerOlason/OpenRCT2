@@ -13,6 +13,7 @@
 
 #include "FactoryPool.hpp"
 #include "FactoryRecords.h"
+#include "Market.h"
 #include "Materials.h"
 #include "Ore.h"
 #include "ParkExt.h"
@@ -50,6 +51,7 @@ namespace OpenRCT2::Factory
         std::vector<RideProximityEntry> rideProximity;
         PollutionLayer pollution;
         Warehouse warehouse;
+        Market market;
         OreLayer ore;
         ParkExt parkExt; // saved in its own chunk (0x45); part of the sync checksum // saved in its own chunk (0x42); its hash
                          // joins the sync checksum
@@ -94,6 +96,7 @@ namespace OpenRCT2::Factory
             v.vec(rideProximity, VisitElement{});
             pollution.visit(v);
             warehouse.visit(v);
+            market.visit(v);
         }
     };
 

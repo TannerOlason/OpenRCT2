@@ -27,6 +27,7 @@
 #include <openrct2/factory/FactoryStringIds.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
+#include <openrct2/factory/actions/FactoryMarketSellAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetRecipeAction.h>
 #include <openrct2/localisation/Formatter.h>
@@ -59,6 +60,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_INPUT_PRIORITY_DROPDOWN_BUTTON,
         WIDX_OUTPUT_PRIORITY_DROPDOWN,
         WIDX_OUTPUT_PRIORITY_DROPDOWN_BUTTON,
+        WIDX_WAREHOUSE_SCROLL,
     };
 
     // clang-format off
@@ -71,7 +73,8 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({ 96, 48}, {128, 12}, WidgetType::dropdownMenu, WindowColour::secondary                                     ),
         makeWidget({212, 49}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_PRIORITY_TIP),
         makeWidget({ 96, 64}, {128, 12}, WidgetType::dropdownMenu, WindowColour::secondary                                     ),
-        makeWidget({212, 65}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_PRIORITY_TIP)
+        makeWidget({212, 65}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_PRIORITY_TIP),
+        makeWidget({  4, 44}, {222, 108}, WidgetType::scroll,      WindowColour::secondary, SCROLL_VERTICAL,    STR_FT_SELL_STACK_TIP)
     );
     // clang-format on
 
@@ -110,6 +113,30 @@ namespace OpenRCT2::Ui::Windows
         {
             if (widgetIndex == WIDX_CLOSE)
                 close();
+        }
+
+        ScreenSize onScrollGetSize(int32_t scrollIndex) override
+        {
+            const auto rows = (static_cast<int32_t>(WarehouseStacks().size()) + kSlotsPerRow - 1) / kSlotsPerRow;
+            return { 0, std::max(1, rows) * kSlotSize };
+        }
+
+        void onScrollDraw(int32_t scrollIndex, Drawing::RenderTarget& rt) override
+        {
+            GfxClear(rt, getColourMap(colours[1].colour).midLight);
+            DrawSlots(rt, { 1, 1 }, WarehouseStacks());
+        }
+
+        void onScrollMouseDown(int32_t scrollIndex, const ScreenCoordsXY& screenCoords) override
+        {
+            // Clicking a stack sells all of it to the Market.
+            const auto& stock = getGameState().factory.warehouse.stock;
+            const int32_t column = screenCoords.x / kSlotSize;
+            const auto index = static_cast<size_t>((screenCoords.y / kSlotSize) * kSlotsPerRow + column);
+            if (column >= kSlotsPerRow || index >= stock.size())
+                return;
+            auto action = GameActions::FactoryMarketSellAction(stock[index].item, stock[index].count);
+            GameActions::Execute(&action, getGameState());
         }
 
         void onMouseDown(WidgetIndex widgetIndex) override
@@ -196,6 +223,8 @@ namespace OpenRCT2::Ui::Windows
                 widgets[WIDX_RECIPE_DROPDOWN].setString(STR_FT_NO_RECIPE);
             }
 
+            widgets[WIDX_WAREHOUSE_SCROLL].setVisible(IsWarehouseDepot());
+
             auto* splitter = FindSplitter();
             for (auto widx :
                  { WIDX_FILTER_DROPDOWN, WIDX_FILTER_DROPDOWN_BUTTON, WIDX_INPUT_PRIORITY_DROPDOWN,
@@ -244,13 +273,13 @@ namespace OpenRCT2::Ui::Windows
                     return;
                 if (proto != nullptr && proto->getContainer().warehouse)
                 {
-                    // A depot shows the park-wide stock it feeds.
+                    // A depot shows the park-wide stock it feeds (in the scroll) and what the Market has paid.
                     drawText(rt, pos, STR_FT_WAREHOUSE);
-                    pos.y += 12;
-                    std::vector<ItemStack> stock;
-                    for (const auto& entry : state.warehouse.stock)
-                        stock.push_back({ entry.item, static_cast<uint16_t>(std::min<uint32_t>(entry.count, 0xFFFF)) });
-                    DrawSlots(rt, pos, stock);
+                    auto ft = Formatter();
+                    ft.Add<money64>(state.market.goodsSold);
+                    drawText(
+                        rt, windowPos + ScreenCoordsXY{ 6, widgets[WIDX_WAREHOUSE_SCROLL].bottom + 3 }, STR_FT_MARKET_PRICE,
+                        ft);
                     return;
                 }
                 drawText(rt, pos, STR_FT_CONTENTS);
@@ -344,6 +373,22 @@ namespace OpenRCT2::Ui::Windows
             if (element == nullptr || element->getSubtype() != FactoryElementSubtype::machine || !element->hasRecord())
                 return nullptr;
             return getGameState().factory.machines.get(element->getRecordId());
+        }
+
+        bool IsWarehouseDepot() const
+        {
+            auto* element = FindElement();
+            auto* proto = element != nullptr ? getPrototype(*element) : nullptr;
+            return proto != nullptr && element->getSubtype() == FactoryElementSubtype::container
+                && proto->getContainer().warehouse;
+        }
+
+        std::vector<ItemStack> WarehouseStacks() const
+        {
+            std::vector<ItemStack> stock;
+            for (const auto& entry : getGameState().factory.warehouse.stock)
+                stock.push_back({ entry.item, static_cast<uint16_t>(std::min<uint32_t>(entry.count, 0xFFFF)) });
+            return stock;
         }
 
         SplitterRecord* FindSplitter() const
