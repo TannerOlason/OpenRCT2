@@ -57,9 +57,10 @@ namespace OpenRCT2::Factory
         os.readWriteChunk(ChunkType::factoryPools, [&](OrcaStream::ChunkStream& cs) {
             uint16_t version = kFactoryPoolsVersion;
             cs.readWrite(version);
-            if (version > kFactoryPoolsVersion)
+            if (version != kFactoryPoolsVersion)
             {
-                LOG_ERROR("Factory pools chunk version %u is newer than supported %u", version, kFactoryPoolsVersion);
+                // Pre-release saves are not migrated: the records change shape between milestones.
+                LOG_ERROR("Factory pools chunk version %u is not the supported %u", version, kFactoryPoolsVersion);
                 compatible = false;
                 return;
             }

@@ -60,6 +60,8 @@ namespace OpenRCT2::Factory
      *   machine:   [direction * frames + frame] (or [frame] when rotations == 1); frame 0 = idle
      *   ore:       [0] ground overlay (64x32 diamond), [1] icon
      *   pole:      [0] the pole
+     *   underground: [direction] entrance, [4 + direction] exit
+     *   splitter:  [side * 4 + direction], side 0 = origin tile (left of travel)
      */
     enum class BeltShape : uint8_t
     {
@@ -137,6 +139,7 @@ namespace OpenRCT2::Factory
     {
         uint8_t speed = 12; // belt units per tick (12/24/36 = 15/30/45 items per second)
         uint8_t frames = 1; // animation frames per shape and direction
+        uint8_t reach = 4;  // underground belts: tiles the pair may span (gap between entrance and exit)
     };
 
     struct InserterProperties
@@ -256,6 +259,8 @@ namespace OpenRCT2::Factory
         ImageIndex getOreOverlayImage() const;
         ImageIndex getOreIconImage() const;
         ImageIndex getPoleImage() const;
+        ImageIndex getUndergroundImage(bool exit, uint8_t direction) const;
+        ImageIndex getSplitterImage(uint8_t side, uint8_t direction) const;
 
     private:
         ImageIndex imageAt(uint32_t offset) const;

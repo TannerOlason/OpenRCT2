@@ -62,6 +62,8 @@ protected:
         _assembler = Index(objectManager.LoadObject("factory-tour.factory_prototype.assembling_machine"));
         _gear = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_gear"));
         _gearRecipe = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_gear_recipe"));
+        _underground = Index(objectManager.LoadObject("factory-tour.factory_prototype.underground_belt_basic"));
+        _splitter = Index(objectManager.LoadObject("factory-tour.factory_prototype.splitter_basic"));
         ASSERT_NE(_plate, kObjectEntryIndexNull);
         ASSERT_NE(_belt, kObjectEntryIndexNull);
         ASSERT_NE(_inserter, kObjectEntryIndexNull);
@@ -106,11 +108,16 @@ protected:
 
     static void ClearStrip()
     {
-        for (int32_t tx = kRowX0 - 1; tx <= kRowX0 + kRowLength + 1; tx++)
+        // Tests also build on the rows around the strip; clear everything so no element outlives its record.
+        for (int32_t ty = kRowY - 2; ty <= kRowY + 6; ty++)
         {
-            while (auto* element = findFactoryElement(Tile(tx), true))
+            for (int32_t tx = kRowX0 - 1; tx <= kRowX0 + kRowLength + 1; tx++)
             {
-                removeElement(getGameState(), *element, Tile(tx));
+                const CoordsXYZ at{ tx * kCoordsXYStep, ty * kCoordsXYStep, GroundZ(kRowX0) };
+                while (auto* element = findFactoryElement(at, true))
+                {
+                    removeElement(getGameState(), *element, at);
+                }
             }
         }
         // The strip must be flat for neighbours to connect; the test park's surface is uniform here.
@@ -166,6 +173,8 @@ protected:
     static ObjectEntryIndex _assembler;
     static ObjectEntryIndex _gear;
     static ObjectEntryIndex _gearRecipe;
+    static ObjectEntryIndex _underground;
+    static ObjectEntryIndex _splitter;
 };
 
 std::shared_ptr<IContext> FactoryTopologyTests::_context;
@@ -184,6 +193,8 @@ ObjectEntryIndex FactoryTopologyTests::_generator = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_assembler = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_gear = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_gearRecipe = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_underground = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_splitter = kObjectEntryIndexNull;
 
 TEST_F(FactoryTopologyTests, PlacingBeltsInARowFormsOneSegment)
 {
@@ -381,6 +392,24 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     PlaceAt(kRowX0 + 2, kRowY + 3, east, _belt);
     PlaceAt(kRowX0 + 3, kRowY + 3, east, _inserter);
     auto* furnaceElement = PlaceAt(kRowX0 + 4, kRowY + 3, east, _furnace);
+
+    // Logistics row: belt -> underground under a crossing belt -> splitter with two output belts.
+    PlaceAt(kRowX0 + 0, kRowY + 5, east, _belt);
+    PlaceAt(kRowX0 + 1, kRowY + 5, east, _underground);
+    PlaceAt(kRowX0 + 2, kRowY + 5, 1, _belt);
+    PlaceAt(kRowX0 + 3, kRowY + 5, east, _underground);
+    PlaceAt(kRowX0 + 4, kRowY + 5, east, _belt);
+    PlaceAt(kRowX0 + 5, kRowY + 5, east, _splitter);
+    PlaceAt(kRowX0 + 6, kRowY + 5, east, _belt);
+    PlaceAt(kRowX0 + 6, kRowY + 4, east, _belt);
+    PlaceAt(kRowX0 + 7, kRowY + 5, east, _belt);
+    PlaceAt(kRowX0 + 7, kRowY + 4, east, _belt);
+    if (auto* logistics = state.beltSegments.get(
+            findBeltElement(CoordsXYZ{ kRowX0 * kCoordsXYStep, (kRowY + 5) * kCoordsXYStep, GroundZ(kRowX0) })->getRecordId()))
+    {
+        for (int i = 0; i < 3; i++)
+            laneInsertAt(logistics->lanes[0], segmentLength(*logistics), 20 + i * 80, _plate);
+    }
     if (drillElement != nullptr && furnaceElement != nullptr)
     {
         for (int i = 0; i < 5; i++)
@@ -556,4 +585,143 @@ TEST_F(FactoryTopologyTests, AssemblerNeedsAPoweredNetworkAndMakesGears)
     Tick(300);
     EXPECT_EQ(assembler->getStatus(), MachineStatus::noPower);
     EXPECT_EQ(generator->powerNetwork, kNullRecord);
+}
+
+TEST_F(FactoryTopologyTests, SideloadMergesOntoTheNearLane)
+{
+    auto& state = getGameState().factory;
+    const Direction east = 2;  // +x
+    const Direction south = 1; // +y
+    // Main belt heading south through column kRowX0 + 3, rows kRowY-1 .. kRowY+2. A feeder heading east along
+    // the row ends at the main belt's side.
+    const int32_t mx = kRowX0 + 3;
+    for (int32_t y = kRowY - 1; y <= kRowY + 2; y++)
+        PlaceAt(mx, y, south, _belt);
+    for (int32_t x = kRowX0; x < mx; x++)
+        PlaceAt(x, kRowY, east, _belt);
+
+    auto* feederEnd = findBeltElement(Tile(mx - 1));
+    auto* mainTile = findBeltElement(Tile(mx));
+    ASSERT_NE(feederEnd, nullptr);
+    ASSERT_NE(mainTile, nullptr);
+    auto* feeder = state.beltSegments.get(feederEnd->getRecordId());
+    auto* main = state.beltSegments.get(mainTile->getRecordId());
+    ASSERT_NE(feeder, nullptr);
+    ASSERT_NE(main, nullptr);
+    EXPECT_NE(feeder, main);
+    EXPECT_EQ(feeder->getNextKind(), BeltLinkKind::sideload);
+    EXPECT_EQ(feeder->next, mainTile->getRecordId());
+    // Entering from the main belt's left (east is rightOf(south)) lands on its left lane.
+    EXPECT_EQ(feeder->nextLane, kLaneLeft);
+    EXPECT_EQ(feeder->nextPos, segmentTileStart(*main, mainTile->getFootprintIndex()) + kBeltUnitsPerTile / 2);
+
+    laneInsertAt(feeder->lanes[0], segmentLength(*feeder), 100, _plate);
+    laneInsertAt(feeder->lanes[1], segmentLength(*feeder), 20, _gear);
+    Tick(200);
+    EXPECT_TRUE(feeder->lanes[0].items.empty());
+    EXPECT_TRUE(feeder->lanes[1].items.empty());
+    // Both arrived on the main belt's left lane, nothing on its right lane; they compress at its dead end.
+    EXPECT_EQ(main->lanes[kLaneLeft].items.size(), 2u);
+    EXPECT_TRUE(main->lanes[kLaneRight].items.empty());
+    EXPECT_EQ(lanePosition(main->lanes[kLaneLeft], segmentLength(*main), 0), segmentLength(*main));
+}
+
+TEST_F(FactoryTopologyTests, UndergroundBeltPairsAndPassesUnderACrossingBelt)
+{
+    auto& state = getGameState().factory;
+    const Direction east = 2;
+    const Direction south = 1;
+    // belt(0) -> underground entrance(1) ... crossing belt at (3) heading south ... exit(4) -> belt(5)
+    Place(kRowX0 + 0, east, _belt);
+    auto* entrance = Place(kRowX0 + 1, east, _underground);
+    ASSERT_NE(entrance, nullptr);
+    EXPECT_FALSE(entrance->hasRecord());
+    EXPECT_FALSE(isUndergroundExit(*entrance));
+    Place(kRowX0 + 3, south, _belt);
+    auto* exit = Place(kRowX0 + 4, east, _underground);
+    ASSERT_NE(exit, nullptr);
+    entrance = findFactoryElement(Tile(kRowX0 + 1));
+    ASSERT_TRUE(entrance->hasRecord());
+    EXPECT_TRUE(isUndergroundExit(*exit));
+    EXPECT_FALSE(isUndergroundExit(*entrance));
+    EXPECT_EQ(entrance->getRecordId(), exit->getRecordId());
+    auto* tunnel = state.beltSegments.get(exit->getRecordId());
+    ASSERT_NE(tunnel, nullptr);
+    EXPECT_EQ(tunnel->tiles.size(), 2u);
+    EXPECT_EQ(tunnel->extraLength, 2 * kBeltUnitsPerTile); // tiles 2 and 3 are spanned
+    EXPECT_EQ(segmentLength(*tunnel), 4 * kBeltUnitsPerTile);
+    Place(kRowX0 + 5, east, _belt);
+
+    auto* first = state.beltSegments.get(findBeltElement(Tile(kRowX0))->getRecordId());
+    auto* last = state.beltSegments.get(findBeltElement(Tile(kRowX0 + 5))->getRecordId());
+    ASSERT_NE(first, nullptr);
+    ASSERT_NE(last, nullptr);
+    EXPECT_EQ(first->getNextKind(), BeltLinkKind::segment);
+    EXPECT_EQ(first->next, exit->getRecordId());
+    EXPECT_EQ(tunnel->getNextKind(), BeltLinkKind::segment);
+    EXPECT_EQ(tunnel->next, findBeltElement(Tile(kRowX0 + 5))->getRecordId());
+
+    laneInsertAt(first->lanes[0], segmentLength(*first), 50, _plate);
+    Tick(300);
+    EXPECT_TRUE(first->lanes[0].items.empty());
+    EXPECT_TRUE(tunnel->lanes[0].items.empty());
+    ASSERT_EQ(last->lanes[0].items.size(), 1u);
+    // The crossing belt was untouched.
+    auto* crossing = state.beltSegments.get(findBeltElement(Tile(kRowX0 + 3))->getRecordId());
+    ASSERT_NE(crossing, nullptr);
+    EXPECT_TRUE(crossing->lanes[0].items.empty());
+
+    // Removing the exit unpairs the entrance.
+    removeElement(getGameState(), *findFactoryElement(Tile(kRowX0 + 4)), Tile(kRowX0 + 4));
+    entrance = findFactoryElement(Tile(kRowX0 + 1));
+    ASSERT_NE(entrance, nullptr);
+    EXPECT_FALSE(entrance->hasRecord());
+}
+
+TEST_F(FactoryTopologyTests, SplitterAlternatesBetweenOutputs)
+{
+    auto& state = getGameState().factory;
+    const Direction east = 2;
+    // Input belt along the row into side 0 of a splitter at column kRowX0 + 2 (side 1 is one tile north:
+    // rightOf(east) = direction 3 = -y). Output belts ahead of both sides.
+    Place(kRowX0 + 0, east, _belt);
+    Place(kRowX0 + 1, east, _belt);
+    auto* splitterElement = Place(kRowX0 + 2, east, _splitter);
+    ASSERT_NE(splitterElement, nullptr);
+    auto* second = findFactoryElement(CoordsXYZ{ (kRowX0 + 2) * kCoordsXYStep, (kRowY - 1) * kCoordsXYStep, GroundZ(kRowX0) });
+    ASSERT_NE(second, nullptr);
+    EXPECT_EQ(second->getSubtype(), FactoryElementSubtype::splitter);
+    EXPECT_EQ(second->getFootprintIndex(), 1);
+    EXPECT_EQ(second->getRecordId(), splitterElement->getRecordId());
+    EXPECT_EQ(state.splitters.aliveCount(), 1u);
+
+    Place(kRowX0 + 3, east, _belt);
+    Place(kRowX0 + 4, east, _belt);
+    PlaceAt(kRowX0 + 3, kRowY - 1, east, _belt);
+    PlaceAt(kRowX0 + 4, kRowY - 1, east, _belt);
+
+    auto* input = state.beltSegments.get(findBeltElement(Tile(kRowX0))->getRecordId());
+    ASSERT_NE(input, nullptr);
+    EXPECT_EQ(input->getNextKind(), BeltLinkKind::splitter);
+    EXPECT_EQ(input->nextLane, 0);
+
+    const int32_t inputLength = segmentLength(*input);
+    for (int i = 0; i < 6; i++)
+        laneInsertAt(input->lanes[0], inputLength, 10 + i * 70, _plate);
+    Tick(400);
+    EXPECT_TRUE(input->lanes[0].items.empty());
+    auto* out0 = state.beltSegments.get(findBeltElement(Tile(kRowX0 + 3))->getRecordId());
+    auto* out1 = state.beltSegments.get(
+        findBeltElement(CoordsXYZ{ (kRowX0 + 3) * kCoordsXYStep, (kRowY - 1) * kCoordsXYStep, GroundZ(kRowX0) })
+            ->getRecordId());
+    ASSERT_NE(out0, nullptr);
+    ASSERT_NE(out1, nullptr);
+    EXPECT_EQ(out0->lanes[0].items.size(), 3u);
+    EXPECT_EQ(out1->lanes[0].items.size(), 3u);
+
+    // Removing one splitter tile removes the whole splitter.
+    removeElement(getGameState(), *findFactoryElement(Tile(kRowX0 + 2)), Tile(kRowX0 + 2));
+    EXPECT_EQ(state.splitters.aliveCount(), 0u);
+    EXPECT_EQ(
+        findFactoryElement(CoordsXYZ{ (kRowX0 + 2) * kCoordsXYStep, (kRowY - 1) * kCoordsXYStep, GroundZ(kRowX0) }), nullptr);
 }

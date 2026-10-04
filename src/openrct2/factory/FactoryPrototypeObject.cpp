@@ -212,8 +212,11 @@ namespace OpenRCT2::Factory
                 break;
             }
             case PrototypeKind::belt:
+            case PrototypeKind::undergroundBelt:
+            case PrototypeKind::splitter:
                 _belt.speed = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["speed"], 12), 1, 64);
                 _belt.frames = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["frames"], 1));
+                _belt.reach = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["reach"], 4), 1, 30);
                 break;
             case PrototypeKind::inserter:
                 _inserter.frames = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["frames"], 1));
@@ -314,6 +317,16 @@ namespace OpenRCT2::Factory
         return imageAt(0);
     }
 
+    ImageIndex FactoryPrototypeObject::getUndergroundImage(bool exit, uint8_t direction) const
+    {
+        return imageAt((exit ? 4u : 0u) + (direction & 3));
+    }
+
+    ImageIndex FactoryPrototypeObject::getSplitterImage(uint8_t side, uint8_t direction) const
+    {
+        return imageAt((side & 1) * 4u + (direction & 3));
+    }
+
     ImageIndex FactoryPrototypeObject::getOreIconImage() const
     {
         auto image = imageAt(1);
@@ -346,6 +359,12 @@ namespace OpenRCT2::Factory
                 break;
             case PrototypeKind::pole:
                 image = getPoleImage();
+                break;
+            case PrototypeKind::undergroundBelt:
+                image = getUndergroundImage(false, 0);
+                break;
+            case PrototypeKind::splitter:
+                image = getSplitterImage(0, 0);
                 break;
             default:
                 image = imageAt(0);

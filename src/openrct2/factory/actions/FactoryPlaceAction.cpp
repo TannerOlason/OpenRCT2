@@ -95,8 +95,30 @@ namespace OpenRCT2::GameActions
             canBuild.errorTitle = STR_FT_CANT_BUILD_THIS_HERE;
             return canBuild;
         }
-
         res.cost = proto->getPrice() + canBuild.cost;
+
+        if (proto->getSubtype() == FactoryElementSubtype::splitter)
+        {
+            // The second tile must be just as buildable.
+            CoordsXYZ second;
+            if (!splitterSecondTile(_loc, _direction, second) || !LocationValid(second))
+                return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_OFF_EDGE_OF_MAP);
+            if (!MapCanBuildAt(second))
+                return Result(Status::notOwned, STR_FT_CANT_BUILD_THIS_HERE, STR_LAND_NOT_OWNED_BY_PARK);
+            auto* secondSurface = MapGetSurfaceElementAt(second);
+            if (secondSurface == nullptr || secondSurface->getSlope() != 0 || secondSurface->getBaseZ() != _loc.z)
+                return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_LEVEL_LAND_REQUIRED);
+            if (findFactoryElement(second, GetFlags().has(CommandFlag::ghost)) != nullptr)
+                return Result(Status::itemAlreadyPlaced, STR_FT_CANT_BUILD_THIS_HERE, STR_FT_FACTORY_IN_THE_WAY);
+            auto canBuildSecond = MapCanConstructWithClearAt(
+                { second, second.z, clearanceZ }, MapPlaceNonSceneryClearFunc, QuarterTile{ 0b1111, 0 }, flags);
+            if (canBuildSecond.error != Status::ok)
+            {
+                canBuildSecond.errorTitle = STR_FT_CANT_BUILD_THIS_HERE;
+                return canBuildSecond;
+            }
+            res.cost += canBuildSecond.cost;
+        }
         return res;
     }
 

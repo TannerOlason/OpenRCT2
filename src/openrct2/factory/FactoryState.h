@@ -35,6 +35,7 @@ namespace OpenRCT2::Factory
         Pool<InserterRecord> inserters;
         Pool<BeltSegmentRecord> beltSegments;
         Pool<MachineRecord> machines;
+        Pool<SplitterRecord> splitters;
         Pool<PoleRecord> poles;
         Pool<PowerNetworkRecord> powerNetworks;
         OreLayer ore; // saved in its own chunk (0x42); its hash joins the sync checksum
@@ -63,6 +64,7 @@ namespace OpenRCT2::Factory
             inserters.visit(v);
             beltSegments.visit(v);
             machines.visit(v);
+            splitters.visit(v);
             poles.visit(v);
             powerNetworks.visit(v);
             uint8_t dirty = powerDirty ? 1 : 0;

@@ -1,0 +1,64 @@
+{
+    "id": "factory-tour.factory_prototype.underground_belt_basic",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "underground_belt",
+        "speed": 12,
+        "reach": 4,
+        "price": 50,
+        "removalPrice": -35,
+        "clearance": 3
+    },
+    "images": [
+        {
+            "path": "images/u_entry_d0.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/u_entry_d1.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/u_entry_d2.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/u_entry_d3.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/u_exit_d0.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/u_exit_d1.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/u_exit_d2.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/u_exit_d3.png",
+            "x": -32,
+            "y": -14
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Basic underground belt"
+        }
+    }
+}

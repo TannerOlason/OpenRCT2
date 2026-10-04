@@ -17,7 +17,22 @@ namespace OpenRCT2::Factory
 {
     int32_t segmentLength(const BeltSegmentRecord& segment)
     {
-        return static_cast<int32_t>(segment.tiles.size()) * kBeltUnitsPerTile;
+        return static_cast<int32_t>(segment.tiles.size()) * kBeltUnitsPerTile + segment.extraLength;
+    }
+
+    int32_t segmentTileStart(const BeltSegmentRecord& segment, size_t index)
+    {
+        return static_cast<int32_t>(index) * kBeltUnitsPerTile + (index > 0 ? segment.extraLength : 0);
+    }
+
+    std::optional<ObjectEntryIndex> laneTakeFrontAtEnd(BeltLane& lane)
+    {
+        if (lane.items.empty() || lane.items.front().gap != 0)
+            return std::nullopt;
+        auto item = lane.items.front().item;
+        lane.items.erase(lane.items.begin());
+        // The new front keeps its gap: it was measured from the removed item, which sat exactly at the end.
+        return item;
     }
 
     int32_t lanePosition(const BeltLane& lane, int32_t length, size_t index)
@@ -116,21 +131,31 @@ namespace OpenRCT2::Factory
         lane.items.push_back({ item, static_cast<uint16_t>(rear - pos) });
     }
 
-    void tickLane(BeltLane& lane, int32_t length, int32_t speed, BeltLane* next, int32_t nextLength)
+    void tickLane(BeltLane& lane, int32_t length, int32_t speed, const LaneTarget& target)
     {
         if (lane.items.empty() || speed <= 0)
             return;
 
-        // Front items that would cross the end this tick move onto the next lane while it has room.
+        // Front items that would cross the end this tick move onto the target while it has room.
         while (!lane.items.empty())
         {
             auto& front = lane.items.front();
             if (front.gap >= speed)
                 break;
             const int32_t overshoot = speed - front.gap;
-            if (next == nullptr || !laneAcceptsAtStart(*next, nextLength, overshoot))
+            if (target.lane == nullptr)
                 break;
-            laneAppendAtStart(*next, nextLength, overshoot, front.item);
+            if (target.position < 0)
+            {
+                if (!laneAcceptsAtStart(*target.lane, target.length, overshoot))
+                    break;
+                laneAppendAtStart(*target.lane, target.length, overshoot, front.item);
+            }
+            else
+            {
+                if (!laneInsertAt(*target.lane, target.length, target.position, front.item))
+                    break;
+            }
             const uint16_t frontGap = front.gap;
             lane.items.erase(lane.items.begin());
             if (!lane.items.empty())
@@ -153,13 +178,12 @@ namespace OpenRCT2::Factory
         }
     }
 
-    void tickSegment(BeltSegmentRecord& segment, BeltSegmentRecord* next)
+    void tickSegment(BeltSegmentRecord& segment, const LaneTarget* targets)
     {
         const int32_t length = segmentLength(segment);
-        const int32_t nextLength = next != nullptr ? segmentLength(*next) : 0;
         for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
         {
-            tickLane(segment.lanes[lane], length, segment.speed, next != nullptr ? &next->lanes[lane] : nullptr, nextLength);
+            tickLane(segment.lanes[lane], length, segment.speed, targets != nullptr ? targets[lane] : LaneTarget{});
         }
     }
 } // namespace OpenRCT2::Factory

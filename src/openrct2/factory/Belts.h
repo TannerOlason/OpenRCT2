@@ -25,6 +25,9 @@ namespace OpenRCT2::Factory
 {
     int32_t segmentLength(const BeltSegmentRecord& segment);
 
+    // First belt unit of tile `index` of the segment (underground pairs put their hidden span before the exit).
+    int32_t segmentTileStart(const BeltSegmentRecord& segment, size_t index);
+
     // Position of items[index] measured from the segment start to the item centre.
     int32_t lanePosition(const BeltLane& lane, int32_t length, size_t index);
 
@@ -36,6 +39,9 @@ namespace OpenRCT2::Factory
 
     // Removes and returns the first item whose centre lies in [from, to], searching from the front.
     std::optional<ObjectEntryIndex> laneTakeInRange(BeltLane& lane, int32_t length, int32_t from, int32_t to);
+
+    // Removes and returns the front item when it has reached the end (gap 0).
+    std::optional<ObjectEntryIndex> laneTakeFrontAtEnd(BeltLane& lane);
 
     struct LaneItemView
     {
@@ -59,10 +65,23 @@ namespace OpenRCT2::Factory
     }
 
     /**
-     * Advances every item by up to `speed` units. Items reaching the end move onto `next` (which may be
-     * nullptr for a dead end) when it has room; otherwise they compress against the end.
+     * Where a lane hands items over when they reach its end.
      */
-    void tickLane(BeltLane& lane, int32_t length, int32_t speed, BeltLane* next, int32_t nextLength);
+    struct LaneTarget
+    {
+        BeltLane* lane = nullptr; // nullptr: dead end
+        int32_t length = 0;
+        // -1: append at the target's start carrying the overshoot (a segment join);
+        // >= 0: insert at this fixed position (a sideload), waiting until there is room.
+        int32_t position = -1;
+    };
 
-    void tickSegment(BeltSegmentRecord& segment, BeltSegmentRecord* next);
+    /**
+     * Advances every item by up to `speed` units. Items reaching the end move onto the target when it has
+     * room; otherwise they compress against the end.
+     */
+    void tickLane(BeltLane& lane, int32_t length, int32_t speed, const LaneTarget& target);
+
+    // Ticks both lanes with per-lane targets (nullptr targets are dead ends).
+    void tickSegment(BeltSegmentRecord& segment, const LaneTarget* targets);
 } // namespace OpenRCT2::Factory

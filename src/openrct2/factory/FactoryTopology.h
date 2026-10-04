@@ -44,11 +44,16 @@ namespace OpenRCT2::Factory
     constexpr uint8_t kLaneLeft = 0;
     constexpr uint8_t kLaneRight = 1;
 
-    // connectionCache layout for belts: bits 0-1 hold the BeltShape.
+    // connectionCache layout for belts: bits 0-1 hold the BeltShape; undergrounds use bit 2 for "exit".
     constexpr uint8_t kBeltShapeMask = 0b11;
+    constexpr uint8_t kUndergroundExitFlag = 0b100;
 
     BeltShape getBeltShape(const FactoryElement& element);
     void setBeltShape(FactoryElement& element, BeltShape shape);
+    bool isUndergroundExit(const FactoryElement& element);
+
+    // The second tile a splitter facing `dir` placed at loc occupies (to its right).
+    bool splitterSecondTile(const CoordsXYZ& loc, Direction dir, CoordsXYZ& second);
 
     CoordsXYZ tileToCoords(const TileCoordsXYZ& tile);
     CoordsXYZ neighbourTile(const CoordsXYZ& loc, Direction d);

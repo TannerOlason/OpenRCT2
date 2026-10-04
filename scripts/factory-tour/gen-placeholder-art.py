@@ -324,6 +324,82 @@ def draw_pole():
     return img
 
 
+def draw_underground(d, is_exit):
+    """A belt stub on the tile with a hood where it enters (entrance) or leaves (exit) the ground."""
+    img = Image.new("RGBA", (64, 46), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    cy = 16 + 14
+    draw.polygon(tile_polygon(32, cy), fill=(70, 70, 76, 255), outline=(40, 40, 44, 255))
+    centre = (32, cy)
+    # Entrance: belt visible from the entry edge to the centre, hood at the centre. Exit: hood at the centre,
+    # belt from the centre to the exit edge.
+    a = edge_midpoint(centre, d, -1) if not is_exit else centre
+    b = centre if not is_exit else edge_midpoint(centre, d, +1)
+    for width, colour in ((11, (120, 110, 60, 255)), (9, (190, 170, 70, 255))):
+        draw.line([a, b], fill=colour, width=width)
+    hx, hy = centre
+    draw.polygon([(hx - 12, hy - 2), (hx, hy - 20), (hx + 12, hy - 2), (hx, hy + 6)], fill=(90, 90, 110, 255),
+                 outline=(30, 30, 40, 255))
+    sx, sy = SCREEN_DIR[d]
+    draw.line([(hx, hy - 10), (hx + sx * 0.3, hy - 10 + sy * 0.3)], fill=(230, 200, 60, 255), width=2)
+    return img, 14
+
+
+def draw_splitter(d, side):
+    """One tile of a 1x2 splitter: a belt strip with a raised bar across the middle."""
+    img = Image.new("RGBA", (64, 46), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    cy = 16 + 14
+    draw.polygon(tile_polygon(32, cy), fill=(70, 70, 76, 255), outline=(40, 40, 44, 255))
+    centre = (32, cy)
+    a = edge_midpoint(centre, d, -1)
+    b = edge_midpoint(centre, d, +1)
+    for width, colour in ((11, (120, 110, 60, 255)), (9, (190, 170, 70, 255))):
+        draw.line([a, b], fill=colour, width=width)
+    # Bar perpendicular to travel, offset toward the shared edge so the two tiles read as one machine.
+    px, py = SCREEN_DIR[(d + 1) & 3]
+    bx, by = centre[0] + (px * 0.25 if side == 0 else -px * 0.25), centre[1] + (py * 0.25 if side == 0 else -py * 0.25)
+    draw.line([(bx - px * 0.5, by - py * 0.5 - 8), (bx + px * 0.5, by + py * 0.5 - 8)], fill=(60, 110, 150, 255), width=6)
+    draw.line([(bx - px * 0.5, by - py * 0.5 - 8), (bx - px * 0.5, by - py * 0.5)], fill=(40, 70, 100, 255), width=2)
+    draw.line([(bx + px * 0.5, by + py * 0.5 - 8), (bx + px * 0.5, by + py * 0.5)], fill=(40, 70, 100, 255), width=2)
+    return img, 14
+
+
+def write_underground_and_splitter():
+    images = []
+    folder = write_object("underground_belt_basic", "underground_belt",
+                          {"speed": 12, "reach": 4, "price": 50, "removalPrice": -35, "clearance": 3}, [],
+                          "Basic underground belt")
+    for is_exit in (False, True):
+        for d in range(4):
+            fname = f"u_{'exit' if is_exit else 'entry'}_d{d}.png"
+            img, h = draw_underground(d, is_exit)
+            save(img, folder, fname)
+            images.append({"path": f"images/{fname}", "x": -32, "y": -h})
+    with open(os.path.join(folder, "object.json")) as fh:
+        obj = json.load(fh)
+    obj["images"] = images
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+    images = []
+    folder = write_object("splitter_basic", "splitter", {"speed": 12, "price": 90, "removalPrice": -70, "clearance": 3},
+                          [], "Basic splitter")
+    for side in range(2):
+        for d in range(4):
+            fname = f"s_{side}_d{d}.png"
+            img, h = draw_splitter(d, side)
+            save(img, folder, fname)
+            images.append({"path": f"images/{fname}", "x": -32, "y": -h})
+    with open(os.path.join(folder, "object.json")) as fh:
+        obj = json.load(fh)
+    obj["images"] = images
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
 def write_machine(name, display, props, draw_fn, frames):
     images = []
     folder = write_object(name, "machine", {**props, "frames": frames, "rotations": 4}, [], display)
@@ -371,6 +447,8 @@ def main():
         "ingredients": [{"item": "factory-tour.factory_prototype.iron_ore", "count": 1}],
         "results": [{"item": "factory-tour.factory_prototype.iron_plate", "count": 1}],
         "timeTicks": 128, "category": "smelting"}, [], "Iron plate")
+
+    write_underground_and_splitter()
 
     # Machines (1x1 in M2; multi-tile footprints come later).
     write_machine("burner_drill", "Burner mining drill", {

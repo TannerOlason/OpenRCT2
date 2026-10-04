@@ -82,8 +82,8 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   generator shares a network, and the assembler loses power when the linking pole is removed.
 - [ ] Steam chain (offshore pump, boiler, steam engine) once fluids exist.
 - [ ] Pipes and fluid networks.
-- [ ] Underground belts, splitters, lane filters, sideloading.
-- [ ] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview.
+- [~] Underground belts, splitters, lane filters, sideloading. (filters pending)
+- [~] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview. (window done)
 - [ ] `factory-bench` CLI and the 8 ms per tick CI gate.
 
 ### M3 Park intertwine I `[ ]`

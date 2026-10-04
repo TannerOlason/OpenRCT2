@@ -1,0 +1,63 @@
+{
+    "id": "factory-tour.factory_prototype.splitter_basic",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "splitter",
+        "speed": 12,
+        "price": 90,
+        "removalPrice": -70,
+        "clearance": 3
+    },
+    "images": [
+        {
+            "path": "images/s_0_d0.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/s_0_d1.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/s_0_d2.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/s_0_d3.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/s_1_d0.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/s_1_d1.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/s_1_d2.png",
+            "x": -32,
+            "y": -14
+        },
+        {
+            "path": "images/s_1_d3.png",
+            "x": -32,
+            "y": -14
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Basic splitter"
+        }
+    }
+}

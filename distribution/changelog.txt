@@ -5,6 +5,7 @@
 - Feature: [#27153] [Plugin] Add `guestsEntertained` to `Entertainer` interface.
 - Feature: [#27184] [Plugin] Double limit of miscellaneous entities (e.g. crash particles, steam plumes and balloons) to 6400.
 - Feature: [fork#1] First factory slice: belts, inserters and chests can be built from a new toolbar window; items move along belts and inserters carry them between belts and chests.
+- Feature: [fork#1] Underground belts tunnel under other buildings, splitters alternate items between two output belts, and a belt ending at the side of another belt sideloads onto its near lane.
 - Feature: [objects#447] Track designer grid can now be used outside the Track Designer.
 - Improved: [#21400] The selector for setting staff patrol areas is now drawn on the water as well as on the surface under water.
 - Improved: [#22933] You can now toggle between long and short base flat-to-steep pieces if the ride has both available.

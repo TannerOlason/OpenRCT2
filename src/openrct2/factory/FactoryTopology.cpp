@@ -35,6 +35,18 @@ namespace OpenRCT2::Factory
         element.setConnectionCache(static_cast<uint8_t>(cache | (static_cast<uint8_t>(shape) & kBeltShapeMask)));
     }
 
+    bool isUndergroundExit(const FactoryElement& element)
+    {
+        return (element.getConnectionCache() & kUndergroundExitFlag) != 0;
+    }
+
+    static void setUndergroundExit(FactoryElement& element, bool exit)
+    {
+        auto cache = element.getConnectionCache();
+        element.setConnectionCache(
+            static_cast<uint8_t>(exit ? (cache | kUndergroundExitFlag) : (cache & ~kUndergroundExitFlag)));
+    }
+
     CoordsXYZ tileToCoords(const TileCoordsXYZ& tile)
     {
         return CoordsXYZ{ tile.toCoordsXY(), tile.z * kCoordsZStep };
@@ -68,6 +80,20 @@ namespace OpenRCT2::Factory
         return nullptr;
     }
 
+    static bool isBeltLike(const FactoryElement& element)
+    {
+        const auto subtype = element.getSubtype();
+        return subtype == FactoryElementSubtype::belt || subtype == FactoryElementSubtype::undergroundBelt
+            || subtype == FactoryElementSubtype::splitter;
+    }
+
+    // Any belt-like element at loc (belt, underground tile, splitter tile).
+    static FactoryElement* findBeltLikeElement(const CoordsXYZ& loc)
+    {
+        auto* element = findFactoryElement(loc);
+        return element != nullptr && isBeltLike(*element) ? element : nullptr;
+    }
+
     const FactoryPrototypeObject* getPrototype(ObjectEntryIndex entry)
     {
         if (entry == kObjectEntryIndexNull)
@@ -81,18 +107,34 @@ namespace OpenRCT2::Factory
         return getPrototype(element.getEntryIndex());
     }
 
+    // True when `element` (at the tile behind) pushes items straight into a belt travelling `dir`.
+    static bool outputsStraightInto(const FactoryElement& element, Direction dir)
+    {
+        if (element.getDirection() != dir)
+            return false;
+        switch (element.getSubtype())
+        {
+            case FactoryElementSubtype::belt:
+            case FactoryElementSubtype::splitter:
+                return true;
+            case FactoryElementSubtype::undergroundBelt:
+                return isUndergroundExit(element);
+            default:
+                return false;
+        }
+    }
+
     FactoryElement* findBeltFeeder(const CoordsXYZ& loc, Direction dir, BeltShape& shape)
     {
         shape = BeltShape::straight;
-        auto* behind = findBeltElement(neighbourTile(loc, oppositeOf(dir)));
-        if (behind != nullptr && behind->getDirection() == dir)
+        auto* behind = findBeltLikeElement(neighbourTile(loc, oppositeOf(dir)));
+        if (behind != nullptr && outputsStraightInto(*behind, dir))
         {
             return behind;
         }
 
-        // A belt on our right side travelling leftOf... is simplest expressed by where items come from:
-        // a feeder travelling rightOf(dir) sits at the left neighbour and turns left to continue in dir;
-        // a feeder travelling leftOf(dir) sits at the right neighbour and turns right.
+        // A feeder travelling rightOf(dir) sits at the left neighbour and turns left to continue in dir;
+        // a feeder travelling leftOf(dir) sits at the right neighbour and turns right. Only plain belts curve.
         const Direction turnLeftTravel = rightOf(dir);
         const Direction turnRightTravel = leftOf(dir);
         auto* turnLeftFeeder = findBeltElement(neighbourTile(loc, oppositeOf(turnLeftTravel)));
@@ -102,11 +144,14 @@ namespace OpenRCT2::Factory
         if (turnRightFeeder != nullptr && turnRightFeeder->getDirection() != turnRightTravel)
             turnRightFeeder = nullptr;
 
-        if (behind != nullptr || (turnLeftFeeder != nullptr && turnRightFeeder != nullptr))
+        if (behind != nullptr && behind->getDirection() == oppositeOf(dir)
+            && behind->getSubtype() == FactoryElementSubtype::belt)
         {
-            // Fed straight from behind by a belt not pointing here, or two side feeders: stay straight and
-            // treat the side belts as (unsupported) sideloads.
-            return nullptr;
+            // Head-on belts never feed each other; side belts may still curve in.
+        }
+        if (turnLeftFeeder != nullptr && turnRightFeeder != nullptr)
+        {
+            return nullptr; // two side feeders: both sideload onto a straight belt
         }
         if (turnLeftFeeder != nullptr)
         {
@@ -147,19 +192,122 @@ namespace OpenRCT2::Factory
     static void unlinkSegment(State& state, RecordId id)
     {
         state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& segment) {
-            if (segment.next == id)
+            if (segment.next == id && segment.getNextKind() != BeltLinkKind::splitter)
+            {
                 segment.next = kNullRecord;
+                segment.nextKind = static_cast<uint8_t>(BeltLinkKind::none);
+            }
+        });
+    }
+
+    static void unlinkSplitter(State& state, RecordId id)
+    {
+        state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& segment) {
+            if (segment.next == id && segment.getNextKind() == BeltLinkKind::splitter)
+            {
+                segment.next = kNullRecord;
+                segment.nextKind = static_cast<uint8_t>(BeltLinkKind::none);
+            }
         });
     }
 
     static void bindTileToSegment(const TileCoordsXYZ& tile, RecordId segmentId, uint8_t index)
     {
-        auto* belt = findBeltElement(tileToCoords(tile));
-        if (belt != nullptr)
+        auto* element = findBeltLikeElement(tileToCoords(tile));
+        if (element != nullptr && element->getSubtype() != FactoryElementSubtype::splitter)
         {
-            belt->setRecordId(segmentId);
-            belt->setFootprintIndex(index);
+            element->setRecordId(segmentId);
+            element->setFootprintIndex(index);
         }
+    }
+
+    /**
+     * Recomputes what the segment's last tile feeds: the start of the belt-like thing ahead when we are its
+     * feeder, a sideload into a belt we are not the feeder of, or a splitter input side.
+     */
+    static void computeLink(State& state, RecordId segmentId)
+    {
+        auto* segment = state.beltSegments.get(segmentId);
+        if (segment == nullptr || segment->tiles.empty())
+            return;
+        segment->next = kNullRecord;
+        segment->nextKind = static_cast<uint8_t>(BeltLinkKind::none);
+
+        const auto lastLoc = tileToCoords(segment->tiles.back());
+        auto* last = findBeltLikeElement(lastLoc);
+        if (last == nullptr)
+            return;
+        const Direction dir = last->getDirection();
+        const auto aheadLoc = neighbourTile(lastLoc, dir);
+        auto* ahead = findBeltLikeElement(aheadLoc);
+        if (ahead == nullptr || !ahead->hasRecord())
+            return;
+
+        switch (ahead->getSubtype())
+        {
+            case FactoryElementSubtype::belt:
+            {
+                if (ahead->getRecordId() == segmentId)
+                    return; // a loop onto ourselves is not supported
+                BeltShape aheadShape;
+                auto* feeder = findBeltFeeder(aheadLoc, ahead->getDirection(), aheadShape);
+                if (feeder == last && ahead->getFootprintIndex() == 0)
+                {
+                    segment->next = ahead->getRecordId();
+                    segment->nextKind = static_cast<uint8_t>(BeltLinkKind::segment);
+                    return;
+                }
+                if (ahead->getDirection() == oppositeOf(dir) || ahead->getDirection() == dir)
+                    return; // head-on or behind-fed straight continuation that already has a feeder
+                auto* aheadSegment = state.beltSegments.get(ahead->getRecordId());
+                if (aheadSegment == nullptr)
+                    return;
+                segment->next = ahead->getRecordId();
+                segment->nextKind = static_cast<uint8_t>(BeltLinkKind::sideload);
+                segment->nextPos = segmentTileStart(*aheadSegment, ahead->getFootprintIndex()) + kBeltUnitsPerTile / 2;
+                // Entering from the belt's left puts items on its left lane.
+                segment->nextLane = dir == rightOf(ahead->getDirection()) ? kLaneLeft : kLaneRight;
+                return;
+            }
+            case FactoryElementSubtype::undergroundBelt:
+                if (ahead->getDirection() == dir && !isUndergroundExit(*ahead) && ahead->getRecordId() != segmentId)
+                {
+                    segment->next = ahead->getRecordId();
+                    segment->nextKind = static_cast<uint8_t>(BeltLinkKind::segment);
+                }
+                return;
+            case FactoryElementSubtype::splitter:
+                if (ahead->getDirection() == dir)
+                {
+                    segment->next = ahead->getRecordId();
+                    segment->nextKind = static_cast<uint8_t>(BeltLinkKind::splitter);
+                    segment->nextLane = ahead->getFootprintIndex();
+                }
+                return;
+            default:
+                return;
+        }
+    }
+
+    // Recomputes links of every segment whose last tile is at or next to loc.
+    static void relinkAround(State& state, const CoordsXYZ& loc)
+    {
+        std::vector<RecordId> ids;
+        auto consider = [&](const CoordsXYZ& at) {
+            auto* element = findBeltLikeElement(at);
+            if (element == nullptr || element->getSubtype() == FactoryElementSubtype::splitter || !element->hasRecord())
+                return;
+            auto* segment = state.beltSegments.get(element->getRecordId());
+            if (segment == nullptr || segment->tiles.empty())
+                return;
+            if (tileToCoords(segment->tiles.back()) == at)
+                ids.push_back(element->getRecordId());
+        };
+        consider(loc);
+        for (Direction d = 0; d < 4; d++)
+            consider(neighbourTile(loc, d));
+        for (auto id : ids)
+            computeLink(state, id);
     }
 
     /**
@@ -194,7 +342,23 @@ namespace OpenRCT2::Factory
             bindTileToSegment(tail->tiles[i], headId, static_cast<uint8_t>(headTiles + i));
         }
         head->next = tail->next;
-        unlinkSegment(state, tailId);
+        head->nextKind = tail->nextKind;
+        head->nextLane = tail->nextLane;
+        head->nextPos = tail->nextPos;
+        // Sideloads into the tail now point at the merged segment at a shifted position.
+        const int32_t shift = static_cast<int32_t>(headTiles) * kBeltUnitsPerTile;
+        state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& other) {
+            if (other.next == tailId && other.getNextKind() == BeltLinkKind::sideload)
+            {
+                other.next = headId;
+                other.nextPos += shift;
+            }
+            else if (other.next == tailId && other.getNextKind() == BeltLinkKind::segment)
+            {
+                other.next = kNullRecord;
+                other.nextKind = static_cast<uint8_t>(BeltLinkKind::none);
+            }
+        });
         state.beltSegments.release(tailId);
     }
 
@@ -205,10 +369,10 @@ namespace OpenRCT2::Factory
         auto* feeder = findBeltFeeder(loc, dir, shape);
 
         RecordId segmentId = kNullRecord;
-        if (feeder != nullptr && feeder->hasRecord())
+        if (feeder != nullptr && feeder->hasRecord() && feeder->getSubtype() == FactoryElementSubtype::belt)
         {
             auto* feederSegment = state.beltSegments.get(feeder->getRecordId());
-            if (feederSegment != nullptr && feederSegment->next == kNullRecord
+            if (feederSegment != nullptr && feederSegment->extraLength == 0
                 && static_cast<size_t>(feeder->getFootprintIndex()) + 1 == feederSegment->tiles.size()
                 && feederSegment->tiles.size() < kMaxSegmentTiles && feederSegment->speed == proto.getBelt().speed)
             {
@@ -226,10 +390,10 @@ namespace OpenRCT2::Factory
             bindTileToSegment(tile, segmentId, 0);
         }
 
-        // Link or merge with the belt ahead when this tile is its feeder.
+        // Merge with the plain belt ahead when this tile is its feeder and both stay short enough.
         auto aheadLoc = neighbourTile(loc, dir);
         auto* ahead = findBeltElement(aheadLoc);
-        if (ahead != nullptr && ahead->hasRecord())
+        if (ahead != nullptr && ahead->hasRecord() && ahead->getRecordId() != segmentId)
         {
             BeltShape aheadShape;
             auto* aheadFeeder = findBeltFeeder(aheadLoc, ahead->getDirection(), aheadShape);
@@ -237,20 +401,15 @@ namespace OpenRCT2::Factory
             {
                 auto* segment = state.beltSegments.get(segmentId);
                 auto* aheadSegment = state.beltSegments.get(ahead->getRecordId());
-                if (segment != nullptr && aheadSegment != nullptr)
+                if (segment != nullptr && aheadSegment != nullptr && aheadSegment->extraLength == 0
+                    && segment->tiles.size() + aheadSegment->tiles.size() <= kMaxSegmentTiles
+                    && aheadSegment->speed == segment->speed)
                 {
-                    if (segment->tiles.size() + aheadSegment->tiles.size() <= kMaxSegmentTiles
-                        && aheadSegment->speed == segment->speed)
-                    {
-                        mergeSegments(state, segmentId, ahead->getRecordId());
-                    }
-                    else
-                    {
-                        segment->next = ahead->getRecordId();
-                    }
+                    mergeSegments(state, segmentId, ahead->getRecordId());
                 }
             }
         }
+        computeLink(state, segmentId);
         return segmentId;
     }
 
@@ -282,6 +441,9 @@ namespace OpenRCT2::Factory
 
         std::vector<TileCoordsXYZ> rightTiles(segment->tiles.begin() + static_cast<ptrdiff_t>(k + 1), segment->tiles.end());
         const RecordId oldNext = segment->next;
+        const uint8_t oldNextKind = segment->nextKind;
+        const uint8_t oldNextLane = segment->nextLane;
+        const int32_t oldNextPos = segment->nextPos;
 
         std::vector<LaneItemView> leftItems[kBeltLaneCount];
         std::vector<LaneItemView> rightItems[kBeltLaneCount];
@@ -296,17 +458,20 @@ namespace OpenRCT2::Factory
             });
         }
 
-        // The right part becomes a new segment and keeps the old next link.
+        // The right part becomes a new segment and keeps the old link; sideloads into it shift.
+        RecordId rightId = kNullRecord;
         if (!rightTiles.empty())
         {
             const ObjectEntryIndex entry = segment->entry;
             const uint8_t speed = segment->speed;
-            RecordId rightId;
             auto& right = state.beltSegments.allocateRecord(rightId);
             right.tiles = rightTiles;
             right.entry = entry;
             right.speed = speed;
             right.next = oldNext;
+            right.nextKind = oldNextKind;
+            right.nextLane = oldNextLane;
+            right.nextPos = oldNextPos;
             const int32_t rightLength = segmentLength(right);
             for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
             {
@@ -318,6 +483,20 @@ namespace OpenRCT2::Factory
             }
             segment = state.beltSegments.get(segmentId);
         }
+        state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& other) {
+            if (other.next != segmentId || other.getNextKind() != BeltLinkKind::sideload)
+                return;
+            if (other.nextPos >= removedEnd && rightId != kNullRecord)
+            {
+                other.next = rightId;
+                other.nextPos -= removedEnd;
+            }
+            else if (other.nextPos >= removedStart)
+            {
+                other.next = kNullRecord;
+                other.nextKind = static_cast<uint8_t>(BeltLinkKind::none);
+            }
+        });
 
         // The left part keeps the id, or the segment dies.
         if (k == 0)
@@ -329,6 +508,7 @@ namespace OpenRCT2::Factory
         {
             segment->tiles.resize(k);
             segment->next = kNullRecord;
+            segment->nextKind = static_cast<uint8_t>(BeltLinkKind::none);
             const int32_t leftLength = segmentLength(*segment);
             for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
             {
@@ -336,6 +516,97 @@ namespace OpenRCT2::Factory
             }
         }
         element.setRecordId(kNullRecord);
+    }
+
+    // Finds the unpaired underground entrance behind `loc` within reach, travelling `dir`.
+    static FactoryElement* findUndergroundEntranceBehind(const CoordsXYZ& loc, Direction dir, int32_t reach, int32_t& gap)
+    {
+        auto at = loc;
+        for (int32_t i = 1; i <= reach + 1; i++)
+        {
+            at = neighbourTile(at, oppositeOf(dir));
+            auto* element = findFactoryElement(at);
+            if (element == nullptr || element->getSubtype() != FactoryElementSubtype::undergroundBelt)
+                continue;
+            if (element->getDirection() != dir)
+                continue;
+            if (!element->hasRecord() && !isUndergroundExit(*element))
+            {
+                gap = i - 1;
+                return element;
+            }
+            return nullptr; // another pair in the way
+        }
+        return nullptr;
+    }
+
+    static void placeUnderground(
+        State& state, FactoryElement& element, const CoordsXYZ& loc, Direction dir, const FactoryPrototypeObject& proto)
+    {
+        int32_t gap = 0;
+        auto* entrance = findUndergroundEntranceBehind(loc, dir, proto.getBelt().reach, gap);
+        if (entrance == nullptr)
+        {
+            // Unpaired: an entrance waiting for its exit. No record until then.
+            setUndergroundExit(element, false);
+            return;
+        }
+        setUndergroundExit(element, true);
+        RecordId segmentId;
+        auto& segment = state.beltSegments.allocateRecord(segmentId);
+        const auto entranceLoc = neighbourTile(loc, oppositeOf(dir));
+        (void)entranceLoc;
+        auto entranceTile = TileCoordsXYZ(tileToCoords(TileCoordsXYZ(loc)));
+        entranceTile = TileCoordsXYZ(CoordsXYZ{ CoordsXY(loc) - CoordsDirectionDelta[dir & 3] * (gap + 1), loc.z });
+        segment.tiles = { entranceTile, TileCoordsXYZ(loc) };
+        segment.entry = kObjectEntryIndexNull;
+        segment.speed = proto.getBelt().speed;
+        segment.extraLength = static_cast<uint16_t>(gap * kBeltUnitsPerTile);
+        entrance->setRecordId(segmentId);
+        entrance->setFootprintIndex(0);
+        element.setRecordId(segmentId);
+        element.setFootprintIndex(1);
+        computeLink(state, segmentId);
+        relinkAround(state, tileToCoords(entranceTile));
+    }
+
+    static void removeUnderground(State& state, FactoryElement& element)
+    {
+        if (!element.hasRecord())
+            return;
+        const RecordId segmentId = element.getRecordId();
+        auto* segment = state.beltSegments.get(segmentId);
+        if (segment != nullptr)
+        {
+            // The partner becomes an unpaired entrance again (items in the tunnel are lost).
+            for (auto& tile : segment->tiles)
+            {
+                auto* partner = findFactoryElement(tileToCoords(tile));
+                if (partner != nullptr && partner != &element
+                    && partner->getSubtype() == FactoryElementSubtype::undergroundBelt)
+                {
+                    partner->setRecordId(kNullRecord);
+                    partner->setFootprintIndex(0);
+                    setUndergroundExit(*partner, false);
+                    MapInvalidateTileFull(tileToCoords(tile));
+                }
+            }
+            unlinkSegment(state, segmentId);
+            state.beltSegments.release(segmentId);
+        }
+        element.setRecordId(kNullRecord);
+    }
+
+    static CoordsXYZ splitterPartnerTile(const CoordsXYZ& loc, Direction dir, uint8_t side)
+    {
+        // Side 0 is the origin (left of travel); side 1 sits to its right.
+        return side == 0 ? neighbourTile(loc, rightOf(dir)) : neighbourTile(loc, leftOf(dir));
+    }
+
+    bool splitterSecondTile(const CoordsXYZ& loc, Direction dir, CoordsXYZ& second)
+    {
+        second = splitterPartnerTile(loc, dir, 0);
+        return MapIsLocationValid(second);
     }
 
     FactoryElement* placeElement(
@@ -349,9 +620,10 @@ namespace OpenRCT2::Factory
         if (element == nullptr)
             return nullptr;
 
+        const auto subtype = proto->getSubtype();
         element->setClearanceZ(loc.z + proto->getClearance() * kCoordsZStep);
         element->setDirection(dir & 3);
-        element->setSubtype(proto->getSubtype());
+        element->setSubtype(subtype);
         element->setEntryIndex(entry);
         element->setRecordId(kNullRecord);
         element->setFootprintIndex(0);
@@ -359,14 +631,61 @@ namespace OpenRCT2::Factory
         element->setFactoryFlags(FACTORY_ELEMENT_FLAG_ORIGIN);
         element->setGhost(ghost);
 
+        FactoryElement* second = nullptr;
+        if (subtype == FactoryElementSubtype::splitter)
+        {
+            CoordsXYZ secondLoc;
+            if (!splitterSecondTile(loc, dir, secondLoc))
+            {
+                TileElementRemove(reinterpret_cast<TileElement*>(element));
+                return nullptr;
+            }
+            second = TileElementInsert<FactoryElement>(secondLoc, 0b1111);
+            if (second == nullptr)
+            {
+                element = findFactoryElement(loc, ghost);
+                if (element != nullptr)
+                    TileElementRemove(reinterpret_cast<TileElement*>(element));
+                return nullptr;
+            }
+            // Inserting may have moved the element array; look the origin up again.
+            element = findFactoryElement(loc, ghost);
+            second->setClearanceZ(secondLoc.z + proto->getClearance() * kCoordsZStep);
+            second->setDirection(dir & 3);
+            second->setSubtype(subtype);
+            second->setEntryIndex(entry);
+            second->setRecordId(kNullRecord);
+            second->setFootprintIndex(1);
+            second->setConnectionCache(0);
+            second->setFactoryFlags(0);
+            second->setGhost(ghost);
+            MapInvalidateTileFull(secondLoc);
+            MapAnimations::MarkTileForInvalidation(TileCoordsXY(secondLoc));
+        }
+
         auto& state = gameState.factory;
         if (!ghost)
         {
-            switch (proto->getSubtype())
+            switch (subtype)
             {
                 case FactoryElementSubtype::belt:
                     placeBelt(state, loc, dir, *proto);
                     break;
+                case FactoryElementSubtype::undergroundBelt:
+                    placeUnderground(state, *element, loc, dir, *proto);
+                    break;
+                case FactoryElementSubtype::splitter:
+                {
+                    RecordId id;
+                    auto& record = state.splitters.allocateRecord(id);
+                    record.setLocation(TileCoordsXYZ(loc));
+                    record.direction = dir & 3;
+                    record.entry = entry;
+                    element->setRecordId(id);
+                    if (second != nullptr)
+                        second->setRecordId(id);
+                    break;
+                }
                 case FactoryElementSubtype::container:
                 {
                     RecordId id;
@@ -421,6 +740,9 @@ namespace OpenRCT2::Factory
                     break;
             }
             state.topologyVersion++;
+            relinkAround(state, loc);
+            if (second != nullptr)
+                relinkAround(state, splitterPartnerTile(loc, dir, 0));
         }
 
         refreshBeltShapesAround(loc);
@@ -432,12 +754,32 @@ namespace OpenRCT2::Factory
     void removeElement(GameState_t& gameState, FactoryElement& element, const CoordsXYZ& loc)
     {
         auto& state = gameState.factory;
+        const Direction dir = element.getDirection();
+        const auto subtype = element.getSubtype();
+        CoordsXYZ partnerLoc{};
+        bool hasPartner = false;
+        if (subtype == FactoryElementSubtype::splitter)
+        {
+            partnerLoc = splitterPartnerTile(loc, dir, element.getFootprintIndex());
+            hasPartner = true;
+        }
+
         if (!element.isGhost())
         {
-            switch (element.getSubtype())
+            switch (subtype)
             {
                 case FactoryElementSubtype::belt:
                     removeBelt(state, element);
+                    break;
+                case FactoryElementSubtype::undergroundBelt:
+                    removeUnderground(state, element);
+                    break;
+                case FactoryElementSubtype::splitter:
+                    if (element.hasRecord())
+                    {
+                        unlinkSplitter(state, element.getRecordId());
+                        state.splitters.release(element.getRecordId());
+                    }
                     break;
                 case FactoryElementSubtype::container:
                     state.containers.release(element.getRecordId());
@@ -458,9 +800,27 @@ namespace OpenRCT2::Factory
             }
             state.topologyVersion++;
         }
+        const bool ghost = element.isGhost();
         MapInvalidateTileFull(loc);
         TileElementRemove(reinterpret_cast<TileElement*>(&element));
+        if (hasPartner)
+        {
+            auto* partner = findFactoryElement(partnerLoc, ghost);
+            if (partner != nullptr && partner->getSubtype() == FactoryElementSubtype::splitter && partner->isGhost() == ghost)
+            {
+                MapInvalidateTileFull(partnerLoc);
+                TileElementRemove(reinterpret_cast<TileElement*>(partner));
+            }
+        }
+        if (!ghost)
+        {
+            relinkAround(state, loc);
+            if (hasPartner)
+                relinkAround(state, partnerLoc);
+        }
         refreshBeltShapesAround(loc);
+        if (hasPartner)
+            refreshBeltShapesAround(partnerLoc);
     }
 
     void postLoad(GameState_t& gameState)
@@ -476,8 +836,9 @@ namespace OpenRCT2::Factory
         state.beltSegments.forEach([&](RecordId id, BeltSegmentRecord& segment) {
             for (size_t i = 0; i < segment.tiles.size(); i++)
             {
-                auto* belt = findBeltElement(tileToCoords(segment.tiles[i]));
-                if (belt == nullptr || belt->getRecordId() != id || belt->getFootprintIndex() != i)
+                auto* belt = findBeltLikeElement(tileToCoords(segment.tiles[i]));
+                if (belt == nullptr || belt->getSubtype() == FactoryElementSubtype::splitter || belt->getRecordId() != id
+                    || belt->getFootprintIndex() != i)
                 {
                     dead.push_back(id);
                     break;
@@ -488,6 +849,18 @@ namespace OpenRCT2::Factory
         {
             unlinkSegment(state, id);
             state.beltSegments.release(id);
+            changed = true;
+        }
+        dead.clear();
+        state.splitters.forEach([&](RecordId id, SplitterRecord& record) {
+            auto* element = findFactoryElement(tileToCoords(record.location()));
+            if (element == nullptr || element->getSubtype() != FactoryElementSubtype::splitter || element->getRecordId() != id)
+                dead.push_back(id);
+        });
+        for (auto id : dead)
+        {
+            unlinkSplitter(state, id);
+            state.splitters.release(id);
             changed = true;
         }
         dead.clear();
@@ -535,10 +908,8 @@ namespace OpenRCT2::Factory
             changed = true;
         }
         if (changed)
-            state.powerDirty = true;
-
-        if (changed)
         {
+            state.powerDirty = true;
             state.topologyVersion++;
         }
     }

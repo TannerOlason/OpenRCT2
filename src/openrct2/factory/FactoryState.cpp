@@ -33,6 +33,7 @@ namespace OpenRCT2::Factory
         inserters.clear();
         beltSegments.clear();
         machines.clear();
+        splitters.clear();
         poles.clear();
         powerNetworks.clear();
         ore.clear();
@@ -48,14 +49,106 @@ namespace OpenRCT2::Factory
     size_t State::recordCount() const
     {
         return containers.aliveCount() + inserters.aliveCount() + beltSegments.aliveCount() + machines.aliveCount()
-            + poles.aliveCount();
+            + splitters.aliveCount() + poles.aliveCount();
     }
 
     static void updateBelts(State& state)
     {
         state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& segment) {
-            auto* next = segment.next != kNullRecord ? state.beltSegments.get(segment.next) : nullptr;
-            tickSegment(segment, next);
+            LaneTarget targets[kBeltLaneCount];
+            switch (segment.getNextKind())
+            {
+                case BeltLinkKind::segment:
+                {
+                    auto* next = state.beltSegments.get(segment.next);
+                    if (next != nullptr)
+                    {
+                        const int32_t nextLength = segmentLength(*next);
+                        for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
+                            targets[lane] = LaneTarget{ &next->lanes[lane], nextLength, -1 };
+                    }
+                    break;
+                }
+                case BeltLinkKind::sideload:
+                {
+                    auto* next = state.beltSegments.get(segment.next);
+                    if (next != nullptr)
+                    {
+                        // Both of our lanes merge onto the near lane of the target at the entry point.
+                        const uint8_t lane = segment.nextLane < kBeltLaneCount ? segment.nextLane : 0;
+                        for (uint8_t ourLane = 0; ourLane < kBeltLaneCount; ourLane++)
+                            targets[ourLane] = LaneTarget{ &next->lanes[lane], segmentLength(*next), segment.nextPos };
+                    }
+                    break;
+                }
+                default:
+                    break; // dead end or splitter input: items park at the end and the splitter takes them
+            }
+            tickSegment(segment, targets);
+        });
+    }
+
+    static void resolveSplitterOutputs(State& state, RecordId splitterId, SplitterRecord& splitter)
+    {
+        if (splitter.topologyVersionSeen == state.topologyVersion)
+            return;
+        splitter.topologyVersionSeen = state.topologyVersion;
+        const auto origin = tileToCoords(splitter.location());
+        for (uint8_t side = 0; side < 2; side++)
+        {
+            splitter.outputs[side] = kNullRecord;
+            const auto sideLoc = side == 0 ? origin : neighbourTile(origin, rightOf(splitter.direction));
+            auto* ahead = findFactoryElement(neighbourTile(sideLoc, splitter.direction));
+            if (ahead == nullptr || !ahead->hasRecord() || ahead->getFootprintIndex() != 0
+                || ahead->getDirection() != splitter.direction)
+                continue;
+            if (ahead->getSubtype() == FactoryElementSubtype::belt
+                || (ahead->getSubtype() == FactoryElementSubtype::undergroundBelt && !isUndergroundExit(*ahead)))
+            {
+                splitter.outputs[side] = ahead->getRecordId();
+            }
+        }
+        (void)splitterId;
+    }
+
+    static void updateSplitters(State& state)
+    {
+        state.splitters.forEach([&](RecordId splitterId, SplitterRecord& splitter) {
+            resolveSplitterOutputs(state, splitterId, splitter);
+            // Inputs: segments linked to this splitter. Items parked at their ends go to the outputs in turn.
+            state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& input) {
+                if (input.getNextKind() != BeltLinkKind::splitter || input.next != splitterId)
+                    return;
+                for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
+                {
+                    for (int guard = 0; guard < 4; guard++)
+                    {
+                        auto& inLane = input.lanes[lane];
+                        if (inLane.items.empty() || inLane.items.front().gap != 0)
+                            break;
+                        bool moved = false;
+                        for (uint8_t attempt = 0; attempt < 2 && !moved; attempt++)
+                        {
+                            const uint8_t side = (splitter.nextOutput + attempt) & 1;
+                            auto* out = splitter.outputs[side] != kNullRecord ? state.beltSegments.get(splitter.outputs[side])
+                                                                              : nullptr;
+                            if (out == nullptr)
+                                continue;
+                            const int32_t outLength = segmentLength(*out);
+                            if (laneRearPosition(out->lanes[lane], outLength) - 0 < kBeltItemSpacing)
+                                continue;
+                            auto item = laneTakeFrontAtEnd(inLane);
+                            if (!item.has_value())
+                                break;
+                            laneInsertAt(out->lanes[lane], outLength, 0, *item);
+                            splitter.nextOutput = (side + 1) & 1;
+                            moved = true;
+                        }
+                        if (!moved)
+                            break;
+                    }
+                }
+            });
         });
     }
 
@@ -65,7 +158,12 @@ namespace OpenRCT2::Factory
         auto* element = findFactoryElement(loc);
         if (element == nullptr || !element->hasRecord())
             return RecordRef{};
-        return RecordRef{ static_cast<uint8_t>(element->getSubtype()), element->getRecordId(), element->getFootprintIndex() };
+        auto kind = element->getSubtype();
+        if (kind == FactoryElementSubtype::undergroundBelt)
+            kind = FactoryElementSubtype::belt; // the pair is a belt segment; tile index selects the end
+        if (kind == FactoryElementSubtype::splitter)
+            return RecordRef{};
+        return RecordRef{ static_cast<uint8_t>(kind), element->getRecordId(), element->getFootprintIndex() };
     }
 
     static void resolveInserterRefs(State& state, InserterRecord& inserter)
@@ -116,9 +214,9 @@ namespace OpenRCT2::Factory
         return false;
     }
 
-    static int32_t beltTileStart(const RecordRef& ref)
+    static int32_t beltTileStart(const BeltSegmentRecord& segment, const RecordRef& ref)
     {
-        return ref.aux * kBeltUnitsPerTile;
+        return segmentTileStart(segment, ref.aux);
     }
 
     static uint16_t stackSizeOf(ObjectEntryIndex item)
@@ -330,7 +428,7 @@ namespace OpenRCT2::Factory
                 if (segment == nullptr)
                     return false;
                 const int32_t length = segmentLength(*segment);
-                const int32_t from = beltTileStart(ref);
+                const int32_t from = beltTileStart(*segment, ref);
                 const int32_t to = from + kBeltUnitsPerTile - 1;
                 for (auto& lane : segment->lanes)
                 {
@@ -383,7 +481,7 @@ namespace OpenRCT2::Factory
                 if (segment == nullptr || ref.aux >= segment->tiles.size())
                     return false;
                 const int32_t length = segmentLength(*segment);
-                const int32_t pos = beltTileStart(ref) + kBeltUnitsPerTile / 2;
+                const int32_t pos = beltTileStart(*segment, ref) + kBeltUnitsPerTile / 2;
                 auto* beltElement = findBeltElement(tileToCoords(segment->tiles[ref.aux]));
                 const Direction beltDirection = beltElement != nullptr ? beltElement->getDirection() : inserter.direction;
                 const uint8_t lane = dropLaneFor(inserter.direction, beltDirection);
@@ -499,7 +597,7 @@ namespace OpenRCT2::Factory
                     auto* segment = state.beltSegments.get(element->getRecordId());
                     if (segment == nullptr)
                         break;
-                    const int32_t pos = element->getFootprintIndex() * kBeltUnitsPerTile + kBeltUnitsPerTile / 2;
+                    const int32_t pos = segmentTileStart(*segment, element->getFootprintIndex()) + kBeltUnitsPerTile / 2;
                     const uint8_t lane = dropLaneFor(machine.direction, element->getDirection());
                     moved = laneInsertAt(segment->lanes[lane], segmentLength(*segment), pos, slot.item);
                     break;
@@ -841,6 +939,7 @@ namespace OpenRCT2::Factory
         // Fixed order: belts move, then inserters pick up and drop, then machines work. Containers have no
         // per-tick behaviour.
         updateBelts(state);
+        updateSplitters(state);
         updateInserters(state);
         updatePower(state);
         updateMachines(state);

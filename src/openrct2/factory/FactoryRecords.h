@@ -182,6 +182,15 @@ namespace OpenRCT2::Factory
         }
     };
 
+    // What a belt segment's last tile feeds.
+    enum class BeltLinkKind : uint8_t
+    {
+        none = 0,     // dead end
+        segment = 1,  // start of `next`
+        sideload = 2, // the middle of `next` at nextPos on lane nextLane
+        splitter = 3, // input side nextLane of splitter `next`
+    };
+
     struct BeltSegmentRecord
     {
         // Tiles from the segment start to its end; each tile's own FactoryElement carries its direction.
@@ -189,8 +198,18 @@ namespace OpenRCT2::Factory
         ObjectEntryIndex entry{ kObjectEntryIndexNull };
         uint8_t speed{};
         std::array<BeltLane, kBeltLaneCount> lanes{};
-        // Segment fed by this one's last tile, or kNullRecord.
+        // Link from the last tile: see BeltLinkKind.
         RecordId next{ kNullRecord };
+        uint8_t nextKind{ static_cast<uint8_t>(BeltLinkKind::none) };
+        uint8_t nextLane{};
+        int32_t nextPos{};
+        // Underground pairs are two-tile segments with this many hidden belt units between the tiles.
+        uint16_t extraLength{};
+
+        BeltLinkKind getNextKind() const
+        {
+            return static_cast<BeltLinkKind>(nextKind);
+        }
 
         template<typename V>
         void visit(V& v)
@@ -203,6 +222,31 @@ namespace OpenRCT2::Factory
                 lane.visit(v);
             }
             v(next);
+            v(nextKind);
+            v(nextLane);
+            v(nextPos);
+            v(extraLength);
+        }
+    };
+
+    /**
+     * A 1x2 splitter: the origin tile is input/output side 0 (left of travel), the second tile side 1.
+     * Items arriving on either input side go alternately to the output segments ahead of each side.
+     */
+    struct SplitterRecord : RecordBase
+    {
+        std::array<RecordId, 2> outputs{ kNullRecord, kNullRecord }; // segments starting ahead of each side
+        uint8_t nextOutput{};
+        uint32_t topologyVersionSeen{};
+
+        template<typename V>
+        void visit(V& v)
+        {
+            visitBase(v);
+            v(outputs[0]);
+            v(outputs[1]);
+            v(nextOutput);
+            v(topologyVersionSeen);
         }
     };
 

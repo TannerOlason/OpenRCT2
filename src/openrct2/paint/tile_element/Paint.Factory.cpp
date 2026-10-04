@@ -84,7 +84,7 @@ namespace
         if (segment == nullptr)
             return;
         const int32_t length = segmentLength(*segment);
-        const int32_t tileStart = element.getFootprintIndex() * kBeltUnitsPerTile;
+        const int32_t tileStart = segmentTileStart(*segment, element.getFootprintIndex());
         const auto shape = getBeltShape(element);
         const Direction dir = element.getDirection();
 
@@ -166,6 +166,28 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
                 {
                     paintBeltItems(session, height, factoryElement);
                 }
+            }
+            break;
+        }
+        case FactoryElementSubtype::undergroundBelt:
+        {
+            auto image = proto->getUndergroundImage(isUndergroundExit(factoryElement), direction);
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);
+                if (!factoryElement.isGhost() && factoryElement.hasRecord())
+                {
+                    paintBeltItems(session, height, factoryElement);
+                }
+            }
+            break;
+        }
+        case FactoryElementSubtype::splitter:
+        {
+            auto image = proto->getSplitterImage(factoryElement.getFootprintIndex(), direction);
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);
             }
             break;
         }
