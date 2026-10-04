@@ -17,6 +17,7 @@ set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryActionTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryBeltTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryElementTests.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/FactoryOreTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryPrototypeTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryStateTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryTopologyTests.cpp"

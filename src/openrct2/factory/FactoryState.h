@@ -13,6 +13,7 @@
 
 #include "FactoryPool.hpp"
 #include "FactoryRecords.h"
+#include "Ore.h"
 
 #include <cstdint>
 
@@ -33,6 +34,8 @@ namespace OpenRCT2::Factory
         Pool<ContainerRecord> containers;
         Pool<InserterRecord> inserters;
         Pool<BeltSegmentRecord> beltSegments;
+        Pool<MachineRecord> machines;
+        OreLayer ore; // saved in its own chunk (0x42); its hash joins the sync checksum
 
         // Incremented whenever an element is placed, removed or rotated; records that cache references
         // to neighbours re-resolve them when this changes.
@@ -46,6 +49,7 @@ namespace OpenRCT2::Factory
 
         size_t recordCount() const;
 
+        // Visits the pools (not the ore layer, which has its own chunk and hash).
         template<typename V>
         void visit(V& v)
         {
@@ -53,8 +57,14 @@ namespace OpenRCT2::Factory
             containers.visit(v);
             inserters.visit(v);
             beltSegments.visit(v);
+            machines.visit(v);
         }
     };
+
+    // Machine helpers shared by inserters, drills and tests.
+    bool machineAcceptsInput(const State& state, const MachineRecord& machine, ObjectEntryIndex item);
+    bool machineInsertInput(State& state, MachineRecord& machine, ObjectEntryIndex item);
+    bool machineTakeOutput(MachineRecord& machine, ItemStack& hand);
 
     /**
      * One simulation tick. Called from gameStateUpdateLogic between Ride::updateAll() and Park::Update so

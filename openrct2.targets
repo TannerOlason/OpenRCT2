@@ -16,6 +16,8 @@
     <DataLanguagePath Condition="'$(DataLanguagePath)' == ''">$(SolutionDir)data\language\</DataLanguagePath>
     <DataShadersPath Condition="'$(DataShadersPath)' == ''">$(SolutionDir)data\shaders\</DataShadersPath>
     <DataScenarioPath Condition="'$(DataScenarioPath)' == ''">$(SolutionDir)data\scenario_patches\</DataScenarioPath>
+    <!-- FACTORY-TOUR: fork content pack -->
+    <DataFactoryPath Condition="'$(DataFactoryPath)' == ''">$(SolutionDir)data\factory\</DataFactoryPath>
     <ResourcesPath Condition="'$(ResourcesPath)' == ''">$(SolutionDir)resources\</ResourcesPath>
     <G2InputFile Condition="'$(G2InputFile)' == ''">$(ResourcesPath)g2\sprites.json</G2InputFile>
     <FontsInputFile Condition="'$(FontsInputFile)' == ''">$(ResourcesPath)fonts\sprites.json</FontsInputFile>
@@ -42,7 +44,33 @@
     <ScenarioPatchFiles Include="$(DataScenarioPath)**\*"
                         Exclude="$(DataScenarioPath)*.bak;
                                   $(DataScenarioPath)*.tmp" />
+
+    <!-- FACTORY-TOUR -->
+    <FactoryFiles Include="$(DataFactoryPath)**\*"
+                  Exclude="$(DataFactoryPath)*.bak;
+                            $(DataFactoryPath)*.tmp" />
   </ItemGroup>
+
+  <!-- FACTORY-TOUR: copy the fork content pack next to the other data folders -->
+  <Target Name="CopyFactoryFiles"
+          AfterTargets="Build"
+          Inputs="@(FactoryFiles)"
+          Outputs="@(FactoryFiles->'$(DataOutputPath)factory\%(RecursiveDir)%(Filename)%(Extension)')">
+
+    <MakeDir Directories="@(FactoryFiles->'$(DataOutputPath)factory\%(RecursiveDir)')" />
+
+    <Copy SourceFiles="@(FactoryFiles)"
+          DestinationFiles="@(FactoryFiles->'$(DataOutputPath)factory\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="3">
+      <Output TaskParameter="CopiedFiles" ItemName="CopiedFactoryFiles" />
+    </Copy>
+
+    <Message Text="Copied factory file: %(CopiedFactoryFiles.RecursiveDir)%(CopiedFactoryFiles.Filename)%(CopiedFactoryFiles.Extension)"
+             Importance="high"
+             Condition="'@(CopiedFactoryFiles)' != ''" />
+  </Target>
 
   <!-- Target Implementations -->
   <Target Name="CopyLanguageFiles"

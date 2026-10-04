@@ -203,8 +203,139 @@ def draw_item_belt_sprite():
     return img
 
 
+def draw_ore_overlay(colour, dark):
+    """Flat diamond with speckles, drawn as a child of the surface."""
+    img = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.polygon(tile_polygon(32, 16), fill=colour + (255,))
+    rnd = 7
+    for i in range(40):
+        rnd = (rnd * 1103515245 + 12345) & 0x7FFFFFFF
+        x = (rnd >> 8) % 56 + 4
+        rnd = (rnd * 1103515245 + 12345) & 0x7FFFFFFF
+        y = (rnd >> 8) % 28 + 2
+        # keep inside the diamond
+        if abs(x - 32) / 32 + abs(y - 16) / 16 <= 0.9:
+            draw.rectangle([x, y, x + 1, y + 1], fill=dark + (255,))
+    return img
+
+
+def draw_item_small(colour, dark):
+    icon = Image.new("RGBA", (24, 24), (0, 0, 0, 0))
+    d = ImageDraw.Draw(icon)
+    d.ellipse([4, 5, 20, 19], fill=colour + (255,), outline=dark + (255,))
+    d.ellipse([8, 8, 13, 12], fill=dark + (255,))
+    belt = Image.new("RGBA", (10, 8), (0, 0, 0, 0))
+    d = ImageDraw.Draw(belt)
+    d.ellipse([1, 1, 8, 6], fill=colour + (255,), outline=dark + (255,))
+    return icon, belt
+
+
+def draw_machine_box(d, body, roof, outline, h=24, top_detail=None, side_detail=None):
+    """A full-tile box of height h with a lid; returns image anchored at (-32, -h)."""
+    img = Image.new("RGBA", (64, 32 + h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = 32, 16 + h
+    top = [(cx, cy - 16 - h), (cx + 30, cy - 1 - h), (cx, cy + 14 - h), (cx - 30, cy - 1 - h)]
+    left = [(cx - 30, cy - 1 - h), (cx, cy + 14 - h), (cx, cy + 14), (cx - 30, cy - 1)]
+    right = [(cx, cy + 14 - h), (cx + 30, cy - 1 - h), (cx + 30, cy - 1), (cx, cy + 14)]
+    draw.polygon(left, fill=body, outline=outline)
+    draw.polygon(right, fill=tuple(min(255, c + 25) for c in body[:3]) + (255,), outline=outline)
+    draw.polygon(top, fill=roof, outline=outline)
+    if top_detail:
+        top_detail(draw, cx, cy - h)
+    if side_detail:
+        side_detail(draw, cx, cy, h, d)
+    return img, h
+
+
+def draw_drill(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        # Drill head: a hub with a rotating bar.
+        draw.ellipse([cx - 7, cy - 4, cx + 7, cy + 3], fill=(80, 80, 90, 255), outline=(30, 30, 40, 255))
+        ang = math.pi * frame / max(1, frames)
+        dx, dy = math.cos(ang) * 9, math.sin(ang) * 4
+        draw.line([(cx - dx, cy - dy), (cx + dx, cy + dy)], fill=(230, 200, 60, 255), width=2)
+
+    def side_detail(draw, cx, cy, h, dd):
+        # Output chute on the side facing direction d.
+        sx, sy = SCREEN_DIR[dd]
+        ex, ey = cx + sx * 0.6, cy - h // 2 + sy * 0.6
+        draw.rectangle([ex - 4, ey - 3, ex + 4, ey + 3], fill=(60, 60, 70, 255), outline=(20, 20, 30, 255))
+
+    return draw_machine_box(d, (120, 110, 90, 255), (150, 140, 110, 255), (40, 35, 25, 255), 20, top_detail, side_detail)
+
+
+def draw_furnace(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        draw.rectangle([cx + 6, cy - 22, cx + 12, cy - 4], fill=(90, 90, 90, 255), outline=(30, 30, 30, 255))
+        if frame > 0:
+            glow = (255, 160 + (frame % 3) * 30, 40, 255)
+            draw.ellipse([cx - 6, cy - 2, cx + 6, cy + 6], fill=glow)
+        else:
+            draw.ellipse([cx - 6, cy - 2, cx + 6, cy + 6], fill=(60, 50, 50, 255))
+
+    def side_detail(draw, cx, cy, h, dd):
+        draw.rectangle([cx - 8, cy - 2, cx - 2, cy + 4], fill=(40, 30, 30, 255))
+
+    return draw_machine_box(d, (130, 100, 90, 255), (160, 130, 110, 255), (50, 30, 30, 255), 26, top_detail, side_detail)
+
+
+def write_machine(name, display, props, draw_fn, frames):
+    images = []
+    folder = write_object(name, "machine", {**props, "frames": frames, "rotations": 4}, [], display)
+    for d in range(4):
+        for f in range(frames):
+            fname = f"m_d{d}_f{f}.png"
+            img, h = draw_fn(d, f, frames)
+            save(img, folder, fname)
+            images.append({"path": f"images/{fname}", "x": -32, "y": -h})
+    with open(os.path.join(folder, "object.json")) as fh:
+        obj = json.load(fh)
+    obj["images"] = images
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
+def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0):
+    icon, belt = draw_item_small(colour, dark)
+    item_props = {"stackSize": 50}
+    if fuel_ticks:
+        item_props["fuelTicks"] = fuel_ticks
+    folder = write_object(item_name, "item", item_props,
+                          [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                          display_item)
+    save(icon, folder, "icon.png")
+    save(belt, folder, "belt.png")
+    folder = write_object(ore_name, "ore",
+                          {"item": f"factory-tour.factory_prototype.{item_name}", "defaultAmount": 500},
+                          [{"path": "images/overlay.png", "x": -32, "y": 0}, {"path": "images/icon.png", "x": -12, "y": -12}],
+                          display_ore)
+    save(draw_ore_overlay(colour, dark), folder, "overlay.png")
+    save(icon, folder, "icon.png")
+
+
 def main():
     os.makedirs(ROOT, exist_ok=True)
+
+    # Ores and their items.
+    write_ore_and_item("iron_ore_patch", "iron_ore", "Iron ore", "Iron ore", (110, 120, 140), (60, 70, 90))
+    write_ore_and_item("coal_patch", "coal", "Coal", "Coal", (50, 50, 55), (20, 20, 25), fuel_ticks=1600)
+
+    # Recipes.
+    write_object("iron_plate_smelting", "recipe", {
+        "ingredients": [{"item": "factory-tour.factory_prototype.iron_ore", "count": 1}],
+        "results": [{"item": "factory-tour.factory_prototype.iron_plate", "count": 1}],
+        "timeTicks": 128, "category": "smelting"}, [], "Iron plate")
+
+    # Machines (1x1 in M2; multi-tile footprints come later).
+    write_machine("burner_drill", "Burner mining drill", {
+        "machineKind": "drill", "energy": "burner", "speedQ8": 256, "miningRadius": 1, "miningTimeTicks": 100,
+        "inputSlots": 0, "outputSlots": 1, "price": 80, "removalPrice": -60, "clearance": 5}, draw_drill, 4)
+    write_machine("stone_furnace", "Stone furnace", {
+        "machineKind": "furnace", "energy": "burner", "speedQ8": 256, "recipeCategories": ["smelting"],
+        "inputSlots": 1, "outputSlots": 1, "price": 60, "removalPrice": -45, "clearance": 7}, draw_furnace, 4)
 
     # Item: iron plate.
     folder = write_object(

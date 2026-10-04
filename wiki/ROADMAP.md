@@ -62,11 +62,25 @@ saved and loaded, multiplayer-synced, with determinism, save/load and throughput
   automation; xdotool is not installed).
 - [ ] Changelog line added; d.ts documents the three fork actions' argument shapes.
 
-### M2 Production chain `[ ]`
+### M2 Production chain `[~]`
 
 Ore Layer and overlay, mining drill, furnace, assembler with recipe window, power (poles, offshore pump,
 boiler, steam engine, power overview), pipes and Fluid Networks, undergrounds, splitters, filters, belt-line
 drag, `factory-bench` CLI and the 8 ms CI gate.
+
+- [x] Ore Layer (`OreLayer`, chunk 0x42 RLE, order-independent hash in the sync checksum), ground overlay
+  toggled from the view menu (`ViewportFlag::factoryOre`, bit 22), `FactorySetOreAction` for the editor,
+  sandbox and tests.
+- [x] Machines as 1x1 records: burner mining drill (scans a radius, drops output onto the tile ahead) and
+  stone furnace (auto recipe from its input); recipe, ore and fuel prototypes; `FactorySetRecipeAction` for
+  assemblers; inserters feed and empty machines. Test: ore → drill → belt → inserter → furnace → inserter →
+  chest yields 90 plates from 90 ore.
+- [ ] Multi-tile footprints (machines are 1x1 until the paint pipeline slices composite sprites per tile).
+- [ ] Assembler + electric power: poles, power networks, burner generator, then steam (pump, boiler, engine).
+- [ ] Pipes and fluid networks.
+- [ ] Underground belts, splitters, lane filters, sideloading.
+- [ ] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview.
+- [ ] `factory-bench` CLI and the 8 ms per tick CI gate.
 
 ### M3 Park intertwine I `[ ]`
 

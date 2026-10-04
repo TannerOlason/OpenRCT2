@@ -194,6 +194,26 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
             }
             break;
         }
+        case FactoryElementSubtype::machine:
+        {
+            uint8_t frame = 0;
+            if (factoryElement.hasRecord())
+            {
+                auto* record = state.machines.get(factoryElement.getRecordId());
+                const auto& props = proto->getMachine();
+                if (record != nullptr && record->isWorking() && props.frames > 1)
+                {
+                    // Cycle the working frames at roughly 10 frames per second.
+                    frame = static_cast<uint8_t>(1 + ((getGameState().currentTicks / 4) % (props.frames - 1)));
+                }
+            }
+            auto image = proto->getMachineImage(direction, frame);
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);
+            }
+            break;
+        }
         default:
         {
             auto image = proto->hasImages() ? proto->GetBaseImageId() : kImageIndexUndefined;
@@ -207,4 +227,20 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
 
     PaintUtilSetGeneralSupportHeight(session, static_cast<int16_t>(factoryElement.getClearanceZ()));
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
+}
+
+void PaintFactoryOreOverlay(PaintSession& session, const CoordsXY& tile, int32_t height)
+{
+    const auto& ore = getGameState().factory.ore;
+    const auto& cell = ore.get(TileCoordsXY(tile));
+    if (cell.isEmpty())
+        return;
+    auto* proto = getPrototype(cell.ore);
+    if (proto == nullptr)
+        return;
+    auto image = proto->getOreOverlayImage();
+    if (image == kImageIndexUndefined)
+        return;
+    // Drawn as a child of the surface so it never sorts above things standing on the tile.
+    PaintAddImageAsChild(session, ImageId(image), { 0, 0, height + 1 }, { { 0, 0, height + 1 }, { 32, 32, 1 } });
 }

@@ -32,5 +32,6 @@ namespace OpenRCT2
         STR_FT_FACTORY_ELEMENT_NOT_FOUND = 20488,
         STR_FT_FACTORY_IN_THE_WAY = 20489,
         STR_FT_ROTATE_TIP = 20490,
+        STR_FT_SHOW_ORE = 20491,
     };
 } // namespace OpenRCT2

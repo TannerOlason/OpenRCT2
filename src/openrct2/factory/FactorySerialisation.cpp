@@ -15,8 +15,14 @@
 #include "../GameState.h"
 #include "FactoryTopology.h"
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 namespace OpenRCT2::Factory
 {
+    static void readWriteOreChunk(State& state, OrcaStream& os);
+
     void readWriteParkChunks(GameState_t& gameState, OrcaStream& os)
     {
         auto& state = gameState.factory;
@@ -46,6 +52,8 @@ namespace OpenRCT2::Factory
             return;
         }
 
+        readWriteOreChunk(state, os);
+
         os.readWriteChunk(ChunkType::factoryPools, [&](OrcaStream::ChunkStream& cs) {
             uint16_t version = kFactoryPoolsVersion;
             cs.readWrite(version);
@@ -69,9 +77,84 @@ namespace OpenRCT2::Factory
         }
     }
 
+    static void readWriteOreChunk(State& state, OrcaStream& os)
+    {
+        const bool reading = os.getMode() == OrcaStream::Mode::reading;
+        if (!reading && state.ore.isEmpty())
+        {
+            return;
+        }
+        bool found = os.readWriteChunk(ChunkType::factoryOre, [&](OrcaStream::ChunkStream& cs) {
+            uint16_t version = kFactoryOreVersion;
+            cs.readWrite(version);
+            if (version > kFactoryOreVersion)
+            {
+                LOG_ERROR("Factory ore chunk version %u is newer than supported %u", version, kFactoryOreVersion);
+                state.ore.clear();
+                return;
+            }
+            if (reading)
+            {
+                int32_t width = 0;
+                int32_t height = 0;
+                cs.readWrite(width);
+                cs.readWrite(height);
+                const auto total = static_cast<size_t>(std::max(0, width)) * static_cast<size_t>(std::max(0, height));
+                std::vector<OreCell> cells;
+                cells.reserve(total);
+                auto runs = cs.read<uint32_t>();
+                for (uint32_t i = 0; i < runs && cells.size() < total; i++)
+                {
+                    auto length = cs.read<uint32_t>();
+                    OreCell cell;
+                    cs.readWrite(cell.ore);
+                    cs.readWrite(cell.richness);
+                    cs.readWrite(cell.amount);
+                    length = static_cast<uint32_t>(std::min<size_t>(length, total - cells.size()));
+                    cells.insert(cells.end(), length, cell);
+                }
+                state.ore.assign({ width, height }, std::move(cells));
+            }
+            else
+            {
+                int32_t width = state.ore.width();
+                int32_t height = state.ore.height();
+                cs.readWrite(width);
+                cs.readWrite(height);
+                const auto& cells = state.ore.cells();
+                std::vector<std::pair<uint32_t, OreCell>> runs;
+                for (const auto& cell : cells)
+                {
+                    if (!runs.empty() && runs.back().second == cell)
+                        runs.back().first++;
+                    else
+                        runs.emplace_back(1u, cell);
+                }
+                cs.write(static_cast<uint32_t>(runs.size()));
+                for (auto& run : runs)
+                {
+                    cs.write(run.first);
+                    cs.readWrite(run.second.ore);
+                    cs.readWrite(run.second.richness);
+                    cs.readWrite(run.second.amount);
+                }
+            }
+        });
+        if (reading && !found)
+        {
+            state.ore.clear();
+        }
+    }
+
     void serialise(State& state, DataSerialiser& ds)
     {
         SerialiserVisitor visitor{ ds };
         state.visit(visitor);
+        // The ore layer contributes its dimensions and running hash rather than every cell.
+        int32_t width = state.ore.width();
+        int32_t height = state.ore.height();
+        uint64_t hash = state.ore.hash();
+        uint32_t nonEmpty = state.ore.nonEmptyCount();
+        ds << width << height << hash << nonEmpty;
     }
 } // namespace OpenRCT2::Factory

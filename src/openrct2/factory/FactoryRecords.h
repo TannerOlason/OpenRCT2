@@ -206,6 +206,109 @@ namespace OpenRCT2::Factory
         }
     };
 
+    enum class MachineKind : uint8_t
+    {
+        drill,
+        furnace,
+        assembler,
+        boiler,
+        engine,
+        pump,
+        lab,
+        turret,
+        exportDepot,
+        count,
+    };
+
+    enum class EnergySource : uint8_t
+    {
+        none,
+        burner,
+        electric,
+    };
+
+    enum class MachineStatus : uint8_t
+    {
+        idle,
+        working,
+        noInput,
+        outputFull,
+        noFuel,
+        noPower,
+        noOre,
+        noRecipe,
+    };
+
+    // Work units: a recipe taking T ticks at speed 1.0 costs T * kWorkUnitsPerTick; a machine adds speedQ8
+    // (256 = 1.0) scaled by its power satisfaction every tick.
+    constexpr uint32_t kWorkUnitsPerTick = 256;
+
+    struct MachineRecord : RecordBase
+    {
+        uint8_t kind{};                                   // MachineKind
+        ObjectEntryIndex recipe{ kObjectEntryIndexNull }; // assemblers: chosen; furnaces: current auto recipe
+        std::vector<ItemStack> inputs;
+        std::vector<ItemStack> outputs;
+        ItemStack fuel;          // burner machines
+        uint32_t fuelEnergy{};   // ticks of work left in the item being burnt
+        uint32_t progress{};     // work units done on the current craft
+        uint32_t craftCost{};    // work units the current craft needs, 0 when idle
+        uint8_t status{};        // MachineStatus
+        uint16_t miningCursor{}; // drills: next cell of the mining area to scan
+        RecordId powerNetwork{ kNullRecord };
+        uint32_t topologyVersionSeen{};
+
+        MachineKind getKind() const
+        {
+            return static_cast<MachineKind>(kind);
+        }
+        MachineStatus getStatus() const
+        {
+            return static_cast<MachineStatus>(status);
+        }
+        bool isWorking() const
+        {
+            return getStatus() == MachineStatus::working;
+        }
+
+        template<typename V>
+        void visit(V& v)
+        {
+            visitBase(v);
+            v(kind);
+            v(recipe);
+            v.vec(inputs, VisitElement{});
+            v.vec(outputs, VisitElement{});
+            fuel.visit(v);
+            v(fuelEnergy);
+            v(progress);
+            v(craftCost);
+            v(status);
+            v(miningCursor);
+            v(powerNetwork);
+            v(topologyVersionSeen);
+        }
+    };
+
+    /**
+     * One tile of the ore layer. 8 bytes; a map is at most 1001 x 1001 tiles.
+     */
+    struct OreCell
+    {
+        ObjectEntryIndex ore{ kObjectEntryIndexNull };
+        uint16_t richness{};
+        uint32_t amount{};
+
+        bool isEmpty() const
+        {
+            return amount == 0 || ore == kObjectEntryIndexNull;
+        }
+        bool operator==(const OreCell& other) const
+        {
+            return ore == other.ore && richness == other.richness && amount == other.amount;
+        }
+    };
+
     struct InserterRecord : RecordBase
     {
         uint8_t phase{};

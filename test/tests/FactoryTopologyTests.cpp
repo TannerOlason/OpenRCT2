@@ -51,6 +51,12 @@ protected:
         _belt = Index(objectManager.LoadObject("factory-tour.factory_prototype.belt_basic"));
         _inserter = Index(objectManager.LoadObject("factory-tour.factory_prototype.inserter_basic"));
         _chest = Index(objectManager.LoadObject("factory-tour.factory_prototype.chest_wooden"));
+        _ironOrePatch = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_ore_patch"));
+        _ironOre = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_ore"));
+        _coal = Index(objectManager.LoadObject("factory-tour.factory_prototype.coal"));
+        _drill = Index(objectManager.LoadObject("factory-tour.factory_prototype.burner_drill"));
+        _furnace = Index(objectManager.LoadObject("factory-tour.factory_prototype.stone_furnace"));
+        _smelting = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_plate_smelting"));
         ASSERT_NE(_plate, kObjectEntryIndexNull);
         ASSERT_NE(_belt, kObjectEntryIndexNull);
         ASSERT_NE(_inserter, kObjectEntryIndexNull);
@@ -129,6 +135,12 @@ protected:
     static ObjectEntryIndex _belt;
     static ObjectEntryIndex _inserter;
     static ObjectEntryIndex _chest;
+    static ObjectEntryIndex _ironOrePatch;
+    static ObjectEntryIndex _ironOre;
+    static ObjectEntryIndex _coal;
+    static ObjectEntryIndex _drill;
+    static ObjectEntryIndex _furnace;
+    static ObjectEntryIndex _smelting;
 };
 
 std::shared_ptr<IContext> FactoryTopologyTests::_context;
@@ -136,6 +148,12 @@ ObjectEntryIndex FactoryTopologyTests::_plate = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_belt = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_inserter = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_chest = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_ironOrePatch = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_ironOre = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_coal = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_drill = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_furnace = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_smelting = kObjectEntryIndexNull;
 
 TEST_F(FactoryTopologyTests, PlacingBeltsInARowFormsOneSegment)
 {
@@ -338,4 +356,74 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     EXPECT_NE(findBeltElement(Tile(kRowX0 + 2)), nullptr);
     EXPECT_NE(findFactoryElement(Tile(kRowX0 + 1)), nullptr);
     EXPECT_EQ(computeSyncChecksum(getGameState()).toString(), checksumBefore);
+}
+
+TEST_F(FactoryTopologyTests, DrillMinesOreAndFurnaceSmeltsIt)
+{
+    ASSERT_NE(_ironOrePatch, kObjectEntryIndexNull);
+    ASSERT_NE(_drill, kObjectEntryIndexNull);
+    ASSERT_NE(_furnace, kObjectEntryIndexNull);
+    ASSERT_NE(_smelting, kObjectEntryIndexNull);
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    const Direction east = 2;
+
+    // Ore under and around the drill at tile 0.
+    state.ore.resize(gameState.mapSize);
+    for (int32_t dx = -1; dx <= 1; dx++)
+        for (int32_t dy = -1; dy <= 1; dy++)
+            state.ore.set({ kRowX0 + dx, kRowY + dy }, { _ironOrePatch, 0, 10 });
+    EXPECT_EQ(state.ore.nonEmptyCount(), 9u);
+
+    // drill(0) -> belt(1..3) -> inserter(4) -> furnace(5) -> inserter(6) -> chest(7)
+    auto* drillElement = Place(kRowX0 + 0, east, _drill);
+    for (int32_t i = 1; i <= 3; i++)
+        Place(kRowX0 + i, east, _belt);
+    Place(kRowX0 + 4, east, _inserter);
+    auto* furnaceElement = Place(kRowX0 + 5, east, _furnace);
+    Place(kRowX0 + 6, east, _inserter);
+    auto* chestElement = Place(kRowX0 + 7, east, _chest);
+    ASSERT_NE(drillElement, nullptr);
+    ASSERT_NE(furnaceElement, nullptr);
+    ASSERT_NE(chestElement, nullptr);
+    ASSERT_EQ(state.machines.aliveCount(), 2u);
+
+    auto* drill = state.machines.get(drillElement->getRecordId());
+    auto* furnace = state.machines.get(furnaceElement->getRecordId());
+    auto* chest = state.containers.get(chestElement->getRecordId());
+    ASSERT_NE(drill, nullptr);
+    ASSERT_NE(furnace, nullptr);
+    EXPECT_EQ(drill->getKind(), MachineKind::drill);
+    EXPECT_EQ(furnace->getKind(), MachineKind::furnace);
+
+    // Without fuel nothing happens.
+    Tick(50);
+    EXPECT_EQ(drill->getStatus(), MachineStatus::noFuel);
+    EXPECT_EQ(state.ore.nonEmptyCount(), 9u);
+
+    // Fuel both burners: coal goes to the fuel slot. One coal burns for 1600 ticks; mining 90 ore takes 9000
+    // ticks and smelting them 11520, so ten coal each is plenty.
+    for (int i = 0; i < 10; i++)
+    {
+        EXPECT_TRUE(machineInsertInput(state, *drill, _coal));
+        EXPECT_TRUE(machineInsertInput(state, *furnace, _coal));
+    }
+    EXPECT_EQ(drill->fuel.item, _coal);
+    EXPECT_EQ(drill->fuel.count, 10);
+    EXPECT_FALSE(machineAcceptsInput(state, *drill, _ironOre)); // drills take nothing but fuel
+    EXPECT_TRUE(machineAcceptsInput(state, *furnace, _ironOre));
+
+    // 90 ore in the patch; mining takes 100 ticks each plus transit and smelting (128 ticks each).
+    Tick(100 * 90 + 128 * 90 + 2000);
+
+    int plates = 0;
+    for (auto& slot : chest->slots)
+        if (slot.item == _plate)
+            plates += slot.count;
+    EXPECT_EQ(state.ore.nonEmptyCount(), 0u);
+    EXPECT_EQ(drill->getStatus(), MachineStatus::noOre);
+    EXPECT_EQ(plates, 90);
+    // An idle furnace forgets its auto-selected recipe until the next input arrives.
+    EXPECT_EQ(furnace->getStatus(), MachineStatus::noInput);
+    EXPECT_EQ(furnace->recipe, kObjectEntryIndexNull);
 }

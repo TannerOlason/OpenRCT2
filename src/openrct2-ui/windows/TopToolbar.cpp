@@ -135,6 +135,7 @@ namespace OpenRCT2::Ui::Windows
         DDIDX_HIGHLIGHT_PATH_ISSUES = 19,
         // separator
         DDIDX_TRANSPARENCY = 21,
+        DDIDX_FACTORY_ORE = 22, // FACTORY-TOUR
 
         TOP_TOOLBAR_VIEW_MENU_COUNT,
     };
@@ -304,6 +305,7 @@ namespace OpenRCT2::Ui::Windows
                 ToggleOption(DDIDX_HIGHLIGHT_PATH_ISSUES, STR_HIGHLIGHT_PATH_ISSUES_MENU),
                 ExtSeparator(),
                 ToggleOption(DDIDX_TRANSPARENCY, STR_TRANSPARENCY_OPTIONS),
+                ToggleOption(DDIDX_FACTORY_ORE, STR_FT_SHOW_ORE), // FACTORY-TOUR
             };
 
             static_assert(ItemIDsMatchIndices(items));
@@ -332,6 +334,7 @@ namespace OpenRCT2::Ui::Windows
             gDropdown.items[DDIDX_PATH_HEIGHTS].setChecked(mvpFlags.has(ViewportFlag::pathHeights));
             gDropdown.items[DDIDX_VIEW_CLIPPING].setChecked(mvpFlags.has(ViewportFlag::clipView));
             gDropdown.items[DDIDX_HIGHLIGHT_PATH_ISSUES].setChecked(mvpFlags.has(ViewportFlag::highlightPathIssues));
+            gDropdown.items[DDIDX_FACTORY_ORE].setChecked(mvpFlags.has(ViewportFlag::factoryOre)); // FACTORY-TOUR
 
             gDropdown.defaultIndex = DDIDX_UNDERGROUND_INSIDE;
         }
@@ -408,6 +411,10 @@ namespace OpenRCT2::Ui::Windows
                         break;
                     case DDIDX_TRANSPARENCY:
                         ContextOpenWindow(WindowClass::transparency);
+                        break;
+                    // FACTORY-TOUR
+                    case DDIDX_FACTORY_ORE:
+                        w->viewport->flags.flip(ViewportFlag::factoryOre);
                         break;
                     default:
                         return;

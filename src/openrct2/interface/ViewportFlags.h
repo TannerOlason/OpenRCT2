@@ -38,6 +38,7 @@ namespace OpenRCT2
         hideRides = 1,
         hideVehicles = 20,
         hideVegetation = 21,
+        factoryOre = 22, // FACTORY-TOUR: ore layer overlay (the last free bit)
         hideScenery = 2,
         hidePaths = 16,
         hideSupports = 3,

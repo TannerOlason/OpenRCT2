@@ -3884,3 +3884,4 @@ STR_20487   :This prototype cannot be placed
 STR_20488   :Factory element not found
 STR_20489   :Factory machinery in the way
 STR_20490   :Rotate factory object
+STR_20491   :Show ore deposits

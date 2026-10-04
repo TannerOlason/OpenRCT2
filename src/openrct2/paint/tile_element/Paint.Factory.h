@@ -20,4 +20,9 @@ namespace OpenRCT2
     struct FactoryElement;
 }
 
+struct CoordsXY;
+
 void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, const OpenRCT2::FactoryElement& factoryElement);
+
+// Draws the ore layer cell under a surface tile (ViewportFlag::factoryOre).
+void PaintFactoryOreOverlay(PaintSession& session, const CoordsXY& tile, int32_t height);

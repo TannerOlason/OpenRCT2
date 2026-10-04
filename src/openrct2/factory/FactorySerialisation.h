@@ -41,6 +41,7 @@ namespace OpenRCT2::Factory
 
     constexpr uint16_t kFactoryHeaderVersion = 1;
     constexpr uint16_t kFactoryPoolsVersion = 1;
+    constexpr uint16_t kFactoryOreVersion = 1;
 
     /**
      * Visitor that reads or writes record fields through an OrcaStream chunk.

@@ -388,6 +388,21 @@ namespace OpenRCT2::Factory
                     element->setRecordId(id);
                     break;
                 }
+                case FactoryElementSubtype::machine:
+                {
+                    RecordId id;
+                    auto& record = state.machines.allocateRecord(id);
+                    record.setLocation(TileCoordsXYZ(loc));
+                    record.direction = dir & 3;
+                    record.entry = entry;
+                    const auto& props = proto->getMachine();
+                    record.kind = static_cast<uint8_t>(props.kind);
+                    record.inputs.assign(props.inputSlots, ItemStack{});
+                    record.outputs.assign(props.outputSlots, ItemStack{});
+                    record.status = static_cast<uint8_t>(MachineStatus::idle);
+                    element->setRecordId(id);
+                    break;
+                }
                 default:
                     // Other kinds get records in later milestones; they still occupy the tile.
                     break;
@@ -416,6 +431,9 @@ namespace OpenRCT2::Factory
                     break;
                 case FactoryElementSubtype::inserter:
                     state.inserters.release(element.getRecordId());
+                    break;
+                case FactoryElementSubtype::machine:
+                    state.machines.release(element.getRecordId());
                     break;
                 default:
                     break;
@@ -474,6 +492,17 @@ namespace OpenRCT2::Factory
         for (auto id : dead)
         {
             state.inserters.release(id);
+            changed = true;
+        }
+        dead.clear();
+        state.machines.forEach([&](RecordId id, MachineRecord& record) {
+            auto* element = findFactoryElement(tileToCoords(record.location()));
+            if (element == nullptr || element->getSubtype() != FactoryElementSubtype::machine || element->getRecordId() != id)
+                dead.push_back(id);
+        });
+        for (auto id : dead)
+        {
+            state.machines.release(id);
             changed = true;
         }
 

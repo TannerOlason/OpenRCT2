@@ -91,6 +91,7 @@
     <ClCompile Include="FactoryActionTests.cpp" />
     <ClCompile Include="FactoryBeltTests.cpp" />
     <ClCompile Include="FactoryElementTests.cpp" />
+    <ClCompile Include="FactoryOreTests.cpp" />
     <ClCompile Include="FactoryPrototypeTests.cpp" />
     <ClCompile Include="FactoryStateTests.cpp" />
     <ClCompile Include="FactoryTopologyTests.cpp" />

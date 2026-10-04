@@ -32,6 +32,7 @@ namespace OpenRCT2::GameActions
         placeBlueprint = 7,
         setWire = 8,
         cheat = 9,
+        setOre = 10,
         count,
     };
 

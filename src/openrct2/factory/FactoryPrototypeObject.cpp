@@ -11,6 +11,7 @@
 
 #include "FactoryPrototypeObject.h"
 
+#include "../Context.h"
 #include "../core/EnumMap.hpp"
 #include "../core/EnumUtils.hpp"
 #include "../core/Guard.hpp"
@@ -18,6 +19,7 @@
 #include "../drawing/Drawing.h"
 #include "../drawing/ImageId.hpp"
 #include "../interface/ScreenCoords.hpp"
+#include "../object/ObjectManager.h"
 
 #include <algorithm>
 
@@ -78,6 +80,70 @@ namespace OpenRCT2::Factory
         }
     }
 
+    static const EnumMap<MachineKind> kMachineKindMap(
+        {
+            { "drill", MachineKind::drill },
+            { "furnace", MachineKind::furnace },
+            { "assembler", MachineKind::assembler },
+            { "boiler", MachineKind::boiler },
+            { "engine", MachineKind::engine },
+            { "pump", MachineKind::pump },
+            { "lab", MachineKind::lab },
+            { "turret", MachineKind::turret },
+            { "export_depot", MachineKind::exportDepot },
+        });
+
+    static const EnumMap<EnergySource> kEnergySourceMap(
+        {
+            { "none", EnergySource::none },
+            { "burner", EnergySource::burner },
+            { "electric", EnergySource::electric },
+        });
+
+    ObjectEntryIndex PrototypeRef::resolve() const
+    {
+        if (identifier.empty())
+            return kObjectEntryIndexNull;
+        auto& objectManager = GetContext()->GetObjectManager();
+        if (cached != kObjectEntryIndexNull)
+        {
+            auto* object = objectManager.GetLoadedObject<FactoryPrototypeObject>(cached);
+            if (object != nullptr && object->GetIdentifier() == identifier)
+                return cached;
+        }
+        auto* object = objectManager.GetLoadedObject(ObjectEntryDescriptor(identifier));
+        cached = object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
+        return cached;
+    }
+
+    static std::vector<ItemAmount> readItemAmounts(json_t& array)
+    {
+        std::vector<ItemAmount> result;
+        if (!array.is_array())
+            return result;
+        for (auto& entry : array)
+        {
+            if (!entry.is_object())
+                continue;
+            ItemAmount amount;
+            amount.item.identifier = Json::GetString(entry["item"]);
+            amount.count = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(entry["count"], 1));
+            if (!amount.item.identifier.empty())
+                result.push_back(std::move(amount));
+        }
+        return result;
+    }
+
+    bool FactoryPrototypeObject::machineHandlesCategory(std::string_view category) const
+    {
+        for (const auto& handled : _machine.recipeCategories)
+        {
+            if (handled == category)
+                return true;
+        }
+        return false;
+    }
+
     void FactoryPrototypeObject::ReadJson(IReadObjectContext* context, json_t& root)
     {
         Guard::Assert(root.is_object(), "FactoryPrototypeObject::ReadJson expects parameter root to be an object");
@@ -106,7 +172,44 @@ namespace OpenRCT2::Factory
         {
             case PrototypeKind::item:
                 _item.stackSize = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["stackSize"], 100));
+                _item.fuelTicks = Json::GetNumber<uint32_t>(properties["fuelTicks"], 0);
                 break;
+            case PrototypeKind::ore:
+                _ore.item.identifier = Json::GetString(properties["item"]);
+                _ore.defaultAmount = std::max<uint32_t>(1, Json::GetNumber<uint32_t>(properties["defaultAmount"], 500));
+                break;
+            case PrototypeKind::recipe:
+                _recipe.ingredients = readItemAmounts(properties["ingredients"]);
+                _recipe.results = readItemAmounts(properties["results"]);
+                _recipe.timeTicks = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["timeTicks"], 40));
+                _recipe.category = Json::GetString(properties["category"], "crafting");
+                break;
+            case PrototypeKind::machine:
+            case PrototypeKind::generator:
+            {
+                auto kindIt = kMachineKindMap.find(Json::GetString(properties["machineKind"], "assembler"));
+                _machine.kind = kindIt != kMachineKindMap.end() ? kindIt->second : MachineKind::assembler;
+                auto energyIt = kEnergySourceMap.find(Json::GetString(properties["energy"], "electric"));
+                _machine.energy = energyIt != kEnergySourceMap.end() ? energyIt->second : EnergySource::electric;
+                _machine.speedQ8 = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["speedQ8"], 256));
+                _machine.powerUsage = Json::GetNumber<uint32_t>(properties["powerUsage"], 0);
+                _machine.inputSlots = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["inputSlots"], 1), 0, 16);
+                _machine.outputSlots = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["outputSlots"], 1), 0, 16);
+                _machine.miningRadius = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["miningRadius"], 1), 0, 4);
+                _machine.miningTimeTicks = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["miningTimeTicks"], 80));
+                _machine.frames = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["frames"], 1));
+                _machine.rotations = Json::GetNumber<uint8_t>(properties["rotations"], 4) == 1 ? 1 : 4;
+                auto categories = properties["recipeCategories"];
+                if (categories.is_array())
+                {
+                    for (auto& category : categories)
+                    {
+                        if (category.is_string())
+                            _machine.recipeCategories.push_back(category.get<std::string>());
+                    }
+                }
+                break;
+            }
             case PrototypeKind::belt:
                 _belt.speed = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["speed"], 12), 1, 64);
                 _belt.frames = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["frames"], 1));
@@ -189,6 +292,24 @@ namespace OpenRCT2::Factory
         return imageAt(_container.rotations == 4 ? (direction & 3) : 0);
     }
 
+    ImageIndex FactoryPrototypeObject::getMachineImage(uint8_t direction, uint8_t frame) const
+    {
+        const uint32_t frames = _machine.frames;
+        const uint32_t dir = _machine.rotations == 4 ? (direction & 3) : 0;
+        return imageAt(dir * frames + (frame % frames));
+    }
+
+    ImageIndex FactoryPrototypeObject::getOreOverlayImage() const
+    {
+        return imageAt(0);
+    }
+
+    ImageIndex FactoryPrototypeObject::getOreIconImage() const
+    {
+        auto image = imageAt(1);
+        return image != kImageIndexUndefined ? image : imageAt(0);
+    }
+
     void FactoryPrototypeObject::DrawPreview(Drawing::RenderTarget& rt, int32_t width, int32_t height) const
     {
         ImageIndex image = kImageIndexUndefined;
@@ -205,6 +326,13 @@ namespace OpenRCT2::Factory
                 break;
             case PrototypeKind::container:
                 image = getContainerImage(0);
+                break;
+            case PrototypeKind::machine:
+            case PrototypeKind::generator:
+                image = getMachineImage(0, 0);
+                break;
+            case PrototypeKind::ore:
+                image = getOreIconImage();
                 break;
             default:
                 image = imageAt(0);
