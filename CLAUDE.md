@@ -42,8 +42,10 @@ build/openrct2 set-rct2 /media/user/D/rct2-data/app   # once, points game_path a
 build/openrct2                            # run the game
 ```
 
-Format with `clang-format -i <files>` (upstream `.clang-format`, Allman braces, 128 columns) and run
-`scripts/run-clang-format.py` before committing. Fork C++ must pass clang-tidy with upstream's `.clang-tidy`.
+Format fork files with `clang-format -i <files>` (upstream `.clang-format`, Allman braces, 128 columns). The local
+clang-format (v23) differs from CI's (v20) on some untouched upstream code, so never format upstream files wholesale:
+run `scripts/factory-tour/check-touchpoint-format.sh`, which reports only formatting hunks that touch FACTORY-TOUR
+lines (include order included), and `scripts/factory-tour/check-vcxproj.sh` before committing. Fork C++ must pass clang-tidy with upstream's `.clang-tidy`.
 
 GUI behaviour (windows, tools, drags) can be checked headlessly under Xvfb with `scripts/factory-tour/xdrive.py`;
 see [`wiki/TESTING.md`](wiki/TESTING.md).

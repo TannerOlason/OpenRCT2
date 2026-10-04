@@ -14,10 +14,10 @@
 #include "../Game.h"
 #include "../GameState.h"
 #include "../ReplayManager.h"
-#include "../factory/Materials.h" // FACTORY-TOUR
 #include "../core/Guard.hpp"
 #include "../core/MemoryStream.h"
 #include "../entity/MoneyEffect.h"
+#include "../factory/Materials.h" // FACTORY-TOUR
 #include "../localisation/Formatter.h"
 #include "../network/Network.h"
 #include "../platform/Platform.h"

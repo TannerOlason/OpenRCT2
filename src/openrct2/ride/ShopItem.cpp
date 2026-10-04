@@ -9,10 +9,10 @@
 
 #include "ShopItem.h"
 
-#include "../factory/FactoryStringIds.h" // FACTORY-TOUR
 #include "../GameState.h"
 #include "../SpriteIds.h"
 #include "../entity/Guest.h"
+#include "../factory/FactoryStringIds.h" // FACTORY-TOUR
 #include "../localisation/StringIds.h"
 #include "../ride/RideEntry.h"
 #include "../ride/RideManager.hpp"

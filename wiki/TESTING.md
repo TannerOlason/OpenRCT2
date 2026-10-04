@@ -66,6 +66,13 @@ Checked this way so far: belt-line drag (ghost run, cost line, build on release)
 info windows (recipe and filter dropdowns), the power overview from a pole and from the build window, and placing
 the 3x3 electric drill (centred ghost, refused over the map edge, no repeat placement while the button is held).
 
+## Pre-commit checks
+
+`scripts/factory-tour/check-touchpoint-format.sh` (clang-format hunks touching FACTORY-TOUR lines in upstream files,
+the usual cause of CI format failures: includes must sit in ASCII order), `scripts/factory-tour/check-vcxproj.sh`
+(every fork source in the MSBuild projects; CI runs it too) and `scripts/check-changelog-formatting` (typographic
+quotes only).
+
 ## Text colour convention
 
 Plain `drawText` with the default paint renders a pale grey. Like upstream, fork strings carry their colour:
