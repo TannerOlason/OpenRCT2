@@ -14,6 +14,7 @@
 #include "Limits.h"
 #include "core/Random.hpp"
 #include "entity/EntityRegistry.h"
+#include "factory/FactoryState.h" // FACTORY-TOUR
 #include "interface/ZoomLevel.h"
 #include "management/NewsItem.h"
 #include "ride/Ride.h"
@@ -97,6 +98,7 @@ namespace OpenRCT2
         ObjectEntryIndex lastEntranceStyle;
 
         CheatsState cheats;
+        Factory::State factory; // FACTORY-TOUR: see factory/FactoryState.h
     };
 
     GameState_t& getGameState();

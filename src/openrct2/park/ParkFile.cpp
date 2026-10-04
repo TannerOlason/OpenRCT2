@@ -34,6 +34,7 @@
 #include "../entity/Particle.h"
 #include "../entity/PatrolArea.h"
 #include "../entity/Staff.h"
+#include "../factory/FactorySerialisation.h" // FACTORY-TOUR
 #include "../localisation/Formatter.h"
 #include "../management/Award.h"
 #include "../management/Finance.h"
@@ -167,6 +168,7 @@ namespace OpenRCT2
         {
             auto& os = *_os;
             ReadWriteTilesChunk(gameState, os);
+            Factory::readWriteParkChunks(gameState, os); // FACTORY-TOUR: after tiles (which resets state)
             ReadWriteBannersChunk(gameState, os);
             ReadWriteRidesChunk(gameState, os);
             ReadWriteEntitiesChunk(gameState, os);
@@ -209,6 +211,7 @@ namespace OpenRCT2
             ReadWriteAuthoringChunk(os);
             ReadWriteObjectsChunk(os);
             ReadWriteTilesChunk(gameState, os);
+            Factory::readWriteParkChunks(gameState, os); // FACTORY-TOUR
             ReadWriteBannersChunk(gameState, os);
             ReadWriteRidesChunk(gameState, os);
             ReadWriteEntitiesChunk(gameState, os);

@@ -26,6 +26,7 @@
 #include "../core/Json.hpp"
 #include "../drawing/Drawing.Screen.h"
 #include "../entity/EntityRegistry.h"
+#include "../factory/SyncChecksum.h" // FACTORY-TOUR
 #include "../entity/EntityTweener.h"
 #include "../localisation/Formatter.h"
 #include "../localisation/Formatting.h"
@@ -862,7 +863,7 @@ namespace OpenRCT2::Network
 
         if (!storedTick.spriteHash.empty())
         {
-            EntitiesChecksum checksum = getGameState().entities.getAllEntitiesChecksum();
+            EntitiesChecksum checksum = Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */;
             std::string clientSpriteHash = checksum.toString();
             if (clientSpriteHash != storedTick.spriteHash)
             {
@@ -1607,7 +1608,7 @@ namespace OpenRCT2::Network
         packet << flags;
         if (flags & TickFlags::kChecksums)
         {
-            EntitiesChecksum checksum = getGameState().entities.getAllEntitiesChecksum();
+            EntitiesChecksum checksum = Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */;
             packet.writeString(checksum.toString());
         }
 

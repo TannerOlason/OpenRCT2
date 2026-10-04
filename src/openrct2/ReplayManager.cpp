@@ -20,6 +20,7 @@
 #include "actions/GameActionRunner.h"
 #include "config/Config.h"
 #include "core/Compression.h"
+#include "factory/SyncChecksum.h" // FACTORY-TOUR
 #include "core/DataSerialiser.h"
 #include "core/EnumUtils.hpp"
 #include "core/FileStream.h"
@@ -178,7 +179,7 @@ namespace OpenRCT2
 
             if ((_mode == ReplayMode::recording || _mode == ReplayMode::normalisation) && currentTicks == _nextChecksumTick)
             {
-                EntitiesChecksum checksum = getGameState().entities.getAllEntitiesChecksum();
+                EntitiesChecksum checksum = Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */;
                 AddChecksum(currentTicks, std::move(checksum));
 
                 _nextChecksumTick = currentTicks + ChecksumTicksDelta();
@@ -308,7 +309,7 @@ namespace OpenRCT2
             _currentRecording->tickEnd = currentTicks;
 
             {
-                EntitiesChecksum checksum = getGameState().entities.getAllEntitiesChecksum();
+                EntitiesChecksum checksum = Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */;
                 AddChecksum(currentTicks, std::move(checksum));
             }
 
@@ -799,7 +800,7 @@ namespace OpenRCT2
             {
                 _currentReplay->checksumIndex++;
 
-                EntitiesChecksum checksum = getGameState().entities.getAllEntitiesChecksum();
+                EntitiesChecksum checksum = Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */;
                 if (savedChecksum.second.raw != checksum.raw)
                 {
                     uint32_t replayTick = currentTicks - _currentReplay->tickStart;

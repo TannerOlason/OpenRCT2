@@ -12,6 +12,7 @@
 #include "../OpenRCT2.h"
 #include "../core/Console.hpp"
 #include "../entity/EntityRegistry.h"
+#include "../factory/SyncChecksum.h" // FACTORY-TOUR
 #include "../network/NetworkTypes.h"
 #include "CommandLine.hpp"
 
@@ -71,7 +72,7 @@ namespace OpenRCT2
             {
                 gameStateUpdateLogic();
             }
-            Console::WriteLine("Completed: %s", getGameState().entities.getAllEntitiesChecksum().toString().c_str());
+            Console::WriteLine("Completed: %s", Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */.toString().c_str());
         }
         else
         {

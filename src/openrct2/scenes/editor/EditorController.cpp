@@ -435,6 +435,10 @@ namespace OpenRCT2::Editor
                     }
                     break;
                 }
+                // FACTORY-TOUR: must not fall into the surface default (asSurface() would be null). Marks the
+                // prototype in use once ObjectType::factoryPrototype exists.
+                case TileElementType::factory:
+                    break;
             }
         } while (TileElementIteratorNext(&iter));
 

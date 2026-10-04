@@ -19,6 +19,7 @@
 #include "drawing/Palette.h"
 #include "entity/EntityTweener.h"
 #include "entity/PatrolArea.h"
+#include "factory/FactoryState.h" // FACTORY-TOUR
 #include "interface/Screenshot.h"
 #include "platform/Platform.h"
 #include "profiling/Profiling.h"
@@ -67,6 +68,7 @@ namespace OpenRCT2
         BannerInit(gameState);
         RideInitAll();
         gameState.entities.resetAllEntities();
+        gameState.factory.reset(); // FACTORY-TOUR
         UpdateConsolidatedPatrolAreas();
         ResetDate();
         Weather::reset();
@@ -322,6 +324,7 @@ namespace OpenRCT2
         VehicleUpdateAll();
         gameState.entities.updateAllMiscEntities();
         Ride::updateAll();
+        Factory::update(gameState); // FACTORY-TOUR: after rides, before the park sees this tick
 
         if (!isInEditorMode())
         {

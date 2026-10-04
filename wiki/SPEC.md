@@ -29,6 +29,11 @@ from upstream commit `5d86c6b` (v0.5.5 / 0.5.6 in development) and drift as upst
 `[10] footprintIndex`, `[11..12] ObjectEntryIndex entry`, `[13] shape/tier/connection cache`, `[14] flags`,
 `[15] pad`. Direction in the base type byte. Ghosts carry `recordId = 0xFFFFFFFF`.
 
+**Records and visitors.** Every record type in `factory/FactoryRecords.h` exposes `template<typename V> void
+visit(V& v)` enumerating its fields in a fixed order. `ChunkVisitor` (park chunks), `SerialiserVisitor` (sync
+checksum, snapshots, tests) and `Pool<T>::visit` (dense layout with alive flags) all drive the same function, so a
+field can never be saved but not hashed. Records hold only integers, `std::vector`s and `std::array`s.
+
 **FactoryState** lives in `GameState_t` after `cheats`, reset in `gameStateInitAll`, ticked between
 `Ride::updateAll()` and `Park::Update`. Pools (stable ids, lowest-free allocation, ascending iteration):
 `beltSegments, splitters, inserters, containers, machines, poles, powerNetworks, fluidNetworks`; plus

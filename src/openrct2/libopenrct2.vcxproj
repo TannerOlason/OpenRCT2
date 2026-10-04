@@ -736,6 +736,11 @@
     <ClInclude Include="world\map_generator\TreePlacement.h" />
     <ClInclude Include="world\tile_element\BannerElement.h" />
     <ClInclude Include="world\tile_element\FactoryElement.h" />
+    <ClInclude Include="factory\FactoryPool.hpp" />
+    <ClInclude Include="factory\FactoryRecords.h" />
+    <ClInclude Include="factory\FactorySerialisation.h" />
+    <ClInclude Include="factory\FactoryState.h" />
+    <ClInclude Include="factory\SyncChecksum.h" />
     <ClInclude Include="world\tile_element\EntranceElement.h" />
     <ClInclude Include="world\tile_element\LargeSceneryElement.h" />
     <ClInclude Include="world\tile_element\PathElement.h" />
@@ -1314,6 +1319,9 @@
     <ClCompile Include="world\map_generator\TreePlacement.cpp" />
     <ClCompile Include="world\tile_element\BannerElement.cpp" />
     <ClCompile Include="world\tile_element\FactoryElement.cpp" />
+    <ClCompile Include="factory\FactorySerialisation.cpp" />
+    <ClCompile Include="factory\FactoryState.cpp" />
+    <ClCompile Include="factory\SyncChecksum.cpp" />
     <ClCompile Include="world\tile_element\EntranceElement.cpp" />
     <ClCompile Include="world\tile_element\LargeSceneryElement.cpp" />
     <ClCompile Include="world\tile_element\PathElement.cpp" />

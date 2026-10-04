@@ -4,7 +4,9 @@ Factory Tour is a mergeable fork of OpenRCT2 that adds a Factorio-style producti
 factory as a theme park. Read [`CONTEXT.md`](CONTEXT.md) for vocabulary and the reserved id map,
 [`wiki/SCOPE.md`](wiki/SCOPE.md) for the product boundary, [`wiki/SPEC.md`](wiki/SPEC.md) for the design and
 [`wiki/ROADMAP.md`](wiki/ROADMAP.md) for milestone status before choosing or continuing a slice. Decisions
-live in `docs/adr/`; add an ADR when you make a new one.
+live in `docs/adr/`; add an ADR when you make a new one. `docs/notes/` holds upstream integration briefs
+(exact touch points for object types, game actions, UI and paint) gathered on 2026-10-03; line numbers drift,
+so verify against the source before editing.
 
 ## Branches and remotes
 
