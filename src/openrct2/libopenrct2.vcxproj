@@ -738,6 +738,10 @@
     <ClInclude Include="world\tile_element\FactoryElement.h" />
     <ClInclude Include="factory\Belts.h" />
     <ClInclude Include="factory\FactoryBench.h" />
+    <ClInclude Include="factory\FactoryTourRTD.h" />
+    <ClInclude Include="factory\GuestFactory.h" />
+    <ClInclude Include="factory\Pollution.h" />
+    <ClInclude Include="factory\RideRatingsFactory.h" />
     <ClInclude Include="factory\Fluids.h" />
     <ClInclude Include="factory\FactoryPool.hpp" />
     <ClInclude Include="factory\FactoryPrototypeObject.h" />
@@ -1337,6 +1341,9 @@
     <ClCompile Include="world\tile_element\FactoryElement.cpp" />
     <ClCompile Include="factory\Belts.cpp" />
     <ClCompile Include="factory\FactoryBench.cpp" />
+    <ClCompile Include="factory\GuestFactory.cpp" />
+    <ClCompile Include="factory\Pollution.cpp" />
+    <ClCompile Include="factory\RideRatingsFactory.cpp" />
     <ClCompile Include="factory\Fluids.cpp" />
     <ClCompile Include="factory\FactoryPrototypeObject.cpp" />
     <ClCompile Include="factory\FactorySerialisation.cpp" />

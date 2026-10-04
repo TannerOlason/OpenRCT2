@@ -17,6 +17,8 @@
         ],
         "inputSlots": 4,
         "outputSlots": 1,
+        "pollution": 4,
+        "noise": 20,
         "price": 150,
         "removalPrice": -110,
         "clearance": 7,

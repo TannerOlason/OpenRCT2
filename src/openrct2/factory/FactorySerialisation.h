@@ -41,8 +41,8 @@ namespace OpenRCT2::Factory
 
     constexpr uint16_t kFactoryHeaderVersion = 1;
     // Pools chunk versions: 2 belt link kinds, undergrounds, splitters, poles, networks; 3 fluids; 4 splitter filters;
-    // 5 ride proximity totals.
-    constexpr uint16_t kFactoryPoolsVersion = 5;
+    // 5 ride proximity totals; 6 pollution.
+    constexpr uint16_t kFactoryPoolsVersion = 6;
     constexpr uint16_t kFactoryOreVersion = 1;
 
     /**

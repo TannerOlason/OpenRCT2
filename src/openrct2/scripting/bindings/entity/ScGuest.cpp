@@ -150,6 +150,14 @@ namespace OpenRCT2::Scripting
             { "nice_ride_deprecated", PeepThoughtType::niceRideDeprecated },
             { "excited_deprecated", PeepThoughtType::excitedDeprecated },
             { "here_we_are", PeepThoughtType::hereWeAre },
+            // FACTORY-TOUR
+            { "factory_impressive", PeepThoughtType::factoryImpressive },
+            { "factory_smell", PeepThoughtType::factorySmell },
+            { "factory_noise", PeepThoughtType::factoryNoise },
+            { "factory_watching", PeepThoughtType::factoryWatching },
+            { "factory_made_here", PeepThoughtType::factoryMadeHere },
+            { "sold_out", PeepThoughtType::soldOut },
+            { "factory_danger", PeepThoughtType::factoryDanger },
         });
 
     ScGuest gScGuest;

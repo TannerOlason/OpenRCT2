@@ -14,6 +14,8 @@
         "recipeCategories": [
             "smelting"
         ],
+        "pollution": 20,
+        "noise": 10,
         "inputSlots": 1,
         "outputSlots": 1,
         "price": 60,

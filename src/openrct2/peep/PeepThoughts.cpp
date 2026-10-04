@@ -8,11 +8,12 @@
  *****************************************************************************/
 
 #include "PeepThoughts.h"
+#include "../factory/FactoryStringIds.h" // FACTORY-TOUR
 
 #include "../localisation/StringIds.h"
 
 // clang-format off
-const StringId kPeepThoughtIds[174] = {
+const StringId kPeepThoughtIds[181] = { // FACTORY-TOUR: 174 -> 181
     STR_PEEP_THOUGHT_TYPE_CANT_AFFORD_0,
     STR_PEEP_THOUGHT_TYPE_SPENT_MONEY,
     STR_PEEP_THOUGHT_TYPE_SICK,
@@ -187,5 +188,13 @@ const StringId kPeepThoughtIds[174] = {
     STR_PEEP_THOUGHT_TYPE_NICE_RIDE_DEPRECATED,
     STR_PEEP_THOUGHT_TYPE_EXCITED_DEPRECATED,
     STR_PEEP_THOUGHT_TYPE_HERE_WE_ARE,
+    // FACTORY-TOUR
+    OpenRCT2::STR_FT_THOUGHT_FACTORY_IMPRESSIVE,
+    OpenRCT2::STR_FT_THOUGHT_FACTORY_SMELL,
+    OpenRCT2::STR_FT_THOUGHT_FACTORY_NOISE,
+    OpenRCT2::STR_FT_THOUGHT_FACTORY_WATCHING,
+    OpenRCT2::STR_FT_THOUGHT_FACTORY_MADE_HERE,
+    OpenRCT2::STR_FT_THOUGHT_SOLD_OUT,
+    OpenRCT2::STR_FT_THOUGHT_FACTORY_DANGER,
 };
 // clang-format on

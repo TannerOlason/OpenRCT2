@@ -12,6 +12,7 @@
         "energy": "fluid",
         "fluidRate": 3,
         "powerOutput": 450,
+        "noise": 40,
         "inputFluid": "factory-tour.factory_prototype.steam",
         "fluidBoxes": [
             {

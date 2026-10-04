@@ -108,8 +108,12 @@ noise effects; `parkExt` Side Table chunk. The first moment the two games touch.
 - [x] Factory Tour ride type (RIDE_TYPE_1D slot, flat track, ADR 0010), `bonusFactoryProximity` ratings modifier fed
   by a 5x5 factory scan along the track walk, tour tram vehicle object with generated art. Tests: pure score,
   per-piece counting, and a built circuit whose excitement rises beside a working furnace; trams render running.
-- [ ] Guest thoughts and watching (thought ids 174-181, happiness and nausea effects, watching photogenic machines).
-- [ ] Pollution and noise from machines, with their effect on nearby guests.
+- [x] Guest thoughts 174-180 declared (strings, action map, plugin names, d.ts); walking guests near a factory think
+  `factoryImpressive` (+30 happiness), `factoryNoise` (-10) or `factorySmell` (-20, +12 nausea) before upstream's
+  scenery thoughts; parks without a factory are untouched.
+- [ ] Watching working photogenic machines (`factoryWatching`) and the `touredFactory` guest flag.
+- [x] Pollution and noise: machine `pollution` feeds an 8x8-tile pollution grid that spreads and decays every 64 ticks
+  (sparse in saves and the checksum, pools chunk version 6); machine `noise` within three tiles annoys guests.
 - [ ] `parkExt` Side Table chunk (0x45) for park-side fork fields.
 
 ### M4 Park intertwine II `[ ]`

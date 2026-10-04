@@ -760,14 +760,14 @@ def main():
 
     # Machines (1x1 in M2; multi-tile footprints come later).
     write_machine("burner_drill", "Burner mining drill", {
-        "machineKind": "drill", "energy": "burner", "speedQ8": 256, "miningRadius": 1, "miningTimeTicks": 100,
+        "machineKind": "drill", "energy": "burner", "speedQ8": 256, "miningRadius": 1, "miningTimeTicks": 100, "pollution": 10, "noise": 30,
         "inputSlots": 0, "outputSlots": 1, "price": 80, "removalPrice": -60, "clearance": 5}, draw_drill, 4)
     write_machine("burner_generator", "Burner generator", {
-        "machineKind": "engine", "energy": "burner", "powerOutput": 200,
+        "machineKind": "engine", "energy": "burner", "powerOutput": 200, "pollution": 30, "noise": 30,
         "inputSlots": 0, "outputSlots": 0, "price": 120, "removalPrice": -90, "clearance": 7}, draw_generator, 4)
     write_machine("assembling_machine", "Assembling machine", {
         "machineKind": "assembler", "energy": "electric", "speedQ8": 128, "powerUsage": 75,
-        "recipeCategories": ["crafting"], "inputSlots": 4, "outputSlots": 1,
+        "recipeCategories": ["crafting"], "inputSlots": 4, "outputSlots": 1, "pollution": 4, "noise": 20,
         "price": 150, "removalPrice": -110, "clearance": 7}, draw_assembler, 4)
     write_object("iron_gear", "item", {"stackSize": 100},
                  [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
@@ -785,6 +785,7 @@ def main():
     save(draw_pole(), folder, "pole.png")
     write_machine("stone_furnace", "Stone furnace", {
         "machineKind": "furnace", "energy": "burner", "speedQ8": 256, "recipeCategories": ["smelting"],
+        "pollution": 20, "noise": 10,
         "inputSlots": 1, "outputSlots": 1, "price": 60, "removalPrice": -45, "clearance": 7}, draw_furnace, 4)
 
     # The Factory Tour ride's vehicle.
@@ -793,7 +794,7 @@ def main():
     # A 3x3 electric mining drill: per-tile slices so it sorts correctly at every rotation.
     write_multitile_machine("electric_drill", "Electric mining drill", {
         "machineKind": "drill", "energy": "electric", "speedQ8": 256, "powerUsage": 90, "miningRadius": 2,
-        "miningTimeTicks": 60, "inputSlots": 0, "outputSlots": 1, "price": 200, "removalPrice": -150,
+        "miningTimeTicks": 60, "pollution": 10, "noise": 50, "inputSlots": 0, "outputSlots": 1, "price": 200, "removalPrice": -150,
         "clearance": 6}, 3, 22, ((110, 120, 90, 255), (140, 150, 110, 255), (40, 45, 30, 255)), drill_head, 4)
 
     # Fluids and the steam chain: offshore pump -> boiler -> steam engine.
@@ -801,17 +802,17 @@ def main():
     write_fluid("steam", "Steam", (220, 220, 225), (150, 150, 160))
     write_pipe()
     write_machine("offshore_pump", "Offshore pump", {
-        "machineKind": "pump", "energy": "none", "fluidRate": 120,
+        "machineKind": "pump", "energy": "none", "fluidRate": 120, "noise": 10,
         "outputFluid": "factory-tour.factory_prototype.water",
         "fluidBoxes": [{"role": "output", "sides": ["front"]}],
         "inputSlots": 0, "outputSlots": 0, "price": 50, "removalPrice": -35, "clearance": 4}, draw_pump, 4)
     write_machine("boiler", "Boiler", {
-        "machineKind": "boiler", "energy": "burner", "fluidRate": 6,
+        "machineKind": "boiler", "energy": "burner", "fluidRate": 6, "pollution": 30, "noise": 20,
         "inputFluid": "factory-tour.factory_prototype.water", "outputFluid": "factory-tour.factory_prototype.steam",
         "fluidBoxes": [{"role": "input", "sides": ["left", "right"]}, {"role": "output", "sides": ["front"]}],
         "inputSlots": 0, "outputSlots": 0, "price": 100, "removalPrice": -75, "clearance": 6}, draw_boiler, 4)
     write_machine("steam_engine", "Steam engine", {
-        "machineKind": "engine", "energy": "fluid", "fluidRate": 3, "powerOutput": 450,
+        "machineKind": "engine", "energy": "fluid", "fluidRate": 3, "powerOutput": 450, "noise": 40,
         "inputFluid": "factory-tour.factory_prototype.steam",
         "fluidBoxes": [{"role": "input", "sides": ["front", "back"]}],
         "inputSlots": 0, "outputSlots": 0, "price": 150, "removalPrice": -110, "clearance": 6}, draw_steam_engine, 4)

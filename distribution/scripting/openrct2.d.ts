@@ -3803,7 +3803,15 @@ declare global {
         "new_ride" |
         "nice_ride_deprecated" |
         "excited_deprecated" |
-        "here_we_are";
+        "here_we_are" |
+        // FACTORY-TOUR
+        "factory_impressive" |
+        "factory_smell" |
+        "factory_noise" |
+        "factory_watching" |
+        "factory_made_here" |
+        "sold_out" |
+        "factory_danger";
 
     type GuestItemType =
         "balloon" |

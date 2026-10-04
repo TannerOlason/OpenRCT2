@@ -25,11 +25,17 @@
 #include <openrct2/actions/ride/RideEntranceExitPlaceAction.h>
 #include <openrct2/actions/ride/RideSetStatusAction.h>
 #include <openrct2/actions/track/TrackPlaceAction.h>
+#include <openrct2/core/DataSerialiser.h>
+#include <openrct2/core/MemoryStream.h>
+#include <openrct2/entity/Guest.h>
 #include <openrct2/factory/Belts.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
+#include <openrct2/factory/FactorySerialisation.h>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
+#include <openrct2/factory/GuestFactory.h>
+#include <openrct2/factory/Pollution.h>
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
@@ -1234,4 +1240,94 @@ TEST_F(FactoryTopologyTests, FactoryTourExcitementRisesBesideWorkingMachinery)
 
     auto demolish = GameActions::RideDemolishAction(rideId, GameActions::RideModifyType::demolish);
     EXPECT_EQ(GameActions::ExecuteNested(&demolish, gameState).error, GameActions::Status::ok);
+}
+
+TEST(FactoryPollutionTests, SpreadsDecaysAndRoundTripsSparsely)
+{
+    PollutionLayer layer;
+    layer.ensureSize({ 64, 64 }); // 8x8 cells
+    layer.add({ 20, 20 }, 1600);  // cell (2, 2)
+    EXPECT_EQ(layer.at({ 17, 23 }), 1600u);
+    EXPECT_EQ(layer.at({ 30, 20 }), 0u);
+    layer.spread();
+    // Each neighbour gets a sixteenth; the cell keeps the rest less a thirty-second.
+    EXPECT_EQ(layer.at({ 20, 20 }), 1600u - 4 * 100 - 50);
+    EXPECT_EQ(layer.at({ 28, 20 }), 100u);
+    EXPECT_EQ(layer.at({ 20, 12 }), 100u);
+    EXPECT_EQ(layer.total(), 1600u - 50);
+    for (int i = 0; i < 400; i++)
+        layer.spread();
+    EXPECT_TRUE(layer.isEmpty()); // integer decay always reaches zero
+
+    layer.add({ 3, 60 }, 7);
+    layer.add({ 63, 0 }, 9);
+    State state;
+    state.pollution = layer;
+    std::vector<uint8_t> bytes;
+    {
+        MemoryStream ms;
+        DataSerialiser ds(true, ms);
+        serialise(state, ds);
+        auto* data = static_cast<const uint8_t*>(ms.GetData());
+        bytes.assign(data, data + ms.GetLength());
+    }
+    State loaded;
+    MemoryStream in(bytes);
+    in.SetPosition(0);
+    DataSerialiser ds(false, in);
+    serialise(loaded, ds);
+    EXPECT_EQ(loaded.pollution.at({ 3, 60 }), 7u);
+    EXPECT_EQ(loaded.pollution.at({ 63, 0 }), 9u);
+    EXPECT_EQ(loaded.pollution.total(), 16u);
+}
+
+TEST_F(FactoryTopologyTests, GuestsNoticeImpressiveSmellyAndNoisyFactories)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    const CoordsXYZ guest = Tile(kRowX0 + 2);
+    // No factory: no thought, so the guest falls back to upstream's assessment.
+    EXPECT_FALSE(assessGuestSurroundings(gameState, guest).hasThought);
+
+    // Four working machines of two kinds nearby impress (the furnaces stay quiet enough).
+    std::vector<RecordId> machines;
+    for (int32_t i = 0; i < 3; i++)
+        machines.push_back(PlaceAt(kRowX0 + i, kRowY + 3, 2, _furnace)->getRecordId());
+    machines.push_back(PlaceAt(kRowX0 + 3, kRowY + 3, 2, _assembler)->getRecordId());
+    for (auto id : machines)
+        state.machines.get(id)->status = static_cast<uint8_t>(MachineStatus::working);
+    auto verdict = assessGuestSurroundings(gameState, guest);
+    ASSERT_TRUE(verdict.hasThought);
+    EXPECT_EQ(verdict.thought, PeepThoughtType::factoryImpressive);
+    EXPECT_GT(verdict.happiness, 0);
+
+    // Loud machines close by drown that out.
+    auto* generator = PlaceAt(kRowX0 + 2, kRowY + 1, 2, _generator);
+    auto* drill = PlaceAt(kRowX0 + 3, kRowY + 1, 2, _drill);
+    state.machines.get(generator->getRecordId())->status = static_cast<uint8_t>(MachineStatus::working);
+    state.machines.get(drill->getRecordId())->status = static_cast<uint8_t>(MachineStatus::working);
+    verdict = assessGuestSurroundings(gameState, guest);
+    EXPECT_EQ(verdict.thought, PeepThoughtType::factoryNoise);
+    EXPECT_LT(verdict.happiness, 0);
+
+    // Enough pollution in the guest's cell beats everything and makes them queasy.
+    state.pollution.ensureSize(gameState.mapSize);
+    state.pollution.add(TileCoordsXY{ CoordsXY(guest) }, kSmellPollution);
+    verdict = assessGuestSurroundings(gameState, guest);
+    EXPECT_EQ(verdict.thought, PeepThoughtType::factorySmell);
+    EXPECT_GT(verdict.nausea, 0);
+}
+
+TEST_F(FactoryTopologyTests, WorkingMachinesPollute)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    auto* furnace = Place(kRowX0 + 2, 2, _furnace);
+    ASSERT_NE(furnace, nullptr);
+    for (int i = 0; i < 5; i++)
+        machineInsertInput(state, *state.machines.get(furnace->getRecordId()), _coal);
+    for (int i = 0; i < 20; i++)
+        machineInsertInput(state, *state.machines.get(furnace->getRecordId()), _ironOre);
+    Tick(200);
+    EXPECT_GT(state.pollution.at({ kRowX0 + 2, kRowY }), 1000u);
 }

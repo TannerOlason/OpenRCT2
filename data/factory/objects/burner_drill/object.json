@@ -13,6 +13,8 @@
         "speedQ8": 256,
         "miningRadius": 1,
         "miningTimeTicks": 100,
+        "pollution": 10,
+        "noise": 30,
         "inputSlots": 0,
         "outputSlots": 1,
         "price": 80,

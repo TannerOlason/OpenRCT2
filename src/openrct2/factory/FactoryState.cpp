@@ -41,6 +41,7 @@ namespace OpenRCT2::Factory
         pipes.clear();
         fluidNetworks.clear();
         rideProximity.clear();
+        pollution.clear();
         ore.clear();
         powerDirty = false;
         fluidDirty = false;
@@ -1048,6 +1049,12 @@ namespace OpenRCT2::Factory
             auto* proto = getPrototype(machine.entry);
             if (proto == nullptr)
                 return;
+            // Last tick's work pollutes now; centre of the footprint.
+            if (machine.isWorking() && proto->getMachine().pollution > 0)
+            {
+                const int32_t half = (proto->getMachine().size - 1) / 2;
+                state.pollution.add({ machine.x + half, machine.y + half }, proto->getMachine().pollution);
+            }
             switch (machine.getKind())
             {
                 case MachineKind::drill:
@@ -1085,6 +1092,9 @@ namespace OpenRCT2::Factory
         {
             return;
         }
+        state.pollution.ensureSize(gameState.mapSize);
+        if (gameState.currentTicks % PollutionLayer::kSpreadTicks == 0)
+            state.pollution.spread();
         // Fixed order: belts move, then inserters pick up and drop, then machines work. Containers have no
         // per-tick behaviour.
         if (times == nullptr)

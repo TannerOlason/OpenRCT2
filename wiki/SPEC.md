@@ -156,6 +156,15 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
   density saturating at six elements per piece, plus variety (popcount of kinds, up to eight) and activity
   (working / machines). Vehicle: `factory-tour.ride.tour_tram`, generated art with 32 flat rotations, body and
   riders in the primary remap ramp (palette 245-254). The `ride.ratings.calculate` hook exposure is still to do.
+- **Pollution and noise**: machine prototypes take `pollution` (added to `PollutionLayer` every working tick at the
+  footprint centre) and `noise`. The layer is a grid of 8x8-tile cells; every 64 ticks each cell gives a sixteenth to
+  each neighbour (lost off the map) and loses a thirty-second, at least one unit, so it always drains. It is saved and
+  hashed sparsely (non-zero cells) inside the pools chunk.
+- **Guest appreciation (first part)**: `Factory::assessGuestSurroundings` runs where a walking guest assesses their
+  surroundings, before upstream's checks. Pollution in the guest's cell >= 4000 gives `factorySmell` (-20 happiness,
+  +12 nausea); summed `noise / (1 + distance)` of working machines within three tiles >= 40 gives `factoryNoise` (-10);
+  at least four machines within four tiles, half working, of two kinds gives `factoryImpressive` (+30). No factory
+  thought (and always in parks without a factory) falls through to upstream's scenery, fountain and music thoughts.
 - **Exhibit Paths**: `FOOTPATH_ENTRY_FLAG_IS_EXHIBIT = 1<<5`, JSON `"isExhibit": true`; ~60% bias in
   `CalculateNextDestination`, no dead-end culling; guests marked `touredFactory`.
 - **Guest appreciation**: `GuestAssessSurroundings` counts machines, working, pollution and noise via

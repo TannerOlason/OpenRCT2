@@ -14,6 +14,7 @@
 #include "FactoryPool.hpp"
 #include "FactoryRecords.h"
 #include "Ore.h"
+#include "Pollution.h"
 #include "RideRatingsFactory.h"
 
 #include <cstdint>
@@ -45,6 +46,7 @@ namespace OpenRCT2::Factory
         Pool<FluidNetworkRecord> fluidNetworks;
         // Factory proximity totals of rides part-way through a rating calculation, sorted by ride id.
         std::vector<RideProximityEntry> rideProximity;
+        PollutionLayer pollution;
         OreLayer ore; // saved in its own chunk (0x42); its hash joins the sync checksum
 
         // Set when poles, generators or consumers change; networks are rebuilt by BFS on the next tick.
@@ -85,6 +87,7 @@ namespace OpenRCT2::Factory
             v(fluidDirtyByte);
             fluidDirty = fluidDirtyByte != 0;
             v.vec(rideProximity, VisitElement{});
+            pollution.visit(v);
         }
     };
 

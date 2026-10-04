@@ -11,6 +11,8 @@
         "machineKind": "boiler",
         "energy": "burner",
         "fluidRate": 6,
+        "pollution": 30,
+        "noise": 20,
         "inputFluid": "factory-tour.factory_prototype.water",
         "outputFluid": "factory-tour.factory_prototype.steam",
         "fluidBoxes": [

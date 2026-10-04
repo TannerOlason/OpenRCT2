@@ -3925,3 +3925,10 @@ STR_20528   :Next network
 STR_20529   :Show power networks
 STR_20530   :Factory Tour
 STR_20531   :Visitors ride a slow tram past working machinery; the busier and more varied the factory along the track, the more exciting the tour
+STR_20532   :“This factory is fascinating!”
+STR_20533   :“Something smells awful around here”
+STR_20534   :“It’s so noisy here!”
+STR_20535   :“I could watch these machines all day”
+STR_20536   :“I wonder where they make these”
+STR_20537   :“It’s sold out!”
+STR_20538   :“That machinery looks dangerous”

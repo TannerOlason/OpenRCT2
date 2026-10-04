@@ -11,6 +11,8 @@
         "machineKind": "engine",
         "energy": "burner",
         "powerOutput": 200,
+        "pollution": 30,
+        "noise": 30,
         "inputSlots": 0,
         "outputSlots": 0,
         "price": 120,

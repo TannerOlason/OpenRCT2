@@ -54,6 +54,7 @@
 #include "../ui/WindowManager.h"
 #include "../util/Util.h"
 #include "../windows/Intent.h"
+#include "../factory/GuestFactory.h" // FACTORY-TOUR
 #include "../world/Footpath.h"
 #include "../world/Location.hpp"
 #include "../world/Map.h"
@@ -430,6 +431,14 @@ namespace OpenRCT2
         { PeepActionType::walking, PEEP_THOUGHT_ACTION_NO_FLAGS },
         { PeepActionType::joy, PEEP_THOUGHT_ACTION_NO_FLAGS },
         { PeepActionType::walking, PEEP_THOUGHT_ACTION_FLAG_RIDE },
+        // FACTORY-TOUR: 174-180
+        { PeepActionType::wow, PEEP_THOUGHT_ACTION_NO_FLAGS },
+        { PeepActionType::disgust, PEEP_THOUGHT_ACTION_NO_FLAGS },
+        { PeepActionType::shakeHead, PEEP_THOUGHT_ACTION_NO_FLAGS },
+        { PeepActionType::walking, PEEP_THOUGHT_ACTION_NO_FLAGS },
+        { PeepActionType::walking, PEEP_THOUGHT_ACTION_NO_FLAGS },
+        { PeepActionType::shakeHead, PEEP_THOUGHT_ACTION_NO_FLAGS },
+        { PeepActionType::shakeHead, PEEP_THOUGHT_ACTION_NO_FLAGS },
     };
 
     // These arrays contain the base minimum and maximum nausea ratings for peeps, based on their nausea tolerance level.
@@ -902,7 +911,17 @@ namespace OpenRCT2
             if (surroundingsThoughtTimeout >= 18)
             {
                 surroundingsThoughtTimeout = 0;
-                if (x != kLocationNull)
+                // FACTORY-TOUR: a factory nearby speaks first (always nothing in parks without one)
+                const auto factoryVerdict = x != kLocationNull
+                    ? Factory::assessGuestSurroundings(getGameState(), { x & 0xFFE0, y & 0xFFE0, z })
+                    : Factory::GuestFactoryVerdict{ PeepThoughtType::none };
+                if (factoryVerdict.hasThought)
+                {
+                    insertNewThought(factoryVerdict.thought);
+                    happinessTarget = std::clamp<int32_t>(happinessTarget + factoryVerdict.happiness, 0, kPeepMaxHappiness);
+                    nauseaTarget = std::min<int32_t>(255, nauseaTarget + factoryVerdict.nausea);
+                }
+                else if (x != kLocationNull)
                 {
                     PeepThoughtType thought_type = GuestAssessSurroundings(x & 0xFFE0, y & 0xFFE0, z);
 

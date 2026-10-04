@@ -167,6 +167,8 @@ namespace OpenRCT2::Factory
         uint8_t frames = 1;            // working animation frames per direction
         uint8_t rotations = 4;         // 1 or 4
         uint8_t size = 1;              // square footprint, size x size tiles from the origin (minimum) corner
+        uint16_t pollution = 0;        // added to the pollution layer every working tick
+        uint8_t noise = 0;             // loudness while working, heard by guests within a few tiles
         std::vector<FluidBoxProperties> fluidBoxes;
         PrototypeRef inputFluid;  // boilers and steam engines: what the input box must hold
         PrototypeRef outputFluid; // pumps and boilers: what the output box receives

@@ -178,6 +178,15 @@ namespace OpenRCT2
         excitedDeprecated = 172,  // "I'm so excited - It's an Intamin ride!"
         hereWeAre = 173,          // "...and here we are on X!"
 
+        // FACTORY-TOUR: fork thoughts (174-180, reserved in CONTEXT.md)
+        factoryImpressive = 174, // "This factory is fascinating!"
+        factorySmell = 175,      // "Something smells awful around here"
+        factoryNoise = 176,      // "It's so noisy here!"
+        factoryWatching = 177,   // "I could watch these machines all day"
+        factoryMadeHere = 178,   // "I wonder where they make these"
+        soldOut = 179,           // "It's sold out!"
+        factoryDanger = 180,     // "That machinery looks dangerous"
+
         none = 255
     };
 

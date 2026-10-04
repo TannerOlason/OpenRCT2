@@ -11,6 +11,7 @@
         "machineKind": "pump",
         "energy": "none",
         "fluidRate": 120,
+        "noise": 10,
         "outputFluid": "factory-tour.factory_prototype.water",
         "fluidBoxes": [
             {
