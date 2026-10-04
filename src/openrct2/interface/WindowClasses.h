@@ -99,6 +99,7 @@ namespace OpenRCT2
         editorStatusLine = 141,
         // FACTORY-TOUR: fork windows take 142-219
         factoryBuild = 142,
+        factoryInfo = 143,
 
         // Only used for colour schemes
         staff = 220,

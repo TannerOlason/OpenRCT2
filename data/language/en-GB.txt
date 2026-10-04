@@ -3885,3 +3885,18 @@ STR_20488   :Factory element not found
 STR_20489   :Factory machinery in the way
 STR_20490   :Rotate factory object
 STR_20491   :Show ore deposits
+STR_20492   :Recipe:
+STR_20493   :No recipe
+STR_20494   :Fuel
+STR_20495   :Inputs
+STR_20496   :Outputs
+STR_20497   :Contents
+STR_20498   :Idle
+STR_20499   :Working
+STR_20500   :Waiting for input
+STR_20501   :Output full
+STR_20502   :Out of fuel
+STR_20503   :No power
+STR_20504   :No ore in range
+STR_20505   :No recipe set
+STR_20506   :Select the recipe this machine makes

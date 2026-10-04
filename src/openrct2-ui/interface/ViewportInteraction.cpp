@@ -95,7 +95,8 @@ namespace OpenRCT2::Ui
 
         info = GetMapCoordinatesFromPos(
             screenCoords,
-            { ViewportInteractionItem::entity, ViewportInteractionItem::ride, ViewportInteractionItem::parkEntrance });
+            { ViewportInteractionItem::entity, ViewportInteractionItem::ride, ViewportInteractionItem::parkEntrance,
+              ViewportInteractionItem::factory /* FACTORY-TOUR */ });
         auto tileElement = info.interactionType != ViewportInteractionItem::entity ? info.Element : nullptr;
         // Only valid when info.interactionType == ViewportInteractionItem::entity, but can't assign nullptr without compiler
         // complaining
@@ -258,6 +259,18 @@ namespace OpenRCT2::Ui
             case ViewportInteractionItem::parkEntrance:
                 ContextOpenWindow(WindowClass::parkInformation);
                 return true;
+            // FACTORY-TOUR: machines and chests open their info window
+            case ViewportInteractionItem::factory:
+            {
+                auto* factoryElement = info.Element != nullptr ? info.Element->asFactory() : nullptr;
+                if (factoryElement == nullptr)
+                    return false;
+                const auto subtype = factoryElement->getSubtype();
+                if (subtype != FactoryElementSubtype::machine && subtype != FactoryElementSubtype::container)
+                    return false;
+                FactoryInfoOpen(CoordsXYZ{ info.Loc.x, info.Loc.y, factoryElement->getBaseZ() });
+                return true;
+            }
             default:
                 return false;
         }

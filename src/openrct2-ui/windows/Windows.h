@@ -18,6 +18,8 @@
 #include <optional>
 #include <string_view>
 
+struct CoordsXYZ; // FACTORY-TOUR
+
 struct ScreenCoordsXY;
 struct StringWithArgs;
 struct RideSelection;
@@ -122,6 +124,7 @@ namespace OpenRCT2::Ui::Windows
     // FACTORY-TOUR: factory build window (windows/factory/FactoryBuild.cpp)
     WindowBase* FactoryBuildOpen();
     void ToggleFactoryBuildWindow();
+    WindowBase* FactoryInfoOpen(const CoordsXYZ& loc);
 
     // Footpath
     WindowBase* FootpathOpen();
