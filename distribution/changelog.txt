@@ -1,10 +1,10 @@
 0.5.6 (in development)
 ------------------------------------------------------------------------
 - Feature: [#16014] Land surfaces and edges can now be recoloured.
-- Feature: [fork#1] First factory slice: belts, inserters and chests can be built from a new toolbar window; items move along belts and inserters carry them between belts and chests.
 - Feature: [#26894] Added 18 additional colours, including 5 from the base version of RCT1 (which were removed in later versions).
 - Feature: [#27153] [Plugin] Add `guestsEntertained` to `Entertainer` interface.
 - Feature: [#27184] [Plugin] Double limit of miscellaneous entities (e.g. crash particles, steam plumes and balloons) to 6400.
+- Feature: [fork#1] First factory slice: belts, inserters and chests can be built from a new toolbar window; items move along belts and inserters carry them between belts and chests.
 - Feature: [objects#447] Track designer grid can now be used outside the Track Designer.
 - Improved: [#21400] The selector for setting staff patrol areas is now drawn on the water as well as on the surface under water.
 - Improved: [#22933] You can now toggle between long and short base flat-to-steep pieces if the ride has both available.
@@ -16,7 +16,7 @@
 - Fix: [#1514] Wrong capitalisation for strings in the Guest List window.
 - Fix: [#12516] Sprites past 65,536 pixels are drawn in the wrong place by the software renderer, most visibly in long scenario lists.
 - Fix: [#15423] Crash when a guest or handyman uses a bin whose path addition object is not loaded.
-- Fix: [#17409] When reading system settings, non-US dollar currencies are not recognised correctly. 
+- Fix: [#17409] When reading system settings, non-US dollar currencies are not recognised correctly.
 - Fix: [#18151] Park value and company value are out of date after loading a save.
 - Fix: [#19754, #27109] Some rides in RCT1 saves have a wrong number of cars per train.
 - Fix: [#19755, #21320] RCT1 allows more cars per train on some rides than OpenRCT2.
@@ -2916,3 +2916,4 @@ This is the first fully implemented version of OpenRCT2. RCT2.EXE is no longer r
 - Feature: The ‘have fun’ objective can now be selected in the scenario editor.
 - Feature: Twitch integration.
 - Fix: Litter bins now get full and require emptying by handymen.
+
