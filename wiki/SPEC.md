@@ -281,7 +281,9 @@ Done so far (`factory/Alerts.cpp`, `ProductionStats` history, `Paint.Factory.cpp
 alerts as blank news items located at the machine (`AlertState` in the pools chunk, version 12), the pollution
 overlay as a second mode (`Factory::gOverlay`) of `ViewportFlag::factoryOre`, and production/consumption totals plus
 a ring of `kProductionSamples` samples per item (`advanceSample` every `kProductionSampleTicks`; idle items drop
-out) shown by the Factory production window.
+out) shown by the Factory production window. Audio and smoke never touch state: `Factory::updateMachineSounds`
+(`FactoryAudio.cpp`) plays `mechanicFix` at noisy working machines through `Audio::Play3D`, and `PaintFactory`
+draws two staggered `SPR_STEAM_PARTICLE` puffs above working machines whose prototype has `smoke`.
 
 Freight: `RIDE_TYPE_1F` → `freightRailway` cloned from Miniature Railway with a `CarEntry` carrying
 `InvSlot[]`; loader and unloader Factory Elements adjacent to stations; vehicle hook on station arrival in

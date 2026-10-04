@@ -245,6 +245,23 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
             {
                 PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);
             }
+            // Smoke from the footprint's centre tile while working: two staggered puffs rising like steam particles.
+            if (factoryElement.hasRecord() && !factoryElement.isGhost() && proto->getMachine().smoke
+                && factoryElement.getFootprintIndex() == (size / 2) * size + size / 2)
+            {
+                auto* record = state.machines.get(factoryElement.getRecordId());
+                if (record != nullptr && record->isWorking())
+                {
+                    const uint32_t ticks = getGameState().currentTicks + factoryElement.getRecordId() * 17;
+                    for (uint32_t puff = 0; puff < 2; puff++)
+                    {
+                        const uint32_t age = (ticks + puff * 28) % 56;
+                        const int32_t z = factoryElement.getClearanceZ() + static_cast<int32_t>(age / 3);
+                        const auto smoke = ImageId(SPR_STEAM_PARTICLE + age / 4);
+                        PaintAddImageAsParent(session, smoke, { 16, 16, z }, { { 16, 16, z }, { 1, 1, 0 } });
+                    }
+                }
+            }
             break;
         }
         case FactoryElementSubtype::pole:

@@ -19,6 +19,7 @@
 #include "drawing/Palette.h"
 #include "entity/EntityTweener.h"
 #include "entity/PatrolArea.h"
+#include "factory/FactoryAudio.h" // FACTORY-TOUR
 #include "factory/FactoryState.h" // FACTORY-TOUR
 #include "interface/Screenshot.h"
 #include "platform/Platform.h"
@@ -339,6 +340,7 @@ namespace OpenRCT2
 
         MapAnimations::InvalidateAndUpdateAll();
         VehicleSoundsUpdate();
+        Factory::updateMachineSounds(gameState); // FACTORY-TOUR: audio only
         PeepUpdateCrowdNoise();
         Weather::updateSound();
 

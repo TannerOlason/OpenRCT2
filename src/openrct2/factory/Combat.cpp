@@ -12,6 +12,7 @@
 #include "Combat.h"
 
 #include "../GameState.h"
+#include "../audio/Audio.h"
 #include "../ride/Ride.h"
 #include "../ride/RideManager.hpp"
 #include "../world/Map.h"
@@ -332,6 +333,7 @@ namespace OpenRCT2::Factory
             return;
         machine.fuelEnergy--;
         machine.progress = props.turretCooldownTicks;
+        Audio::Play3D(Audio::SoundId::click3, { cx, cy, machine.z * kCoordsZStep });
         invokeTurretFireHook(machine, best);
         applyDamage(gameState, DamageTarget::threat, best, props.turretDamage, 1);
     }

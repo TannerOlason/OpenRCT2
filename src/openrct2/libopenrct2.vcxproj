@@ -738,6 +738,7 @@
     <ClInclude Include="world\tile_element\FactoryElement.h" />
     <ClInclude Include="factory\Alerts.h" />
     <ClInclude Include="factory\Belts.h" />
+    <ClInclude Include="factory\FactoryAudio.h" />
     <ClInclude Include="factory\Combat.h" />
     <ClInclude Include="factory\FactoryBench.h" />
     <ClInclude Include="factory\FactoryTourRTD.h" />
@@ -1354,6 +1355,7 @@
     <ClCompile Include="world\tile_element\FactoryElement.cpp" />
     <ClCompile Include="factory\Alerts.cpp" />
     <ClCompile Include="factory\Belts.cpp" />
+    <ClCompile Include="factory\FactoryAudio.cpp" />
     <ClCompile Include="factory\Combat.cpp" />
     <ClCompile Include="factory\FactoryBench.cpp" />
     <ClCompile Include="factory\GuestFactory.cpp" />

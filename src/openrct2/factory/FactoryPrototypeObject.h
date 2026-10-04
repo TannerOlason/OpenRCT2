@@ -180,6 +180,7 @@ namespace OpenRCT2::Factory
         uint16_t pollution = 0;        // added to the pollution layer every working tick
         uint8_t noise = 0;             // loudness while working, heard by guests within a few tiles
         bool photogenic = true;        // guests stop to watch it while it works
+        bool smoke = false;            // puffs of smoke while working (default: burner machines)
         std::vector<FluidBoxProperties> fluidBoxes;
         PrototypeRef inputFluid;  // boilers and steam engines: what the input box must hold
         PrototypeRef outputFluid; // pumps and boilers: what the output box receives
