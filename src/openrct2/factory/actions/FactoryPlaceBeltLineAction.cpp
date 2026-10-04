@@ -21,6 +21,7 @@
 #include "../FactoryTopology.h"
 #include "FactoryPlaceAction.h"
 
+#include <algorithm>
 #include <cstdlib>
 
 namespace OpenRCT2::GameActions
@@ -77,12 +78,13 @@ namespace OpenRCT2::GameActions
         visitor.Visit("endY", _end.y);
         visitor.Visit("endZ", _end.z);
         visitor.Visit("direction", _direction);
-        visitor.Visit("entry", _entry);
+        visitor.Visit("object", _entry);
     }
 
     uint16_t FactoryPlaceBeltLineAction::GetActionFlags() const
     {
-        return GameAction::GetActionFlags() | Flags::AllowWhilePaused;
+        // Not AllowWhilePaused: nested per-tile actions skip the pause check, so the run must honour it.
+        return GameAction::GetActionFlags();
     }
 
     void FactoryPlaceBeltLineAction::Serialise(DataSerialiser& stream)

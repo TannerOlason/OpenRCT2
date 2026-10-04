@@ -650,14 +650,18 @@ TEST_F(FactoryTopologyTests, UndergroundBeltPairsAndPassesUnderACrossingBelt)
     EXPECT_EQ(tunnel->tiles.size(), 2u);
     EXPECT_EQ(tunnel->extraLength, 2 * kBeltUnitsPerTile); // tiles 2 and 3 are spanned
     EXPECT_EQ(segmentLength(*tunnel), 4 * kBeltUnitsPerTile);
+    const RecordId tunnelId = exit->getRecordId();
     Place(kRowX0 + 5, east, _belt);
+    // Placing allocates a segment, which may move the pool; re-fetch every record by id.
+    tunnel = state.beltSegments.get(tunnelId);
+    ASSERT_NE(tunnel, nullptr);
 
     auto* first = state.beltSegments.get(findBeltElement(Tile(kRowX0))->getRecordId());
     auto* last = state.beltSegments.get(findBeltElement(Tile(kRowX0 + 5))->getRecordId());
     ASSERT_NE(first, nullptr);
     ASSERT_NE(last, nullptr);
     EXPECT_EQ(first->getNextKind(), BeltLinkKind::segment);
-    EXPECT_EQ(first->next, exit->getRecordId());
+    EXPECT_EQ(first->next, tunnelId);
     EXPECT_EQ(tunnel->getNextKind(), BeltLinkKind::segment);
     EXPECT_EQ(tunnel->next, findBeltElement(Tile(kRowX0 + 5))->getRecordId());
 

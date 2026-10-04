@@ -10,6 +10,7 @@
 // FACTORY-TOUR: fork-owned file. The factory build window: a palette of placeable prototypes, a rotate
 // button, a ghost preview under the cursor and click-to-place through FactoryPlaceAction.
 
+#include <algorithm>
 #include <openrct2-ui/interface/ViewportInteraction.h>
 #include <openrct2-ui/interface/Widget.h>
 #include <openrct2-ui/interface/Window.h>
@@ -109,6 +110,7 @@ namespace OpenRCT2::Ui::Windows
         void onClose() override
         {
             RemoveGhost();
+            RemoveGhostLine();
             gMapSelectFlags.unset(MapSelectFlag::enable);
             auto* windowMgr = GetWindowManager();
             windowMgr->InvalidateByClass(WindowClass::topToolbar);
@@ -151,14 +153,7 @@ namespace OpenRCT2::Ui::Windows
                 return;
             if (SelectedIsBelt())
             {
-                auto tile = CursorTile(screenCoords);
-                if (!tile.has_value())
-                    return;
-                RemoveGhost();
-                _dragging = true;
-                _dragStart = *tile;
-                _dragEnd = *tile;
-                UpdateGhostLine();
+                BeginDrag(screenCoords);
                 return;
             }
             PlaceAtCursor(screenCoords);
@@ -171,11 +166,20 @@ namespace OpenRCT2::Ui::Windows
             if (_dragging)
             {
                 auto tile = CursorTile(screenCoords);
-                if (!tile.has_value() || *tile == _dragEnd)
+                if (!tile.has_value())
                     return;
                 // Keep the run on the start tile's level so every tile shares one z.
-                _dragEnd = CoordsXYZ{ CoordsXY(*tile), _dragStart.z };
+                const CoordsXYZ end{ CoordsXY(*tile), _dragStart.z };
+                if (end == _dragEnd)
+                    return;
+                _dragEnd = end;
                 UpdateGhostLine();
+                return;
+            }
+            if (SelectedIsBelt())
+            {
+                // The press landed off the map; start the run where the drag first reaches it.
+                BeginDrag(screenCoords);
                 return;
             }
             PlaceAtCursor(screenCoords);
@@ -416,20 +420,43 @@ namespace OpenRCT2::Ui::Windows
                      GameActions::CommandFlag::noSpend };
         }
 
+        void BeginDrag(const ScreenCoordsXY& screenCoords)
+        {
+            auto tile = CursorTile(screenCoords);
+            if (!tile.has_value())
+                return;
+            RemoveGhost();
+            _dragging = true;
+            _dragStart = *tile;
+            _dragEnd = *tile;
+            UpdateGhostLine();
+        }
+
+        void RemoveGhostAt(const CoordsXYZ& loc)
+        {
+            auto action = GameActions::FactoryRemoveAction(loc);
+            action.SetFlags(GhostFlags());
+            GameActions::Execute(&action, getGameState());
+        }
+
         void RemoveGhostLine()
         {
             for (const auto& loc : _ghostLine)
-            {
-                auto action = GameActions::FactoryRemoveAction(loc);
-                action.SetFlags(GhostFlags());
-                GameActions::Execute(&action, getGameState());
-            }
+                RemoveGhostAt(loc);
             _ghostLine.clear();
+        }
+
+        void SetCost(money64 cost)
+        {
+            if (cost != _cost)
+            {
+                _cost = cost;
+                invalidate();
+            }
         }
 
         void UpdateGhostLine()
         {
-            RemoveGhostLine();
             Direction dir;
             const auto tiles = GameActions::FactoryPlaceBeltLineAction::lineTiles(
                 _dragStart, _dragEnd, PlacementDirection(), dir);
@@ -437,26 +464,36 @@ namespace OpenRCT2::Ui::Windows
             gMapSelectType = MapSelectType::full;
             setMapSelectRange(MapRange{ CoordsXY(tiles.front()), CoordsXY(tiles.back()) });
 
+            // The run always starts at _dragStart, so the old and new runs share a prefix. Keep ghosts the new
+            // run still covers facing the same way; the ghost run below skips occupied tiles and fills the rest.
+            std::vector<CoordsXYZ> kept;
+            for (const auto& loc : _ghostLine)
+            {
+                auto* element = findFactoryElement(loc, true);
+                if (element != nullptr && element->isGhost() && element->getDirection() == dir
+                    && std::find(tiles.begin(), tiles.end(), loc) != tiles.end())
+                    kept.push_back(loc);
+                else
+                    RemoveGhostAt(loc);
+            }
+            _ghostLine = std::move(kept);
+
             // Ghosts only where the real run would build, so the preview matches the result tile for tile.
             auto action = GameActions::FactoryPlaceBeltLineAction(_dragStart, _dragEnd, PlacementDirection(), _selected);
             action.SetFlags(GhostFlags());
-            auto res = GameActions::Execute(&action, getGameState());
-            money64 cost = kMoney64Undefined;
-            if (res.error == GameActions::Status::ok)
+            GameActions::Execute(&action, getGameState());
+            for (const auto& tile : tiles)
             {
-                cost = res.cost;
-                for (const auto& tile : tiles)
-                {
-                    auto* element = findFactoryElement(tile, true);
-                    if (element != nullptr && element->isGhost())
-                        _ghostLine.push_back(tile);
-                }
+                auto* element = findFactoryElement(tile, true);
+                if (element != nullptr && element->isGhost()
+                    && std::find(_ghostLine.begin(), _ghostLine.end(), tile) == _ghostLine.end())
+                    _ghostLine.push_back(tile);
             }
-            if (cost != _cost)
-            {
-                _cost = cost;
-                invalidate();
-            }
+
+            // Ghosts never block construction, so querying the real run prices every tile, kept or new.
+            auto query = GameActions::FactoryPlaceBeltLineAction(_dragStart, _dragEnd, PlacementDirection(), _selected);
+            auto res = GameActions::Query(&query, getGameState());
+            SetCost(res.error == GameActions::Status::ok ? res.cost : kMoney64Undefined);
         }
 
         void PlaceLine()
@@ -471,6 +508,8 @@ namespace OpenRCT2::Ui::Windows
                 }
             });
             GameActions::Execute(&action, getGameState());
+            // The run's price no longer describes anything under the cursor.
+            SetCost(kMoney64Undefined);
         }
 
         void PlaceAtCursor(const ScreenCoordsXY& screenCoords)

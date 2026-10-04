@@ -268,4 +268,12 @@ TEST_F(FactoryActionTests, BeltLinePlacesARunAndSkipsOccupiedTiles)
     EXPECT_EQ(tiles.size(), 5u);
     EXPECT_EQ(tiles.front(), Tile(kX0 + 5));
     EXPECT_EQ(tiles.back(), Tile(kX0 + 1));
+
+    // Like a single belt, a run cannot be built while the game is paused.
+    FactoryPlaceBeltLineAction paused(Tile(kX0 + 8), Tile(kX0 + 10), 0, _belt);
+    gGamePaused = 1;
+    auto pausedRes = Query(&paused, getGameState()); // top level: nested runs skip the pause check
+    gGamePaused = 0;
+    EXPECT_EQ(pausedRes.error, Status::gamePaused);
+    EXPECT_EQ(findFactoryElement(Tile(kX0 + 8)), nullptr);
 }
