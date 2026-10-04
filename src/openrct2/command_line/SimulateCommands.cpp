@@ -72,7 +72,8 @@ namespace OpenRCT2
             {
                 gameStateUpdateLogic();
             }
-            Console::WriteLine("Completed: %s", Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */.toString().c_str());
+            Console::WriteLine(
+                "Completed: %s", Factory::computeSyncChecksum(getGameState()) /* FACTORY-TOUR */.toString().c_str());
         }
         else
         {

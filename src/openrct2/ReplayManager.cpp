@@ -20,7 +20,6 @@
 #include "actions/GameActionRunner.h"
 #include "config/Config.h"
 #include "core/Compression.h"
-#include "factory/SyncChecksum.h" // FACTORY-TOUR
 #include "core/DataSerialiser.h"
 #include "core/EnumUtils.hpp"
 #include "core/FileStream.h"
@@ -29,6 +28,7 @@
 #include "core/Path.hpp"
 #include "entity/EntityRegistry.h"
 #include "entity/EntityTweener.h"
+#include "factory/SyncChecksum.h" // FACTORY-TOUR
 #include "interface/WindowTypes.h"
 #include "localisation/Formatting.h"
 #include "localisation/StringIds.h"

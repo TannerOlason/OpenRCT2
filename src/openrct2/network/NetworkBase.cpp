@@ -26,8 +26,8 @@
 #include "../core/Json.hpp"
 #include "../drawing/Drawing.Screen.h"
 #include "../entity/EntityRegistry.h"
-#include "../factory/SyncChecksum.h" // FACTORY-TOUR
 #include "../entity/EntityTweener.h"
+#include "../factory/SyncChecksum.h" // FACTORY-TOUR
 #include "../localisation/Formatter.h"
 #include "../localisation/Formatting.h"
 #include "../localisation/LocalisationService.h"
