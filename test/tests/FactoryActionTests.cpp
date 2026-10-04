@@ -25,6 +25,7 @@
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/actions/FactoryActionRegistry.h>
 #include <openrct2/factory/actions/FactoryPlaceAction.h>
+#include <openrct2/factory/actions/FactoryPlaceBeltLineAction.h>
 #include <openrct2/factory/actions/FactoryRemoveAction.h>
 #include <openrct2/factory/actions/FactoryRotateAction.h>
 #include <openrct2/network/NetworkAction.h>
@@ -215,4 +216,56 @@ TEST_F(FactoryActionTests, SlopedOrOffMapTilesAreRefused)
 
     FactoryPlaceAction badDirection(Tile(kX0 + 2), 7, _belt);
     EXPECT_EQ(Run(badDirection).error, Status::invalidParameters);
+}
+
+TEST_F(FactoryActionTests, BeltLinePlacesARunAndSkipsOccupiedTiles)
+{
+    auto& state = getGameState().factory;
+    // A chest in the middle of the run is skipped; the belts either side face east along the drag.
+    FactoryPlaceAction chest(Tile(kX0 + 2), 0, _chest);
+    ASSERT_EQ(Run(chest).error, Status::ok);
+
+    FactoryPlaceBeltLineAction line(Tile(kX0), Tile(kX0 + 4), 0, _belt);
+    auto ghost = Run(line, { CommandFlag::ghost, CommandFlag::allowDuringPaused, CommandFlag::noSpend });
+    ASSERT_EQ(ghost.error, Status::ok);
+    EXPECT_EQ(ghost.cost, 4 * 20);
+    EXPECT_EQ(state.beltSegments.aliveCount(), 0u);
+    for (int32_t i = 0; i < 5; i++)
+    {
+        auto* element = findFactoryElement(Tile(kX0 + i), true);
+        ASSERT_NE(element, nullptr);
+        EXPECT_EQ(element->isGhost(), i != 2);
+    }
+    for (int32_t i = 0; i < 5; i++)
+    {
+        if (auto* element = findFactoryElement(Tile(kX0 + i), true); element != nullptr && element->isGhost())
+            removeElement(getGameState(), *element, Tile(kX0 + i));
+    }
+
+    auto res = Run(line);
+    ASSERT_EQ(res.error, Status::ok);
+    EXPECT_EQ(res.cost, 4 * 20);
+    for (int32_t i : { 0, 1, 3, 4 })
+    {
+        auto* belt = findBeltElement(Tile(kX0 + i));
+        ASSERT_NE(belt, nullptr) << i;
+        EXPECT_EQ(belt->getDirection(), 2);
+    }
+    EXPECT_EQ(state.beltSegments.aliveCount(), 2u);
+
+    // Dragging the same run again changes nothing and costs nothing.
+    auto again = Run(line);
+    EXPECT_EQ(again.error, Status::ok);
+    EXPECT_EQ(again.cost, 0);
+
+    // A single tile uses the fallback direction; a westward drag faces west.
+    FactoryPlaceBeltLineAction single(Tile(kX0 + 6), Tile(kX0 + 6), 3, _belt);
+    ASSERT_EQ(Run(single).error, Status::ok);
+    EXPECT_EQ(findBeltElement(Tile(kX0 + 6))->getDirection(), 3);
+    Direction dir;
+    auto tiles = FactoryPlaceBeltLineAction::lineTiles(Tile(kX0 + 5), Tile(kX0 + 1), 0, dir);
+    EXPECT_EQ(dir, 0);
+    EXPECT_EQ(tiles.size(), 5u);
+    EXPECT_EQ(tiles.front(), Tile(kX0 + 5));
+    EXPECT_EQ(tiles.back(), Tile(kX0 + 1));
 }

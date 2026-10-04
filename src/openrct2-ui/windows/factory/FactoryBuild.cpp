@@ -29,6 +29,7 @@
 #include <openrct2/factory/FactoryStringIds.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/actions/FactoryPlaceAction.h>
+#include <openrct2/factory/actions/FactoryPlaceBeltLineAction.h>
 #include <openrct2/factory/actions/FactoryRemoveAction.h>
 #include <openrct2/interface/Viewport.h>
 #include <openrct2/interface/WidgetIndexGlobals.h>
@@ -84,6 +85,12 @@ namespace OpenRCT2::Ui::Windows
         Direction _ghostDirection{};
         ObjectEntryIndex _ghostEntry = kObjectEntryIndexNull;
 
+        // Belt drags: tool down fixes the start, dragging previews a ghost run, tool up builds it.
+        bool _dragging = false;
+        CoordsXYZ _dragStart{};
+        CoordsXYZ _dragEnd{};
+        std::vector<CoordsXYZ> _ghostLine;
+
     public:
         void onOpen() override
         {
@@ -133,7 +140,7 @@ namespace OpenRCT2::Ui::Windows
 
         void onToolUpdate(WidgetIndex widgetIndex, const ScreenCoordsXY& screenCoords) override
         {
-            if (widgetIndex != WIDX_BACKGROUND)
+            if (widgetIndex != WIDX_BACKGROUND || _dragging)
                 return;
             UpdateGhost(screenCoords);
         }
@@ -142,6 +149,18 @@ namespace OpenRCT2::Ui::Windows
         {
             if (widgetIndex != WIDX_BACKGROUND)
                 return;
+            if (SelectedIsBelt())
+            {
+                auto tile = CursorTile(screenCoords);
+                if (!tile.has_value())
+                    return;
+                RemoveGhost();
+                _dragging = true;
+                _dragStart = *tile;
+                _dragEnd = *tile;
+                UpdateGhostLine();
+                return;
+            }
             PlaceAtCursor(screenCoords);
         }
 
@@ -149,17 +168,35 @@ namespace OpenRCT2::Ui::Windows
         {
             if (widgetIndex != WIDX_BACKGROUND)
                 return;
+            if (_dragging)
+            {
+                auto tile = CursorTile(screenCoords);
+                if (!tile.has_value() || *tile == _dragEnd)
+                    return;
+                // Keep the run on the start tile's level so every tile shares one z.
+                _dragEnd = CoordsXYZ{ CoordsXY(*tile), _dragStart.z };
+                UpdateGhostLine();
+                return;
+            }
             PlaceAtCursor(screenCoords);
         }
 
         void onToolUp(WidgetIndex widgetIndex, const ScreenCoordsXY&) override
         {
+            if (_dragging)
+            {
+                _dragging = false;
+                RemoveGhostLine();
+                PlaceLine();
+            }
             _errorOccurred = false;
         }
 
         void onToolAbort(WidgetIndex widgetIndex) override
         {
+            _dragging = false;
             RemoveGhost();
+            RemoveGhostLine();
             gMapSelectFlags.unset(MapSelectFlag::enable);
         }
 
@@ -365,6 +402,75 @@ namespace OpenRCT2::Ui::Windows
                 _cost = cost;
                 invalidate();
             }
+        }
+
+        bool SelectedIsBelt() const
+        {
+            auto* proto = getPrototype(_selected);
+            return proto != nullptr && proto->getKind() == PrototypeKind::belt;
+        }
+
+        static GameActions::CommandFlags GhostFlags()
+        {
+            return { GameActions::CommandFlag::ghost, GameActions::CommandFlag::allowDuringPaused,
+                     GameActions::CommandFlag::noSpend };
+        }
+
+        void RemoveGhostLine()
+        {
+            for (const auto& loc : _ghostLine)
+            {
+                auto action = GameActions::FactoryRemoveAction(loc);
+                action.SetFlags(GhostFlags());
+                GameActions::Execute(&action, getGameState());
+            }
+            _ghostLine.clear();
+        }
+
+        void UpdateGhostLine()
+        {
+            RemoveGhostLine();
+            Direction dir;
+            const auto tiles = GameActions::FactoryPlaceBeltLineAction::lineTiles(
+                _dragStart, _dragEnd, PlacementDirection(), dir);
+            gMapSelectFlags.set(MapSelectFlag::enable);
+            gMapSelectType = MapSelectType::full;
+            setMapSelectRange(MapRange{ CoordsXY(tiles.front()), CoordsXY(tiles.back()) });
+
+            // Ghosts only where the real run would build, so the preview matches the result tile for tile.
+            auto action = GameActions::FactoryPlaceBeltLineAction(_dragStart, _dragEnd, PlacementDirection(), _selected);
+            action.SetFlags(GhostFlags());
+            auto res = GameActions::Execute(&action, getGameState());
+            money64 cost = kMoney64Undefined;
+            if (res.error == GameActions::Status::ok)
+            {
+                cost = res.cost;
+                for (const auto& tile : tiles)
+                {
+                    auto* element = findFactoryElement(tile, true);
+                    if (element != nullptr && element->isGhost())
+                        _ghostLine.push_back(tile);
+                }
+            }
+            if (cost != _cost)
+            {
+                _cost = cost;
+                invalidate();
+            }
+        }
+
+        void PlaceLine()
+        {
+            if (_selected == kObjectEntryIndexNull)
+                return;
+            auto action = GameActions::FactoryPlaceBeltLineAction(_dragStart, _dragEnd, PlacementDirection(), _selected);
+            action.SetCallback([](const GameActions::GameAction*, const GameActions::Result* result) {
+                if (result->error == GameActions::Status::ok && result->cost != 0)
+                {
+                    Audio::Play3D(Audio::SoundId::placeItem, result->position);
+                }
+            });
+            GameActions::Execute(&action, getGameState());
         }
 
         void PlaceAtCursor(const ScreenCoordsXY& screenCoords)

@@ -83,7 +83,7 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
 - [ ] Steam chain (offshore pump, boiler, steam engine) once fluids exist.
 - [ ] Pipes and fluid networks.
 - [~] Underground belts, splitters, lane filters, sideloading. (filters pending)
-- [~] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview. (window done)
+- [~] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview. (window and drag tool done)
 - [ ] `factory-bench` CLI and the 8 ms per tick CI gate.
 
 ### M3 Park intertwine I `[ ]`

@@ -748,6 +748,7 @@
     <ClInclude Include="factory\actions\FactoryRemoveAction.h" />
     <ClInclude Include="factory\actions\FactoryRotateAction.h" />
     <ClInclude Include="factory\actions\FactorySetOreAction.h" />
+    <ClInclude Include="factory\actions\FactoryPlaceBeltLineAction.h" />
     <ClInclude Include="factory\actions\FactorySetRecipeAction.h" />
     <ClInclude Include="factory\FactoryRecords.h" />
     <ClInclude Include="factory\FactorySerialisation.h" />
@@ -1342,6 +1343,7 @@
     <ClCompile Include="factory\actions\FactoryRemoveAction.cpp" />
     <ClCompile Include="factory\actions\FactoryRotateAction.cpp" />
     <ClCompile Include="factory\actions\FactorySetOreAction.cpp" />
+    <ClCompile Include="factory\actions\FactoryPlaceBeltLineAction.cpp" />
     <ClCompile Include="factory\actions\FactorySetRecipeAction.cpp" />
     <ClCompile Include="factory\SyncChecksum.cpp" />
     <ClCompile Include="world\tile_element\EntranceElement.cpp" />

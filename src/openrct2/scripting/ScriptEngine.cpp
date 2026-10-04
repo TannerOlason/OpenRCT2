@@ -1754,6 +1754,7 @@ const static EnumMap<GameCommand> ActionNameToType = {
     // FACTORY-TOUR
     { "factoryplace", GameActions::toGameCommand(GameActions::FactoryCommand::place) },
     { "factoryremove", GameActions::toGameCommand(GameActions::FactoryCommand::remove) },
+    { "factoryplacebeltline", GameActions::toGameCommand(GameActions::FactoryCommand::placeBeltLine) },
     { "factoryrotate", GameActions::toGameCommand(GameActions::FactoryCommand::rotate) },
     { "factorysetrecipe", GameActions::toGameCommand(GameActions::FactoryCommand::setRecipe) },
     { "factorysetore", GameActions::toGameCommand(GameActions::FactoryCommand::setOre) },

@@ -12,6 +12,7 @@
 #include "FactoryActionRegistry.h"
 
 #include "FactoryPlaceAction.h"
+#include "FactoryPlaceBeltLineAction.h"
 #include "FactoryRemoveAction.h"
 #include "FactoryRotateAction.h"
 #include "FactorySetOreAction.h"
@@ -38,6 +39,7 @@ namespace OpenRCT2::GameActions::Factory
     static constexpr std::array kEntries = {
         Make<FactoryPlaceAction>("FactoryPlaceAction", "factoryplace"),
         Make<FactoryRemoveAction>("FactoryRemoveAction", "factoryremove"),
+        Make<FactoryPlaceBeltLineAction>("FactoryPlaceBeltLineAction", "factoryplacebeltline"),
         Make<FactoryRotateAction>("FactoryRotateAction", "factoryrotate"),
         Make<FactorySetRecipeAction>("FactorySetRecipeAction", "factorysetrecipe"),
         Make<FactorySetOreAction>("FactorySetOreAction", "factorysetore"),
