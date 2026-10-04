@@ -285,6 +285,12 @@ out) shown by the Factory production window. Audio and smoke never touch state: 
 (`FactoryAudio.cpp`) plays `mechanicFix` at noisy working machines through `Audio::Play3D`, and `PaintFactory`
 draws two staggered `SPR_STEAM_PARTICLE` puffs above working machines whose prototype has `smoke`.
 
+Blueprints (`factory/Blueprint.cpp`): `captureBlueprint` copies placed pieces in a tile range (one entry per
+piece: multi-tile machines at footprint 0, splitters at their record tile; underground exits last so they pair),
+`serialiseBlueprint`/`parseBlueprint` use `FTBP1;w;h;n;ids...;dx,dy,dz,dir,object,recipe;...` (at most 1000 pieces,
+256 x 256 tiles), and `rotateBlueprint` maps (x, y) to (y, width - size - x) with d -> d + 1.
+`FactoryPlaceBlueprintAction {origin, rotation, blueprint}` (command 7) runs nested place and set-recipe actions.
+
 Freight: `RIDE_TYPE_1F` → `freightRailway` cloned from Miniature Railway with a `CarEntry` carrying
 `InvSlot[]`; loader and unloader Factory Elements adjacent to stations; vehicle hook on station arrival in
 `ride/Vehicle.cpp`. Later: logistic bots as factory records painted per tile group. Also lane filters,

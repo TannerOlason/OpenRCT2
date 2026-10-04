@@ -188,7 +188,10 @@ pollution overlay, machine audio and smoke.
 - [x] Production graphs: production and consumption per item (ingredients, lab packs, fuel, ammunition) with a
   48-sample history (one sample per 1024 ticks, about 20 minutes) in the Factory production window (WindowClass 147):
   per-minute rates and a bar graph of production up and consumption down.
-- [ ] Blueprints and copy/paste.
+- [x] Blueprints and copy/paste: the Blueprints window (WindowClass 148, from the build window) copies the pieces in a
+  dragged area (with assembler recipes) into a portable text blueprint (`FTBP1`, prototypes by identifier), previews
+  it as ghosts at the cursor, rotates it in quarter turns and pastes it with `FactoryPlaceBlueprintAction` (pieces
+  that do not fit are skipped; underground pairs re-form). Export and Import go through the system clipboard.
 - [x] Machine audio and smoke: working machines with `noise` >= 30 clank (one-shot 3D sounds, staggered, at most
   two a tick, from a touch point beside `VehicleSoundsUpdate`); turrets click when they fire; machines with `smoke`
   (default: burner machines) puff steam-particle smoke from their centre tile, drawn in paint only.

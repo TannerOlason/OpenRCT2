@@ -4006,3 +4006,24 @@ STR_20609   :{WINDOW_COLOUR_2}Choose an item on the left
 STR_20610   :{BLACK}{STRING}{WINDOW_COLOUR_2}: made {BLACK}{COMMA32}{WINDOW_COLOUR_2}, used {BLACK}{COMMA32}
 STR_20611   :{WINDOW_COLOUR_2}Peak {COMMA32} per min
 STR_20612   :Production statistics
+STR_20613   :Nothing in the blueprint fits here
+STR_20614   :Blueprints
+STR_20615   :Copy area
+STR_20616   :Drag over factory pieces to copy them
+STR_20617   :Paste
+STR_20618   :Place the copied blueprint; click where its corner goes
+STR_20619   :Rotate
+STR_20620   :Export
+STR_20621   :Copy the blueprint to the clipboard as text
+STR_20622   :Import
+STR_20623   :Read a blueprint from the clipboard
+STR_20624   :{WINDOW_COLOUR_2}Blueprint copied to the clipboard
+STR_20625   :{WINDOW_COLOUR_2}Blueprint read from the clipboard
+STR_20626   :{WINDOW_COLOUR_2}The clipboard holds no blueprint
+STR_20627   :{WINDOW_COLOUR_2}No factory pieces in that area
+STR_20628   :{WINDOW_COLOUR_2}Blueprint: {BLACK}{COMMA32}{WINDOW_COLOUR_2} pieces, {BLACK}{COMMA32} x {COMMA32}{WINDOW_COLOUR_2} tiles
+STR_20629   :{WINDOW_COLOUR_2}No blueprint yet
+STR_20630   :{WINDOW_COLOUR_2}Cost: {BLACK}{CURRENCY}
+STR_20631   :{WINDOW_COLOUR_2}Drag over an area to copy it
+STR_20632   :{WINDOW_COLOUR_2}Click to place, Rotate to turn
+STR_20633   :Blueprints: copy and paste factory areas

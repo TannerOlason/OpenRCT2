@@ -189,6 +189,7 @@
     <ClCompile Include="windows\Error.cpp" />
     <ClCompile Include="windows\Finances.cpp" />
     <ClCompile Include="windows\Footpath.cpp" />
+    <ClCompile Include="windows\factory\FactoryBlueprint.cpp" />
     <ClCompile Include="windows\factory\FactoryBuild.cpp" />
     <ClCompile Include="windows\factory\FactoryInfo.cpp" />
     <ClCompile Include="windows\factory\FactoryOptions.cpp" />

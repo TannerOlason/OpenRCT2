@@ -431,6 +431,7 @@ declare global {
         queryAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorymarketsell", args: FactoryMarketSellArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorydamage", args: FactoryDamageArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factoryplaceblueprint", args: FactoryPlaceBlueprintArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorythreatspawn", args: FactoryThreatSpawnArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorythreatdespawn", args: FactoryThreatDespawnArgs, callback?: (result: GameActionResult) => void): void;
 
@@ -535,6 +536,7 @@ declare global {
         executeAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorymarketsell", args: FactoryMarketSellArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorydamage", args: FactoryDamageArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factoryplaceblueprint", args: FactoryPlaceBlueprintArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorythreatspawn", args: FactoryThreatSpawnArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorythreatdespawn", args: FactoryThreatDespawnArgs, callback?: (result: GameActionResult) => void): void;
 
@@ -828,6 +830,7 @@ declare global {
         "factorysetparkoption" |
         "factorymarketsell" |
         "factorydamage" |
+        "factoryplaceblueprint" |
         "factorythreatspawn" |
         "factorythreatdespawn";
 
@@ -1759,6 +1762,21 @@ declare global {
         amount: number;
         /** Free for scripts; reported by the factory.damage hook. */
         damageType: number;
+    }
+
+    interface FactoryPlaceBlueprintArgs extends GameActionArgs {
+        /** The blueprint's minimum corner, in map units. */
+        x: number;
+        y: number;
+        z: number;
+        /** Quarter turns; each turns direction d into d + 1. */
+        rotation: number;
+        /**
+         * Blueprint text from the Blueprints window's Export:
+         * "FTBP1;width;height;n;id_0;...;id_n-1;dx,dy,dz,direction,object,recipe;..." (object and recipe index the
+         * identifier list, recipe -1 for none). Pieces that do not fit are skipped.
+         */
+        blueprint: string;
     }
 
     interface FactoryThreatSpawnArgs extends GameActionArgs {

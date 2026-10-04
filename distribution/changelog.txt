@@ -8,6 +8,7 @@
 - Feature: [fork#1] Underground belts tunnel under other buildings, splitters alternate items between two output belts, and a belt ending at the side of another belt sideloads onto its near lane.
 - Feature: [fork#1] Dragging with a belt selected in the factory window builds a straight run of belts.
 - Feature: [fork#1] Factory alerts, a pollution overlay and production graphs.
+- Feature: [fork#1] Factory blueprints: copy an area, rotate it, paste it, and share it as text.
 - Feature: [fork#1] Noisy machines clank, turrets click and burner machines smoke.
 - Feature: [fork#1] Steel, engineering kits, fast inserters and factory defence technologies; a modding guide with an example turret mod.
 - Feature: [fork#1] Combat stub: machines have health, threats attack them and turrets fight back; plugins can spawn threats and deal damage.

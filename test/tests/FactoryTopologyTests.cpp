@@ -34,6 +34,7 @@
 #include <openrct2/entity/Guest.h>
 #include <openrct2/factory/Alerts.h>
 #include <openrct2/factory/Belts.h>
+#include <openrct2/factory/Blueprint.h>
 #include <openrct2/factory/Combat.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactorySerialisation.h>
@@ -50,6 +51,7 @@
 #include <openrct2/factory/Technology.h>
 #include <openrct2/factory/actions/FactoryDamageAction.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
+#include <openrct2/factory/actions/FactoryPlaceBlueprintAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetParkOptionAction.h>
 #include <openrct2/factory/actions/FactoryThreatSpawnAction.h>
@@ -1997,4 +1999,66 @@ TEST_F(FactoryTopologyTests, AlertsAnnounceNewProblemsOnce)
     gameState.currentTicks = 100000 + kAlertQuietTicks;
     updateAlerts(gameState);
     EXPECT_EQ(countNews("4 machine(s) without power"), 1);
+}
+
+TEST_F(FactoryTopologyTests, BlueprintsCaptureRotateAndPaste)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    const Direction east = 2;
+    // Chest -> inserter -> belt -> underground pair over two tiles -> belt, and an assembler with a recipe.
+    PlaceAt(kRowX0, kRowY, east, _chest);
+    PlaceAt(kRowX0 + 1, kRowY, east, _inserter);
+    PlaceAt(kRowX0 + 2, kRowY, east, _belt);
+    PlaceAt(kRowX0 + 3, kRowY, east, _underground);
+    PlaceAt(kRowX0 + 6, kRowY, east, _underground);
+    PlaceAt(kRowX0 + 7, kRowY, east, _belt);
+    auto* assembler = PlaceAt(kRowX0 + 2, kRowY + 1, east, _assembler);
+    ASSERT_NE(assembler, nullptr);
+    state.machines.get(assembler->getRecordId())->recipe = _gearRecipe;
+
+    const MapRange area{ kRowX0 * kCoordsXYStep, kRowY * kCoordsXYStep, (kRowX0 + 7) * kCoordsXYStep,
+                         (kRowY + 1) * kCoordsXYStep };
+    const auto blueprint = captureBlueprint(gameState, area);
+    ASSERT_EQ(blueprint.entries.size(), 7u);
+    EXPECT_EQ(blueprint.width, 8);
+    EXPECT_EQ(blueprint.height, 2);
+    // The underground exit is placed last so it pairs with its entrance.
+    EXPECT_EQ(blueprint.entries.back().dx, 6);
+    EXPECT_EQ(blueprint.entries.back().object, "factory-tour.factory_prototype.underground_belt_basic");
+
+    // Text round trip; four quarter turns are the identity.
+    const auto text = serialiseBlueprint(blueprint);
+    auto parsed = parseBlueprint(text);
+    ASSERT_TRUE(parsed.has_value());
+    EXPECT_EQ(parsed->entries, blueprint.entries);
+    EXPECT_EQ(serialiseBlueprint(rotateBlueprint(blueprint, 4)), text);
+    EXPECT_FALSE(parseBlueprint("FTBP1;2;2;1;x;5,0,0,0,0,-1").has_value()); // outside the box
+    EXPECT_FALSE(parseBlueprint("nonsense").has_value());
+
+    // Paste turned once (east becomes north, d + 1 = 3) with its corner four rows down.
+    ClearStrip();
+    const CoordsXYZ origin{ kRowX0 * kCoordsXYStep, (kRowY - 2) * kCoordsXYStep, GroundZ(kRowX0) };
+    auto paste = GameActions::FactoryPlaceBlueprintAction(origin, 1, text);
+    const auto result = GameActions::ExecuteNested(&paste, gameState);
+    ASSERT_EQ(result.error, GameActions::Status::ok);
+    EXPECT_GT(result.cost, 0);
+    // Rotated: (dx, dy) -> (dy, width - 1 - dx); the chest at (0, 0) lands on (0, 7) facing north.
+    auto at = [&](int32_t dx, int32_t dy) {
+        return findFactoryElement(CoordsXYZ{ origin.x + dx * kCoordsXYStep, origin.y + dy * kCoordsXYStep, origin.z });
+    };
+    ASSERT_NE(at(0, 7), nullptr);
+    EXPECT_EQ(at(0, 7)->getSubtype(), FactoryElementSubtype::container);
+    EXPECT_EQ(at(0, 7)->getDirection(), 3);
+    ASSERT_NE(at(1, 5), nullptr);
+    EXPECT_EQ(at(1, 5)->getSubtype(), FactoryElementSubtype::machine);
+    EXPECT_EQ(state.machines.get(at(1, 5)->getRecordId())->recipe, _gearRecipe);
+    // The underground pair re-formed: the exit (dx 6 -> dy 1) has a belt segment.
+    ASSERT_NE(at(0, 1), nullptr);
+    EXPECT_TRUE(isUndergroundExit(*at(0, 1)));
+    EXPECT_TRUE(at(0, 1)->hasRecord());
+
+    // Pasting onto the same place again fits nothing.
+    auto again = GameActions::FactoryPlaceBlueprintAction(origin, 1, text);
+    EXPECT_NE(GameActions::QueryNested(&again, gameState).error, GameActions::Status::ok);
 }
