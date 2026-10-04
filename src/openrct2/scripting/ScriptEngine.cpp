@@ -27,6 +27,7 @@
     #include "../core/FileWatcher.h"
     #include "../core/Path.hpp"
     #include "../factory/actions/FactoryCommand.h" // FACTORY-TOUR
+    #include "../factory/scripting/ScFactory.h"    // FACTORY-TOUR
     #include "../interface/InteractiveConsole.h"
     #include "../platform/Platform.h"
     #include "../ride/ted/PitchAndRoll.h"
@@ -615,6 +616,7 @@ void ScriptEngine::RegisterClasses(JSContext* ctx)
     gScScenarioObjective.Register(ctx);
     gScPatrolArea.Register(ctx);
     gScPlugin.Register(ctx);
+    Factory::registerScriptClasses(ctx); // FACTORY-TOUR
 }
 
 void ScriptEngine::UnregisterClasses()
@@ -677,6 +679,7 @@ void ScriptEngine::UnregisterClasses()
     gScScenarioObjective.Unregister();
     gScPatrolArea.Unregister();
     gScPlugin.Unregister();
+    Factory::unregisterScriptClasses(); // FACTORY-TOUR
 }
 
 JSContext* ScriptEngine::CreateContext() const
@@ -711,6 +714,7 @@ void ScriptEngine::InitialiseContext(JSContext* ctx) const
     JS_SetPropertyStr(ctx, glb, "scenario", gScScenario.New(ctx));
     JS_SetPropertyStr(ctx, glb, "objectManager", gScObjectManager.New(ctx));
     JS_FreeValue(ctx, glb);
+    Factory::initialiseScriptContext(ctx); // FACTORY-TOUR: the `factory` global
 
     RegisterConstants(ctx);
 }

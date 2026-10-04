@@ -62,6 +62,7 @@
 #include <openrct2/ride/ted/TrackElemType.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/scenario/ScenarioObjective.h>
+#include <openrct2/scripting/ScriptEngine.h>
 #include <openrct2/world/Footpath.h>
 #include <openrct2/world/Map.h>
 #include <openrct2/world/Park.h>
@@ -1770,3 +1771,97 @@ TEST_F(FactoryTopologyTests, LabsResearchTechnologiesThatUnlockPrototypesAndRide
     EXPECT_TRUE(isPrototypeUnlocked(gameState, depot));
     state.research.reset();
 }
+
+#ifdef ENABLE_SCRIPTING
+TEST_F(FactoryTopologyTests, ScriptApiReadsMachinesAndResearchAndFiresHooks)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto load = [&](const char* id) {
+        auto* object = objectManager.LoadObject(id);
+        return object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
+    };
+    const auto logistics = load("factory-tour.factory_prototype.tech_logistics");
+    const auto lab = load("factory-tour.factory_prototype.lab");
+    ASSERT_NE(logistics, kObjectEntryIndexNull);
+    ASSERT_NE(lab, kObjectEntryIndexNull);
+
+    auto* assembler = PlaceAt(kRowX0, kRowY, 0, _assembler);
+    ASSERT_NE(assembler, nullptr);
+    auto* labElement = PlaceAt(kRowX0 + 2, kRowY, 0, lab);
+    ASSERT_NE(labElement, nullptr);
+
+    auto& scriptEngine = static_cast<Scripting::ScriptEngine&>(GetContext()->GetScriptEngine());
+    scriptEngine.AddNetworkPlugin(R"(
+        registerPlugin({
+            name: 'factory-api-test', version: '1.0', authors: ['test'], type: 'remote', licence: 'MIT',
+            targetApiVersion: 133,
+            main: function () {
+                context.subscribe('factory.research.complete', function (e) {
+                    context.getParkStorage().set('researched', e.technology);
+                });
+                context.subscribe('factory.machine.status', function (e) {
+                    context.getParkStorage().set('status', e.object + ':' + e.status);
+                });
+            }
+        });
+    )");
+    scriptEngine.LoadTransientPlugins();
+    scriptEngine.Tick();
+
+    JSContext* ctx = scriptEngine.GetContext();
+    auto eval = [&](const std::string& code) {
+        JSValue value = JS_Eval(ctx, code.c_str(), code.size(), "<factory-test>", JS_EVAL_TYPE_GLOBAL);
+        std::string result;
+        if (JS_IsException(value))
+        {
+            JSValue exception = JS_GetException(ctx);
+            const char* text = JS_ToCString(ctx, exception);
+            result = std::string("exception: ") + (text != nullptr ? text : "");
+            JS_FreeCString(ctx, text);
+            JS_FreeValue(ctx, exception);
+        }
+        else
+        {
+            const char* text = JS_ToCString(ctx, value);
+            result = text != nullptr ? text : "";
+            JS_FreeCString(ctx, text);
+        }
+        JS_FreeValue(ctx, value);
+        return result;
+    };
+    const auto x = std::to_string(kRowX0), y = std::to_string(kRowY);
+
+    EXPECT_EQ(
+        eval("JSON.stringify([factory.getMachine(" + x + ", " + y + ").kind, factory.getMachine(0, 0)])"),
+        "[\"assembler\",null]");
+    EXPECT_EQ(eval("factory.machines.length"), "2");
+    EXPECT_EQ(eval("factory.isUnlocked('factory-tour.factory_prototype.splitter_basic')"), "false");
+    EXPECT_EQ(
+        eval("factory.technologies[0].object + ' ' + factory.technologies[0].available"),
+        "factory-tour.factory_prototype.tech_logistics true");
+
+    // Setters go through the fork's game actions, queued for the start of the next tick like any script action.
+    EXPECT_EQ(eval("factory.setRecipe(" + x + ", " + y + ", 'factory-tour.factory_prototype.iron_gear_recipe')"), "true");
+    GameActions::ProcessQueue(gameState);
+    EXPECT_EQ(state.machines.get(assembler->getRecordId())->recipe, _gearRecipe);
+    EXPECT_EQ(eval("factory.getMachine(" + x + ", " + y + ").recipe"), "factory-tour.factory_prototype.iron_gear_recipe");
+    eval("factory.researchTarget = 'factory-tour.factory_prototype.tech_logistics'");
+    GameActions::ProcessQueue(gameState);
+    EXPECT_EQ(state.research.current, logistics);
+    EXPECT_EQ(eval("factory.researchTarget"), "factory-tour.factory_prototype.tech_logistics");
+
+    // Hooks: the idle lab now waits for kits, and completing the technology is announced.
+    Tick(1);
+    for (int i = 0; i < 10; i++)
+        addResearchUnit(gameState, logistics);
+    const auto storage = scriptEngine.GetParkStorageAsJSON();
+    EXPECT_NE(storage.find("factory-tour.factory_prototype.tech_logistics"), std::string::npos) << storage;
+    EXPECT_NE(storage.find("factory-tour.factory_prototype.lab:no_input"), std::string::npos) << storage;
+
+    scriptEngine.StopUnloadRegisterAllPlugins();
+    objectManager.UnloadObjects({ ObjectEntryDescriptor("factory-tour.factory_prototype.tech_logistics") });
+    state.research.reset();
+}
+#endif

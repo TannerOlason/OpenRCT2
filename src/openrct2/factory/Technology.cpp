@@ -29,6 +29,7 @@
 #include "FactoryPrototypeObject.h"
 #include "FactoryStringIds.h"
 #include "FactoryTopology.h"
+#include "scripting/ScFactory.h"
 
 #include <algorithm>
 #include <atomic>
@@ -206,6 +207,7 @@ namespace OpenRCT2::Factory
         }
         auto intent = Intent(INTENT_ACTION_INIT_SCENERY);
         ContextBroadcastIntent(&intent);
+        invokeResearchCompleteHook(technology);
     }
 
     bool withholdGatedResearch(GameState_t& gameState)

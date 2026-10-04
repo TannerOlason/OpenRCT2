@@ -61,6 +61,10 @@ declare global {
      */
     var pluginManager: PluginManager;
     /**
+     * FACTORY-TOUR: APIs for the park's factory: machines, the Warehouse, production and research.
+     */
+    var factory: Factory;
+    /**
      * Registers the plugin. This may only be called once.
      * @param metadata Information about the plugin and the entry point.
      */
@@ -550,6 +554,9 @@ declare global {
         subscribe(hook: "ride.breakdown", callback: (e: RideBreakdownArgs) => void): IDisposable;
         subscribe(hook: "ride.ratings.calculate", callback: (e: RideRatingsCalculateArgs) => void): IDisposable;
         subscribe(hook: "vehicle.crash", callback: (e: VehicleCrashArgs) => void): IDisposable;
+        // FACTORY-TOUR
+        subscribe(hook: "factory.machine.status", callback: (e: FactoryMachineStatusArgs) => void): IDisposable;
+        subscribe(hook: "factory.research.complete", callback: (e: FactoryResearchCompleteArgs) => void): IDisposable;
 
         /**
          * Can only be used in intransient plugins.
@@ -689,9 +696,14 @@ declare global {
         "network.chat" |
         "network.join" |
         "network.leave" |
+        "map.resize" |
         "park.guest.softcap.calculate" |
+        "ride.breakdown" |
         "ride.ratings.calculate" |
-        "vehicle.crash";
+        "vehicle.crash" |
+        // FACTORY-TOUR
+        "factory.machine.status" |
+        "factory.research.complete";
 
     type ExpenditureType =
         "ride_construction" |
@@ -1724,7 +1736,11 @@ declare global {
     }
 
     interface FactorySetParkOptionArgs extends GameActionArgs {
-        /** 0 construction mode (0 money, 1 hybrid, 2 materials), 1 shop stock mode (0 infinite, 1 warehouse) */
+        /**
+         * 0 construction mode (0 money, 1 hybrid, 2 materials), 1 shop stock mode (0 infinite, 1 warehouse),
+         * 2 factory affects park rating (0 or 1), 3 produce objective item (item entry index),
+         * 4 research target (available technology entry index, 65535 for none)
+         */
         option: number;
         value: number;
     }
@@ -1812,6 +1828,92 @@ declare global {
     interface VehicleCrashArgs {
         readonly id: number;
         readonly crashIntoType: VehicleCrashIntoType;
+    }
+
+    // FACTORY-TOUR: the factory API. Machine coordinates are in tiles; objects are factory_prototype identifiers.
+
+    type FactoryMachineKind = "drill" | "furnace" | "assembler" | "boiler" | "engine" | "pump" | "lab" | "turret" |
+        "export_depot";
+    type FactoryMachineStatus = "idle" | "working" | "no_input" | "output_full" | "no_fuel" | "no_power" | "no_ore" |
+        "no_recipe";
+
+    interface FactoryItemStack {
+        /** The item's factory_prototype identifier. */
+        readonly item: string;
+        readonly count: number;
+    }
+
+    /**
+     * A snapshot of a machine; read it again for fresh values.
+     */
+    interface FactoryMachine {
+        readonly id: number;
+        readonly object: string;
+        readonly kind: FactoryMachineKind;
+        readonly status: FactoryMachineStatus;
+        /** The footprint's minimum corner, in tiles. */
+        readonly x: number;
+        readonly y: number;
+        readonly baseHeight: number;
+        readonly direction: Direction;
+        /** The chosen recipe (assemblers), the current one (furnaces) or the technology a lab works on. */
+        readonly recipe: string | null;
+        /** Percent of the current craft or research unit done. */
+        readonly progress: number;
+        readonly inputs: FactoryItemStack[];
+        readonly outputs: FactoryItemStack[];
+        readonly fuel: FactoryItemStack | null;
+        /** Attached to a power network (which may still lack supply). */
+        readonly powered: boolean;
+    }
+
+    interface FactoryTechnology {
+        readonly object: string;
+        readonly name: string;
+        readonly researched: boolean;
+        /** Not researched and every prerequisite researched. */
+        readonly available: boolean;
+        readonly units: number;
+        readonly unitsDone: number;
+        readonly prerequisites: string[];
+        /** Factory prototypes, ride objects and scenery groups it unlocks. */
+        readonly unlocks: string[];
+    }
+
+    interface Factory {
+        /** Every machine, in ascending id order. */
+        readonly machines: FactoryMachine[];
+        /** The machine covering tile (x, y), or null. */
+        getMachine(x: number, y: number): FactoryMachine | null;
+        /**
+         * Sets an assembler's recipe (null clears it) through the factorysetrecipe action. Returns false when the
+         * action fails at once; like other script actions it is applied at the start of the next tick.
+         */
+        setRecipe(x: number, y: number, recipe: string | null): boolean;
+        /** Park-wide Warehouse stock. */
+        readonly warehouse: FactoryItemStack[];
+        /** All-time production per item (crafted results and mined ore). */
+        readonly production: FactoryItemStack[];
+        /** All-time Market income. */
+        readonly marketIncome: number;
+        /** Loaded technologies, in ascending entry order. */
+        readonly technologies: FactoryTechnology[];
+        /** The technology labs research; setting it runs factorysetparkoption (null stops research). */
+        researchTarget: string | null;
+        /** False while a loaded technology withholds the prototype. */
+        isUnlocked(object: string): boolean;
+    }
+
+    interface FactoryMachineStatusArgs {
+        readonly x: number;
+        readonly y: number;
+        readonly object: string;
+        readonly status: FactoryMachineStatus;
+        readonly previousStatus: FactoryMachineStatus;
+    }
+
+    interface FactoryResearchCompleteArgs {
+        readonly technology: string;
     }
 
     /**

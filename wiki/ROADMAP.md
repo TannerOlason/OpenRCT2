@@ -161,7 +161,9 @@ object-selection tabs, combat stub (health, damage, Threat, turret), first conte
   consume packs to research the target chosen in the Factory research window; researched technologies unlock
   factory prototypes, ride entries and scenery groups (withheld from upstream's research lists while gated). Starter
   tree with research kits and labs.
-- [ ] Script bindings (`factory` global, machines, warehouse, market, technologies), hooks and d.ts.
+- [x] Script bindings: the `factory` global (machines, recipes, warehouse, production, market income,
+  technologies and the research target), hooks `factory.machine.status` and `factory.research.complete`, d.ts
+  (plugin API 134). Combat hooks follow with the combat stub.
 - [ ] Object selection sub-tabs by prototype kind.
 - [ ] Combat stub: machine health, `FactoryDamageAction`, Threat entity, turret machines.
 - [ ] First content pack (turret, longer technology chain) and a modding guide.

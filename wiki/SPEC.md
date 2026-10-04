@@ -243,11 +243,18 @@ noise, photogenic, hazard, health, materials, turret: {range, damage, ammoItem}?
 Fork content under `data/factory/objects/**` via an extra `ObjectRepository` root. Object-selection editor
 gets a page with sub-tabs by kind.
 
-Script API: `factory` global (`ScFactory`: `getMachine(x, y)`, `machines`, `warehouse`, `market`,
-`technologies`, `spawnThreat()`), `ScMachine`, `ScItemStack`, `ScThreat`; setters guarded by
-`IsGameStateMutable()` and routed through fork actions. Hooks: `factory.tick`, `factory.damage`,
-`factory.threat.spawn/despawn`, `factory.turret.fire`, `factory.machine.status`, `factory.research.complete`.
-Bump `kPluginApiVersion`; update `openrct2.d.ts`.
+Script API (plugin API 134, `factory/scripting/ScFactory.cpp`, registered by three one-line touch points in
+`ScriptEngine.cpp`): the `factory` global with `machines` and `getMachine(x, y)` (tile coordinates, any footprint
+tile) returning plain snapshots (`id, object, kind, status, x, y, baseHeight, direction, recipe`, `progress` in
+percent, `inputs, outputs, fuel, powered`), `setRecipe(x, y, recipe)`, `warehouse`, `production`, `marketIncome`,
+`technologies` (`object, name, researched, available, units, unitsDone, prerequisites, unlocks`), `researchTarget`
+(get/set) and `isUnlocked(object)`. Objects are named by identifier. Setters run the fork's game actions
+(`factorysetrecipe`, `factorysetparkoption`), so they are queued for the next tick and work in multiplayer. Hooks
+(non-mutable, only with subscribers): `factory.machine.status {x, y, object, status, previousStatus}` when a
+machine's status changes and `factory.research.complete {technology}`. Planned with the combat stub:
+`spawnThreat()`, `factory.damage`, `factory.threat.spawn/despawn`, `factory.turret.fire`. No `factory.tick`:
+`interval.tick` already covers it. `openrct2.d.ts` now also lists the upstream `map.resize` and `ride.breakdown`
+hook names that were missing from `HookType`.
 
 Combat stub: `health/maxHealth` on machine records (0xFFFF = indestructible; ride health in `parkExt`);
 `FactoryDamageAction {target variant<tile, RideId, EntityId>, amount, damageType, sourceId}`; destroyed

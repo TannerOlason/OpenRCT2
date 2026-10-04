@@ -21,6 +21,7 @@
 #include "FactoryPrototypeObject.h"
 #include "FactoryTopology.h"
 #include "Fluids.h"
+#include "scripting/ScFactory.h"
 
 #include <algorithm>
 #include <chrono>
@@ -625,7 +626,11 @@ namespace OpenRCT2::Factory
 
     void setMachineStatus(MachineRecord& machine, MachineStatus status)
     {
+        const auto previous = machine.getStatus();
+        if (previous == status)
+            return;
         machine.status = static_cast<uint8_t>(status);
+        invokeMachineStatusHook(machine, previous);
     }
 
     bool machineHasFuel(const MachineRecord& machine, const MachineProperties& props)

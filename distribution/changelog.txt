@@ -7,6 +7,7 @@
 - Feature: [fork#1] First factory slice: belts, inserters and chests can be built from a new toolbar window; items move along belts and inserters carry them between belts and chests.
 - Feature: [fork#1] Underground belts tunnel under other buildings, splitters alternate items between two output belts, and a belt ending at the side of another belt sideloads onto its near lane.
 - Feature: [fork#1] Dragging with a belt selected in the factory window builds a straight run of belts.
+- Feature: [fork#1] Plugins can read and steer the factory through the new ‘factory’ API and its hooks.
 - Feature: [fork#1] Factory technologies: labs turn research kits into technologies that unlock machines, recipes, rides and scenery.
 - Feature: [fork#1] Factory exhibit walkways draw wandering guests past the machines.
 - Feature: [fork#1] New scenario objectives: produce a quantity of an item by a date, or have guests tour the factory; a Factory options window sets construction costs, shop stock and rating rules.

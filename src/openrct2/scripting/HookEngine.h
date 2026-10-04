@@ -43,6 +43,9 @@ namespace OpenRCT2::Scripting
         mapSave,
         parkCalculateGuestCap,
         rideBreakDown,
+        // FACTORY-TOUR
+        factoryMachineStatus,
+        factoryResearchComplete,
         count,
         notDefined = -1,
     };
