@@ -61,4 +61,8 @@ namespace OpenRCT2::Factory
      * the park sees this tick's production.
      */
     void update(GameState_t& gameState);
+
+    // Container helpers shared by inserters, tests and later machines.
+    bool containerTakeAny(ContainerRecord& container, ItemStack& hand);
+    bool containerInsert(ContainerRecord& container, ObjectEntryIndex item, uint16_t stackSize);
 } // namespace OpenRCT2::Factory

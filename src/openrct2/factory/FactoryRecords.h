@@ -66,6 +66,7 @@ namespace OpenRCT2::Factory
     {
         uint8_t kind{ static_cast<uint8_t>(FactoryElementSubtype::count) };
         RecordId id{ kNullRecord };
+        uint8_t aux{}; // belt: tile index inside the segment
 
         bool isNull() const
         {
@@ -82,8 +83,14 @@ namespace OpenRCT2::Factory
         {
             v(kind);
             v(id);
+            v(aux);
         }
     };
+
+    constexpr uint8_t kInserterPhaseWaitingForItem = 0;
+    constexpr uint8_t kInserterPhaseSwingingToDrop = 1;
+    constexpr uint8_t kInserterPhaseWaitingToDrop = 2;
+    constexpr uint8_t kInserterPhaseReturning = 3;
 
     struct ItemStack
     {

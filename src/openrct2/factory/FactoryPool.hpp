@@ -57,6 +57,13 @@ namespace OpenRCT2::Factory
             return id;
         }
 
+        // Allocates and returns the new record; `id` receives its id.
+        T& allocateRecord(RecordId& id)
+        {
+            id = allocate();
+            return _records[id];
+        }
+
         void release(RecordId id)
         {
             if (!isAlive(id))

@@ -13,6 +13,7 @@
 
 #include "../Diagnostic.h"
 #include "../GameState.h"
+#include "FactoryTopology.h"
 
 namespace OpenRCT2::Factory
 {
@@ -61,6 +62,10 @@ namespace OpenRCT2::Factory
         if (reading && !compatible)
         {
             state.reset();
+        }
+        if (reading)
+        {
+            postLoad(gameState);
         }
     }
 

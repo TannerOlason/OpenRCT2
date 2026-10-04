@@ -369,6 +369,15 @@ static std::optional<UpdateType> UpdateTile(const TileCoordsXY& coords, const Vi
                 hasAnimations |= UpdateBannerAnimation<invalidate, invalidateAllViewports>(
                     *tileElement->asBanner(), loc, baseZ, viewport);
                 break;
+            // FACTORY-TOUR: belts and inserters animate every tick; the painter picks the frame.
+            case TileElementType::factory:
+                if constexpr (invalidate)
+                {
+                    Invalidate<invalidateAllViewports>(
+                        viewport, loc.x, loc.y, baseZ, tileElement->getClearanceZ() + 32, kMaxZoom);
+                }
+                hasAnimations = true;
+                break;
             case TileElementType::largeScenery:
                 hasAnimations |= UpdateLargeSceneryAnimation<invalidate, invalidateAllViewports>(
                     *tileElement->asLargeScenery(), loc, baseZ, viewport);
@@ -503,6 +512,9 @@ static std::optional<UpdateType> IsElementAnimated(const TileElementBase& elemen
     switch (element.getType())
     {
         case TileElementType::banner:
+            return std::optional(UpdateType::invalidate);
+        // FACTORY-TOUR
+        case TileElementType::factory:
             return std::optional(UpdateType::invalidate);
         case TileElementType::wall:
         {
