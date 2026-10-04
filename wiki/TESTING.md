@@ -9,6 +9,14 @@ How Factory Tour changes are checked, from fastest to slowest. `CLAUDE.md` has t
 game actions; `FactoryStateTests` covers pools, serialisation and the sync checksum. `ctest --test-dir build` runs
 everything, including upstream's replay pack, which must keep passing in Vanilla Mode.
 
+## Performance
+
+`build/openrct2-cli factory-bench [ticks=400] [cells=2000] [budget ms=8]` builds a synthetic factory on a fresh map
+(each 20x4 cell: drill, 12 belts, furnace, chests, a powered assembler, a pole and six pipes), runs only the
+factory update and prints the average and worst tick, microseconds per phase and the sync checksum; it exits
+non-zero when the average exceeds the budget. CI runs `factory-bench 300 5000 8` after the tests.
+`FactoryBenchTests` checks the bench world produces and runs identically twice.
+
 ## Headless renders
 
 `FT_SLICE_PARK_OUT=<path> ./OpenRCT2Tests --gtest_filter='FactoryTopologyTests.SaveSlice*'` writes a park with

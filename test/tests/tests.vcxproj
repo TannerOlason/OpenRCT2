@@ -89,6 +89,7 @@
     <ClCompile Include="Endianness.cpp" />
     <ClCompile Include="EnumMapTest.cpp" />
     <ClCompile Include="FactoryActionTests.cpp" />
+    <ClCompile Include="FactoryBenchTests.cpp" />
     <ClCompile Include="FactoryBeltTests.cpp" />
     <ClCompile Include="FactoryElementTests.cpp" />
     <ClCompile Include="FactoryOreTests.cpp" />

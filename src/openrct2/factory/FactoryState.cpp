@@ -23,6 +23,7 @@
 #include "Fluids.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
 #include <vector>
 
@@ -831,14 +832,82 @@ namespace OpenRCT2::Factory
         return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
     }
 
+    namespace
+    {
+        /**
+         * Poles bucketed by 16x16 tile cells over their bounding box, so neighbour queries touch only nearby
+         * poles. Buckets hold ids in ascending order (filled while iterating the pool), keeping every query
+         * deterministic.
+         */
+        class PoleGrid
+        {
+        public:
+            static constexpr int32_t kCell = 16;
+
+            explicit PoleGrid(State& state)
+            {
+                bool any = false;
+                state.poles.forEach([&](RecordId, PoleRecord& pole) {
+                    _minX = any ? std::min(_minX, pole.x) : pole.x;
+                    _minY = any ? std::min(_minY, pole.y) : pole.y;
+                    _maxX = any ? std::max(_maxX, pole.x) : pole.x;
+                    _maxY = any ? std::max(_maxY, pole.y) : pole.y;
+                    any = true;
+                });
+                if (!any)
+                    return;
+                _cols = (_maxX - _minX) / kCell + 1;
+                _rows = (_maxY - _minY) / kCell + 1;
+                _buckets.resize(static_cast<size_t>(_cols) * static_cast<size_t>(_rows));
+                state.poles.forEach([&](RecordId id, PoleRecord& pole) { _buckets[index(pole.x, pole.y)].push_back(id); });
+            }
+
+            // Calls f(id) for every pole within `radius` tiles (Chebyshev) of (x, y), bucket by bucket.
+            template<typename F>
+            void forEachNear(int32_t x, int32_t y, int32_t radius, F f) const
+            {
+                if (_buckets.empty())
+                    return;
+                const int32_t c0 = std::max(0, (x - radius - _minX) / kCell);
+                const int32_t c1 = std::min(_cols - 1, (x + radius - _minX) / kCell);
+                const int32_t r0 = std::max(0, (y - radius - _minY) / kCell);
+                const int32_t r1 = std::min(_rows - 1, (y + radius - _minY) / kCell);
+                if (x + radius < _minX || y + radius < _minY)
+                    return;
+                for (int32_t r = r0; r <= r1; r++)
+                    for (int32_t c = c0; c <= c1; c++)
+                        for (auto id : _buckets[static_cast<size_t>(r) * _cols + c])
+                            f(id);
+            }
+
+        private:
+            size_t index(int32_t x, int32_t y) const
+            {
+                return static_cast<size_t>((y - _minY) / kCell) * _cols + static_cast<size_t>((x - _minX) / kCell);
+            }
+
+            int32_t _minX{}, _minY{}, _maxX{}, _maxY{};
+            int32_t _cols{}, _rows{};
+            std::vector<std::vector<RecordId>> _buckets;
+        };
+    } // namespace
+
     void rebuildPowerNetworks(State& state)
     {
         state.powerNetworks.clear();
         std::vector<RecordId> poleIds;
+        int32_t maxReach = 0;
+        int32_t maxRadius = 0;
         state.poles.forEach([&](RecordId id, PoleRecord& pole) {
             pole.network = kNullRecord;
             poleIds.push_back(id);
+            if (auto* proto = getPrototype(pole.entry))
+            {
+                maxReach = std::max<int32_t>(maxReach, proto->getPole().wireReach);
+                maxRadius = std::max<int32_t>(maxRadius, proto->getPole().supplyRadius);
+            }
         });
+        const PoleGrid grid(state);
 
         // Connected components over "within wire reach of each other" (the longer reach wins).
         for (auto startId : poleIds)
@@ -860,11 +929,10 @@ namespace OpenRCT2::Factory
                 auto* currentProto = getPrototype(current->entry);
                 const int32_t currentReach = currentProto != nullptr ? currentProto->getPole().wireReach : 0;
                 network.poleCount++;
-                for (auto otherId : poleIds)
-                {
+                grid.forEachNear(current->x, current->y, maxReach, [&](RecordId otherId) {
                     auto* other = state.poles.get(otherId);
                     if (other == nullptr || other->network != kNullRecord || other->z != current->z)
-                        continue;
+                        return;
                     auto* otherProto = getPrototype(other->entry);
                     const int32_t otherReach = otherProto != nullptr ? otherProto->getPole().wireReach : 0;
                     if (tileDistance(*current, *other) <= std::max(currentReach, otherReach))
@@ -872,7 +940,7 @@ namespace OpenRCT2::Factory
                         other->network = networkId;
                         stack.push_back(otherId);
                     }
-                }
+                });
             }
         }
 
@@ -886,23 +954,32 @@ namespace OpenRCT2::Factory
             const bool isGenerator = proto->isGenerator();
             if (!isGenerator && props.energy != EnergySource::electric)
                 return;
-            state.poles.forEach([&](RecordId, PoleRecord& pole) {
-                if (machine.powerNetwork != kNullRecord || pole.network == kNullRecord || pole.z != machine.z)
+            RecordId best = kNullRecord;
+            RecordId bestNetwork = kNullRecord;
+            grid.forEachNear(machine.x, machine.y, maxRadius, [&](RecordId poleId) {
+                if (best != kNullRecord && poleId > best)
                     return;
-                auto* poleProto = getPrototype(pole.entry);
+                auto* pole = state.poles.get(poleId);
+                if (pole == nullptr || pole->network == kNullRecord || pole->z != machine.z)
+                    return;
+                auto* poleProto = getPrototype(pole->entry);
                 const int32_t radius = poleProto != nullptr ? poleProto->getPole().supplyRadius : 0;
-                if (tileDistance(pole, machine) <= radius)
+                if (tileDistance(*pole, machine) <= radius)
                 {
-                    machine.powerNetwork = pole.network;
-                    auto* network = state.powerNetworks.get(pole.network);
-                    if (network == nullptr)
-                        return;
-                    if (isGenerator)
-                        network->generatorCount++;
-                    else
-                        network->consumerCount++;
+                    best = poleId;
+                    bestNetwork = pole->network;
                 }
             });
+            if (best == kNullRecord)
+                return;
+            machine.powerNetwork = bestNetwork;
+            if (auto* network = state.powerNetworks.get(machine.powerNetwork))
+            {
+                if (isGenerator)
+                    network->generatorCount++;
+                else
+                    network->consumerCount++;
+            }
         });
         state.powerDirty = false;
     }
@@ -983,7 +1060,7 @@ namespace OpenRCT2::Factory
         });
     }
 
-    void update(GameState_t& gameState)
+    void update(GameState_t& gameState, UpdatePhaseTimes* times)
     {
         PROFILED_FUNCTION();
 
@@ -994,11 +1071,34 @@ namespace OpenRCT2::Factory
         }
         // Fixed order: belts move, then inserters pick up and drop, then machines work. Containers have no
         // per-tick behaviour.
+        if (times == nullptr)
+        {
+            updateBelts(state);
+            updateSplitters(state);
+            updateInserters(state);
+            updatePower(state);
+            updateFluidNetworks(state);
+            updateMachines(state);
+            return;
+        }
+        using Clock = std::chrono::steady_clock;
+        auto mark = Clock::now();
+        auto lap = [&](uint64_t& total) {
+            const auto now = Clock::now();
+            total += static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(now - mark).count());
+            mark = now;
+        };
         updateBelts(state);
+        lap(times->belts);
         updateSplitters(state);
+        lap(times->splitters);
         updateInserters(state);
+        lap(times->inserters);
         updatePower(state);
+        lap(times->power);
         updateFluidNetworks(state);
+        lap(times->fluids);
         updateMachines(state);
+        lap(times->machines);
     }
 } // namespace OpenRCT2::Factory

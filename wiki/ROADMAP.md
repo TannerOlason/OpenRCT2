@@ -90,7 +90,9 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   (WindowClass 144: counts, supply, demand, satisfaction and a history graph; opened from a pole or the build
   window). All checked in the real GUI under Xvfb (`wiki/TESTING.md`), which found and fixed left clicks on
   factory elements never reaching the info window.
-- [ ] `factory-bench` CLI and the 8 ms per tick CI gate.
+- [x] `factory-bench` CLI (`openrct2-cli factory-bench [ticks] [cells] [budget ms]`, per-phase µs, checksum) and
+  the 8 ms per tick CI gate on 5000 cells (60k belts, 20k inserters, 20k machines: about 0.8 ms locally). Power
+  networks rebuild through a spatial pole grid (a 12000-cell rebuild went from 1.46 s to 18 ms).
 
 ### M3 Park intertwine I `[ ]`
 

@@ -80,6 +80,10 @@ steam engine (`kind engine`, `energy fluid`) offers `powerOutput` scaled by the 
 proportion to its power network's load. Pipe connection masks are cached in the element's connection byte
 (map directions) and rotated into the view by the painter (16 images).
 
+**Performance.** `openrct2-cli factory-bench` measures the factory update alone on a generated park; CI fails a
+build whose average tick exceeds 8 ms on 5000 cells. Network rebuilds that compare records pairwise use a spatial
+grid of 16x16-tile buckets filled in ascending id order, so results match the brute-force order exactly.
+
 **Persistence.** Chunks `0x40 factoryHeader`, `0x41 factoryPools`, `0x42 factoryOre` registered in
 `park/ParkFile.cpp`, read after the tiles chunk. Each starts with `uint16 factoryVersion`. Pools saved dense
 with alive bytes. `Factory::postLoad` validates element↔record links.

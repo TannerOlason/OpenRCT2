@@ -15,6 +15,7 @@ set(test_files
    "${CMAKE_CURRENT_SOURCE_DIR}/Endianness.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/EnumMapTest.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryActionTests.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/FactoryBenchTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryBeltTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryElementTests.cpp"
    "${CMAKE_CURRENT_SOURCE_DIR}/FactoryOreTests.cpp"

@@ -97,11 +97,23 @@ namespace OpenRCT2::Factory
     bool machineBurnFuel(MachineRecord& machine, const MachineProperties& props);
     bool machineHasFuel(const MachineRecord& machine, const MachineProperties& props);
 
+    // Wall-clock nanoseconds spent in each phase of update(), accumulated (factory-bench only).
+    struct UpdatePhaseTimes
+    {
+        uint64_t belts{};
+        uint64_t splitters{};
+        uint64_t inserters{};
+        uint64_t power{};
+        uint64_t fluids{};
+        uint64_t machines{};
+    };
+
     /**
      * One simulation tick. Called from gameStateUpdateLogic between Ride::updateAll() and Park::Update so
-     * the park sees this tick's production.
+     * the park sees this tick's production. With `times`, each phase's duration is added to it; timing never
+     * changes the simulation.
      */
-    void update(GameState_t& gameState);
+    void update(GameState_t& gameState, UpdatePhaseTimes* times = nullptr);
 
     // Container helpers shared by inserters, tests and later machines.
     bool containerTakeAny(ContainerRecord& container, ItemStack& hand);

@@ -111,6 +111,7 @@ namespace OpenRCT2
             extern const CommandLineCommand kSpriteCommands[];
         }
         extern const CommandLineCommand kSimulateCommands[];
+        extern const CommandLineCommand kFactoryBenchCommands[]; // FACTORY-TOUR
         extern const CommandLineCommand kParkInfoCommands[];
 
         extern const CommandLineExample kRootExamples[];

@@ -7,7 +7,8 @@
 - Feature: [fork#1] First factory slice: belts, inserters and chests can be built from a new toolbar window; items move along belts and inserters carry them between belts and chests.
 - Feature: [fork#1] Underground belts tunnel under other buildings, splitters alternate items between two output belts, and a belt ending at the side of another belt sideloads onto its near lane.
 - Feature: [fork#1] Dragging with a belt selected in the factory window builds a straight run of belts.
-- Feature: [fork#1] A power overview window shows each electric network's supply, demand and satisfaction over time; click a pole or use the factory window's graph button.
+- Feature: [fork#1] [CLI] `factory-bench` measures factory simulation time on a generated park.
+- Feature: [fork#1] A power overview window shows each electric network’s supply, demand and satisfaction over time; click a pole or use the factory window’s graph button.
 - Feature: [fork#1] Splitters can filter one item to a chosen side and prefer an input or output side.
 - Feature: [fork#1] Pipes carry water and steam: an offshore pump by the water feeds boilers, and boilers feed steam engines that power the electric network.
 - Feature: [objects#447] Track designer grid can now be used outside the Track Designer.
