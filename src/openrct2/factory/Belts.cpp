@@ -178,12 +178,12 @@ namespace OpenRCT2::Factory
         }
     }
 
-    void tickSegment(BeltSegmentRecord& segment, const LaneTarget* targets)
+    void tickSegment(BeltSegmentRecord& segment, const LaneTarget* targets, int32_t speed)
     {
         const int32_t length = segmentLength(segment);
         for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
         {
-            tickLane(segment.lanes[lane], length, segment.speed, targets != nullptr ? targets[lane] : LaneTarget{});
+            tickLane(segment.lanes[lane], length, speed, targets != nullptr ? targets[lane] : LaneTarget{});
         }
     }
 } // namespace OpenRCT2::Factory

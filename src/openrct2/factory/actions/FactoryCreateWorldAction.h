@@ -24,10 +24,11 @@ namespace OpenRCT2::GameActions
     {
     private:
         uint16_t _size{ 64 };
+        uint8_t _preset{}; // Factory::WorldPreset
 
     public:
         FactoryCreateWorldAction() = default;
-        explicit FactoryCreateWorldAction(uint16_t size);
+        FactoryCreateWorldAction(uint16_t size, uint8_t preset);
 
         void AcceptParameters(GameActionParameterVisitor& visitor) final;
         uint16_t GetActionFlags() const override;

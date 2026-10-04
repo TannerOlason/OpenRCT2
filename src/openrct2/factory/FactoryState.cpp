@@ -22,6 +22,7 @@
 #include "FactoryPrototypeObject.h"
 #include "FactoryTopology.h"
 #include "Fluids.h"
+#include "Planet.h"
 #include "scripting/ScFactory.h"
 
 #include <algorithm>
@@ -104,7 +105,7 @@ namespace OpenRCT2::Factory
                 default:
                     break; // dead end or splitter input: items park at the end and the splitter takes them
             }
-            tickSegment(segment, targets);
+            tickSegment(segment, targets, scaledBeltSpeed(state.parkExt.planet, segment.speed));
         });
     }
 
@@ -804,7 +805,8 @@ namespace OpenRCT2::Factory
 
         setMachineStatus(machine, MachineStatus::working);
         machine.craftCost = static_cast<uint32_t>(props.miningTimeTicks) * kWorkUnitsPerTick;
-        machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
+        machine.progress += static_cast<uint32_t>(
+            (static_cast<uint64_t>(scaledMachineSpeed(state.parkExt.planet, props.speedQ8)) * satisfactionQ16) >> 16);
         if (machine.progress >= machine.craftCost)
         {
             machine.progress -= machine.craftCost;
@@ -892,7 +894,8 @@ namespace OpenRCT2::Factory
             return;
 
         setMachineStatus(machine, MachineStatus::working);
-        machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
+        machine.progress += static_cast<uint32_t>(
+            (static_cast<uint64_t>(scaledMachineSpeed(state.parkExt.planet, props.speedQ8)) * satisfactionQ16) >> 16);
         if (machine.progress >= machine.craftCost)
         {
             finishCraft(state, machine, *recipeProto);
@@ -941,7 +944,8 @@ namespace OpenRCT2::Factory
             return;
 
         setMachineStatus(machine, MachineStatus::working);
-        machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
+        machine.progress += static_cast<uint32_t>(
+            (static_cast<uint64_t>(scaledMachineSpeed(state.parkExt.planet, props.speedQ8)) * satisfactionQ16) >> 16);
         if (machine.progress >= machine.craftCost)
         {
             machine.craftCost = 0;
@@ -1210,6 +1214,7 @@ namespace OpenRCT2::Factory
         if (gameState.currentTicks % kParkExtPruneTicks == 0)
             pruneParkExt(gameState);
         state.market.update(gameState);
+        updatePlanet(gameState);
         if (gameState.currentTicks % PollutionLayer::kSpreadTicks == 0)
             state.pollution.spread();
         if (gameState.currentTicks % kAlertCheckTicks == 0)

@@ -83,5 +83,6 @@ namespace OpenRCT2::Factory
     void tickLane(BeltLane& lane, int32_t length, int32_t speed, const LaneTarget& target);
 
     // Ticks both lanes with per-lane targets (nullptr targets are dead ends).
-    void tickSegment(BeltSegmentRecord& segment, const LaneTarget* targets);
+    // `speed` overrides the segment's own speed (world rules scale it).
+    void tickSegment(BeltSegmentRecord& segment, const LaneTarget* targets, int32_t speed);
 } // namespace OpenRCT2::Factory

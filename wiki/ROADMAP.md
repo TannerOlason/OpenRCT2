@@ -218,7 +218,7 @@ E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two w
   next world unless set with `FactorySetLaunchTargetAction`, command 17), where shipments land in landing pads 400
   ticks later; the queue is company state. Unlocked by Interworld logistics. (Rocket art and launch animation: M9.)
 
-### M8 Multi-world II `[ ]`
+### M8 Multi-world II `[x]`
 
 E8 stages 3–4: Portal Terminal rides, guest transfer, Planet Params, per-world climate, water and terrain,
 first weird-dimension content pack, `context.worlds` binding.
@@ -226,9 +226,12 @@ first weird-dimension content pack, `context.worlds` binding.
 - [x] Portal Terminals (ADR 0016): `RIDE_TYPE_PORTAL_TERMINAL` in the 22 slot, a short shuttle ride (Portal
   shuttle cars, Portal terminals technology); guests leaving one are removed from their world and appear beside the
   exit of the matching terminal (same index, wrapping) in the next world with their mood, needs, money and name.
-- [ ] Planet Params and per-world terrain, water and weather.
-- [ ] Weird-dimension content pack.
-- [ ] `factory.worlds` script binding.
+- [x] Planet Params (per world, parkExt version 5): belt and machine speed percentages and a held weather type;
+  `FactoryCreateWorldAction` takes a preset (plain, desert, ice moon, weird dimension) that sets terrain, a lake for
+  pumps, ore clusters and the rules. Per-world climate objects were not needed: weather is held by the rules.
+- [x] Weird-dimension content: martian terrain, 150% belts and 75% machines, endless storms, Void crystal ore
+  painted in clusters and the Void lens recipe.
+- [x] Script binding: `factory.worlds`, `factory.activeWorld`, `factory.createWorld(size, preset)` (plugin API 140).
 
 ### M9 Theme and release `[ ]`
 

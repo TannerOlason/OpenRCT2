@@ -4050,3 +4050,10 @@ STR_20653   :{WINDOW_COLOUR_2}Landing pad: receives shipments from other worlds
 STR_20654   :Send to the next world
 STR_20655   :Portal Terminal
 STR_20656   :A short shuttle ride whose passengers step out of the matching terminal in the next world
+STR_20657   :{WINDOW_COLOUR_2}Plain
+STR_20658   :{WINDOW_COLOUR_2}Desert
+STR_20659   :{WINDOW_COLOUR_2}Ice moon
+STR_20660   :{WINDOW_COLOUR_2}Weird dimension
+STR_20661   :Kind
+STR_20662   :Choose what kind of world to create
+STR_20663   :{WINDOW_COLOUR_2}New world kind: {STRINGID}

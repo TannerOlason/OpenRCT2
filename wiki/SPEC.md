@@ -347,7 +347,12 @@ end of its factory tick, lands due entries into its `landingPad` containers (asc
 The queue is company state. Portals (ADR 0016, `factory/Portals.cpp`, pools version 15): `Guest::onExitRide` calls
 `onGuestExitRide`, which for a Portal Terminal queues a `GuestTransfer` (world-neutral fields) to the next world and
 a `GuestDeparture`; `updatePortals` (each world's factory tick) removes departing guests of the active world and
-generates arrivals beside the matching terminal's exit (terminal index mod terminal count).
+generates arrivals beside the matching terminal's exit (terminal index mod terminal count). Planet Params
+(`factory/Planet.cpp`, `ParkExt::planet`, parkExt version 5): `beltSpeedPercent` scales each segment's speed in
+`tickSegment`, `machineSpeedPercent` scales `speedQ8` in crafters, drills and labs, `weather` (Weather::Type + 1)
+replaces `weatherCurrent`/`weatherNext` every tick. Presets (`applyWorldPreset`): terrain surface object, a lake in
+the north corner, ore clusters (weird: Void crystal) and the rules. Scripts: `factory.worlds`, `activeWorld`,
+`createWorld`.
 
 ## E9 Theme, content, release
 

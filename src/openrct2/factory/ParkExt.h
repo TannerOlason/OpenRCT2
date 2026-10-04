@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "Planet.h"
+
 #include <cstdint>
 #include <vector>
 
@@ -59,6 +61,7 @@ namespace OpenRCT2::Factory
     {
         std::vector<GuestExt> guests;
         std::vector<RideExt> rides; // sorted by ride id; only rides with damage
+        PlanetParams planet;        // this world's rules
         // Scenario options (Factory::ConstructionMode, ShopStockMode); 0 is upstream behaviour.
         uint8_t constructionMode{};
         uint8_t shopStockMode{};
@@ -67,12 +70,14 @@ namespace OpenRCT2::Factory
 
         bool isEmpty() const
         {
-            return guests.empty() && rides.empty() && constructionMode == 0 && shopStockMode == 0 && guestsToured == 0;
+            return guests.empty() && rides.empty() && constructionMode == 0 && shopStockMode == 0 && guestsToured == 0
+                && planet.isDefault();
         }
         void reset()
         {
             guests.clear();
             rides.clear();
+            planet = PlanetParams{};
             constructionMode = 0;
             shopStockMode = 0;
             guestsToured = 0;
@@ -91,6 +96,7 @@ namespace OpenRCT2::Factory
             v(shopStockMode);
             v(guestsToured);
             v.vec(rides, [](RideExt& ride, auto& vv) { ride.visit(vv); });
+            planet.visit(v);
         }
     };
 

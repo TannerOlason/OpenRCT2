@@ -48,6 +48,7 @@
 #include <openrct2/factory/Market.h>
 #include <openrct2/factory/Objectives.h>
 #include <openrct2/factory/ParkExt.h>
+#include <openrct2/factory/Planet.h>
 #include <openrct2/factory/Pollution.h>
 #include <openrct2/factory/Portals.h>
 #include <openrct2/factory/RideRatingsFactory.h>
@@ -55,6 +56,7 @@
 #include <openrct2/factory/Technology.h>
 #include <openrct2/factory/Transfers.h>
 #include <openrct2/factory/WorldManager.h>
+#include <openrct2/factory/actions/FactoryCreateWorldAction.h>
 #include <openrct2/factory/actions/FactoryDamageAction.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
 #include <openrct2/factory/actions/FactoryPlaceAction.h>
@@ -80,6 +82,7 @@
 #include <openrct2/world/Footpath.h>
 #include <openrct2/world/Map.h>
 #include <openrct2/world/Park.h>
+#include <openrct2/world/Weather.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
 #include <openrct2/world/tile_element/PathElement.h>
 #include <openrct2/world/tile_element/SurfaceElement.h>
@@ -1876,6 +1879,15 @@ TEST_F(FactoryTopologyTests, ScriptApiReadsMachinesAndResearchAndFiresHooks)
     EXPECT_NE(storage.find("factory-tour.factory_prototype.tech_logistics"), std::string::npos) << storage;
     EXPECT_NE(storage.find("factory-tour.factory_prototype.lab:no_input"), std::string::npos) << storage;
 
+    // Worlds: created through the action, listed with their preset.
+    EXPECT_EQ(eval("factory.worlds.length"), "1");
+    EXPECT_EQ(eval("factory.createWorld(32, 'desert')"), "true");
+    GameActions::ProcessQueue(gameState);
+    EXPECT_EQ(eval("factory.worlds.length + ' ' + factory.worlds[1].preset + ' ' + factory.worlds[1].width"), "2 desert 32");
+    EXPECT_EQ(eval("factory.activeWorld"), "0");
+    Factory::Worlds::activate(Factory::Worlds::kPrimaryWorld);
+    Factory::Worlds::adoptActiveAsPrimary();
+
     scriptEngine.StopUnloadRegisterAllPlugins();
     objectManager.UnloadObjects({ ObjectEntryDescriptor("factory-tour.factory_prototype.tech_logistics") });
     state.research.reset();
@@ -2394,6 +2406,42 @@ TEST_F(FactoryTopologyTests, PortalTerminalsSendRidersToTheNextWorld)
         EXPECT_FALSE(arrived->outsideOfPark);
         EXPECT_EQ(TileCoordsXY(arrived->getLocation()), (TileCoordsXY{ 11, 8 }));
     }
+
+    W::activate(W::kPrimaryWorld);
+    W::adoptActiveAsPrimary();
+}
+
+TEST_F(FactoryTopologyTests, WorldPresetsSetTerrainOreWeatherAndSpeeds)
+{
+    namespace W = Factory::Worlds;
+    auto& objectManager = GetContext()->GetObjectManager();
+    ASSERT_NE(objectManager.LoadObject("factory-tour.factory_prototype.void_crystal_patch"), nullptr);
+    objectManager.LoadObject("factory-tour.factory_prototype.void_crystal");
+    auto* martian = objectManager.LoadObject("rct2.terrain_surface.martian");
+    ASSERT_NE(martian, nullptr);
+
+    auto create = GameActions::FactoryCreateWorldAction(48, static_cast<uint8_t>(WorldPreset::weird));
+    ASSERT_EQ(GameActions::ExecuteNested(&create, getGameState()).error, GameActions::Status::ok);
+    ASSERT_EQ(W::count(), 2u);
+    {
+        W::Scope inWorld1(1);
+        auto& gameState = getGameState();
+        const auto& planet = gameState.factory.parkExt.planet;
+        EXPECT_EQ(planet.preset, static_cast<uint8_t>(WorldPreset::weird));
+        EXPECT_EQ(planet.beltSpeedPercent, 150);
+        EXPECT_EQ(planet.machineSpeedPercent, 75);
+        EXPECT_EQ(
+            MapGetSurfaceElementAt(TileCoordsXY{ 30, 30 })->getSurfaceObjectIndex(),
+            objectManager.GetLoadedObjectEntryIndex(martian));
+        EXPECT_GT(MapGetSurfaceElementAt(TileCoordsXY{ 3, 3 })->getWaterHeight(), 0); // the lake
+        EXPECT_FALSE(gameState.factory.ore.get({ 24, 24 }).isEmpty());                // a void crystal cluster
+        EXPECT_EQ(scaledBeltSpeed(planet, 12), 18);
+        EXPECT_EQ(scaledMachineSpeed(planet, 256), 192u);
+    }
+    for (int i = 0; i < 5; i++)
+        gameStateUpdateLogic();
+    EXPECT_EQ(W::state(1).weatherCurrent.weatherType, Weather::Type::thunder); // held every tick
+    EXPECT_TRUE(getGameState().factory.parkExt.planet.isDefault());            // world 0 keeps its rules
 
     W::activate(W::kPrimaryWorld);
     W::adoptActiveAsPrimary();

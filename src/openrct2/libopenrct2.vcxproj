@@ -748,6 +748,7 @@
     <ClInclude Include="factory\Market.h" />
     <ClInclude Include="factory\Materials.h" />
     <ClInclude Include="factory\ParkExt.h" />
+    <ClInclude Include="factory\Planet.h" />
     <ClInclude Include="factory\Pollution.h" />
     <ClInclude Include="factory\PortalTerminalRTD.h" />
     <ClInclude Include="factory\Portals.h" />
@@ -1373,6 +1374,7 @@
     <ClCompile Include="factory\Market.cpp" />
     <ClCompile Include="factory\Materials.cpp" />
     <ClCompile Include="factory\ParkExt.cpp" />
+    <ClCompile Include="factory\Planet.cpp" />
     <ClCompile Include="factory\Pollution.cpp" />
     <ClCompile Include="factory\Portals.cpp" />
     <ClCompile Include="factory\RideRatingsFactory.cpp" />

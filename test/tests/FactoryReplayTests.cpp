@@ -423,7 +423,7 @@ TEST(FactoryReplayTests, RecordTwoWorlds)
     };
     const Direction east = 2;
     std::map<int32_t, std::function<void()>> script = {
-        { 2, [&] { r.Do(FactoryCreateWorldAction(40)); } },
+        { 2, [&] { r.Do(FactoryCreateWorldAction(40, 0)); } },
         { 4, [&] { inWorld1([&] { r.Do(FactoryPlaceAction(at1(20, 20), east, furnace)); }); } },
         { 5,
           [&] {

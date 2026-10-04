@@ -1160,6 +1160,20 @@ def main():
     # Ores and their items.
     write_ore_and_item("iron_ore_patch", "iron_ore", "Iron ore", "Iron ore", (110, 120, 140), (60, 70, 90), market_price=5)
     write_ore_and_item("coal_patch", "coal", "Coal", "Coal", (50, 50, 55), (20, 20, 25), fuel_ticks=1600, market_price=8)
+    # The weird dimension's ore (painted only in weird worlds) and what it makes.
+    write_ore_and_item("void_crystal_patch", "void_crystal", "Void crystal", "Void crystal", (150, 60, 200), (70, 20, 110),
+                       market_price=60)
+    icon, belt = draw_item_small((230, 120, 240), (120, 40, 140))
+    folder = write_object("void_lens", "item", {"stackSize": 50, "marketPrice": 600},
+                          [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                          "Void lens")
+    save(icon, folder, "icon.png")
+    save(belt, folder, "belt.png")
+    write_object("void_lens_recipe", "recipe", {
+        "ingredients": [{"item": "factory-tour.factory_prototype.void_crystal", "count": 3},
+                        {"item": "factory-tour.factory_prototype.iron_plate", "count": 2}],
+        "results": [{"item": "factory-tour.factory_prototype.void_lens", "count": 1}],
+        "timeTicks": 160, "category": "crafting"}, [], "Void lens")
 
     # Recipes.
     write_object("iron_plate_smelting", "recipe", {

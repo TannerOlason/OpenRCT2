@@ -1773,6 +1773,8 @@ declare global {
     interface FactoryCreateWorldArgs extends GameActionArgs {
         /** Width and height of the new, flat, fully owned world in tiles (16 to 256). */
         size: number;
+        /** 0 plain, 1 desert, 2 ice moon, 3 weird dimension. */
+        preset: number;
     }
 
     interface FactorySetLaunchTargetArgs extends GameActionArgs {
@@ -1962,6 +1964,19 @@ declare global {
         readonly target: number | null;
     }
 
+    type FactoryWorldPreset = "plain" | "desert" | "ice_moon" | "weird";
+
+    interface FactoryWorld {
+        readonly id: number;
+        readonly width: number;
+        readonly height: number;
+        readonly preset: FactoryWorldPreset;
+        readonly machines: number;
+        readonly guests: number;
+        /** Shown on this client's screen. */
+        readonly viewed: boolean;
+    }
+
     interface FactoryFreightCargo extends FactoryItemStack {
         /** The car's entity id (see map.getEntity). */
         readonly vehicle: number;
@@ -2006,6 +2021,12 @@ declare global {
         readonly threats: FactoryThreat[];
         /** What each freight railway car carries (cars with cargo only), by car entity id. */
         readonly freight: FactoryFreightCargo[];
+        /** Every world of the company; `map`, `park` and the rest of the API refer to `activeWorld`. */
+        readonly worlds: FactoryWorld[];
+        /** The world the API currently refers to (the one on screen, outside the simulation). */
+        readonly activeWorld: number;
+        /** Adds a flat, fully owned world (factorycreateworld); size 16 to 256 tiles. */
+        createWorld(size: number, preset?: FactoryWorldPreset): boolean;
         /** Spawns a Threat of the given threat prototype at (x, y) in world units (factorythreatspawn). */
         spawnThreat(object: string, x: number, y: number): boolean;
         /**

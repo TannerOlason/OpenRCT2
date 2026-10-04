@@ -175,7 +175,7 @@ TEST(FactoryBeltTests, ThroughputMatchesSpeedOverLongRuns)
         }
         const int32_t sinkLength = segmentLength(sink);
         const LaneTarget targets[kBeltLaneCount] = { { &sink.lanes[0], sinkLength, -1 }, { &sink.lanes[1], sinkLength, -1 } };
-        tickSegment(source, targets);
+        tickSegment(source, targets, source.speed);
         if (t >= warmup)
         {
             for (auto& lane : sink.lanes)

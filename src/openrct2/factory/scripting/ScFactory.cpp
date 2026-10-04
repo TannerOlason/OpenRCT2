@@ -22,6 +22,8 @@
 #include "../FactoryState.h"
 #include "../FactoryTopology.h"
 #include "../Technology.h"
+#include "../WorldManager.h"
+#include "../actions/FactoryCreateWorldAction.h"
 #include "../actions/FactoryDamageAction.h"
 #include "../actions/FactorySetParkOptionAction.h"
 #include "../actions/FactorySetRecipeAction.h"
@@ -319,6 +321,50 @@ namespace OpenRCT2::Factory
             return array;
         }
 
+        constexpr const char* kPresetNames[] = { "plain", "desert", "ice_moon", "weird" };
+
+        JSValue worldsGet(JSContext* ctx, JSValue)
+        {
+            JSValue array = JS_NewArray(ctx);
+            for (Worlds::WorldId id = 0; id < Worlds::count(); id++)
+            {
+                const auto& state = Worlds::state(id);
+                JSValue obj = JS_NewObject(ctx);
+                JS_SetPropertyStr(ctx, obj, "id", JS_NewUint32(ctx, id));
+                JS_SetPropertyStr(ctx, obj, "width", JS_NewInt32(ctx, state.mapSize.x));
+                JS_SetPropertyStr(ctx, obj, "height", JS_NewInt32(ctx, state.mapSize.y));
+                JS_SetPropertyStr(
+                    ctx, obj, "preset", JSFromStdString(ctx, nameAt(kPresetNames, state.factory.parkExt.planet.preset)));
+                JS_SetPropertyStr(
+                    ctx, obj, "machines", JS_NewUint32(ctx, static_cast<uint32_t>(state.factory.machines.aliveCount())));
+                JS_SetPropertyStr(ctx, obj, "guests", JS_NewUint32(ctx, state.park.numGuestsInPark));
+                JS_SetPropertyStr(ctx, obj, "viewed", JS_NewBool(ctx, id == Worlds::viewed()));
+                JS_SetPropertyInt64(ctx, array, id, obj);
+            }
+            return array;
+        }
+
+        JSValue activeWorldGet(JSContext* ctx, JSValue)
+        {
+            return JS_NewUint32(ctx, Worlds::active());
+        }
+
+        JSValue createWorld(JSContext* ctx, JSValue, int argc, JSValue* argv)
+        {
+            JS_UNPACK_UINT32(size, ctx, argv[0]);
+            uint8_t preset = 0;
+            if (argc > 1 && JS_IsString(argv[1]))
+            {
+                const auto name = JSToStdString(ctx, argv[1]);
+                for (uint8_t i = 0; i < std::size(kPresetNames); i++)
+                    if (name == kPresetNames[i])
+                        preset = i;
+            }
+            auto action = GameActions::FactoryCreateWorldAction(static_cast<uint16_t>(std::min<uint32_t>(size, 256)), preset);
+            auto result = GameActions::Execute(&action, getGameState());
+            return JS_NewBool(ctx, result.error == GameActions::Status::ok);
+        }
+
         JSValue isUnlocked(JSContext* ctx, JSValue, int argc, JSValue* argv)
         {
             JS_UNPACK_STR(identifier, ctx, argv[0]);
@@ -343,6 +389,9 @@ namespace OpenRCT2::Factory
                     JS_CFUNC_DEF("isUnlocked", 1, isUnlocked),
                     JS_CGETSET_DEF("threats", threatsGet, nullptr),
                     JS_CGETSET_DEF("freight", freightGet, nullptr),
+                    JS_CGETSET_DEF("worlds", worldsGet, nullptr),
+                    JS_CGETSET_DEF("activeWorld", activeWorldGet, nullptr),
+                    JS_CFUNC_DEF("createWorld", 2, createWorld),
                     JS_CFUNC_DEF("spawnThreat", 3, spawnThreat),
                     JS_CFUNC_DEF("damage", 4, damage),
                 };

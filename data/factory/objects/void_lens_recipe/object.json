@@ -1,0 +1,36 @@
+{
+    "id": "factory-tour.factory_prototype.void_lens_recipe",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "recipe",
+        "ingredients": [
+            {
+                "item": "factory-tour.factory_prototype.void_crystal",
+                "count": 3
+            },
+            {
+                "item": "factory-tour.factory_prototype.iron_plate",
+                "count": 2
+            }
+        ],
+        "results": [
+            {
+                "item": "factory-tour.factory_prototype.void_lens",
+                "count": 1
+            }
+        ],
+        "timeTicks": 160,
+        "category": "crafting"
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Void lens"
+        }
+    }
+}

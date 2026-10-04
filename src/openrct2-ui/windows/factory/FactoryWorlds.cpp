@@ -43,22 +43,28 @@ namespace OpenRCT2::Ui::Windows
         WIDX_SIZE_DOWN,
         WIDX_SIZE_UP,
         WIDX_CREATE,
+        WIDX_PRESET,
     };
 
     // clang-format off
     static constexpr auto kWindowFactoryWorldsWidgets = makeWidgets(
         makeWindowShim(STR_FT_WORLDS, kWindowSize),
-        makeWidget({  4,  18}, {252, 110}, WidgetType::scroll, WindowColour::secondary, SCROLL_VERTICAL, STR_FT_WORLD_LIST_TIP),
+        makeWidget({  4,  18}, {252,  94}, WidgetType::scroll, WindowColour::secondary, SCROLL_VERTICAL, STR_FT_WORLD_LIST_TIP),
         makeWidget({180, 133}, { 16,  14}, WidgetType::button, WindowColour::secondary, STR_NUMERIC_DOWN),
         makeWidget({198, 133}, { 16,  14}, WidgetType::button, WindowColour::secondary, STR_NUMERIC_UP),
-        makeWidget({  4, 151}, {252,  14}, WidgetType::button, WindowColour::secondary, STR_FT_WORLD_CREATE, STR_FT_WORLD_CREATE_TIP)
+        makeWidget({  4, 151}, {252,  14}, WidgetType::button, WindowColour::secondary, STR_FT_WORLD_CREATE, STR_FT_WORLD_CREATE_TIP),
+        makeWidget({218, 116}, { 38,  14}, WidgetType::button, WindowColour::secondary, STR_FT_PRESET_NEXT, STR_FT_PRESET_NEXT_TIP)
     );
+    static constexpr StringId kPresetNames[] = {
+        STR_FT_PRESET_PLAIN, STR_FT_PRESET_DESERT, STR_FT_PRESET_ICE_MOON, STR_FT_PRESET_WEIRD,
+    };
     // clang-format on
 
     class FactoryWorldsWindow final : public Window
     {
     private:
         uint16_t _newSize = 64;
+        uint8_t _preset = 0;
 
     public:
         void onOpen() override
@@ -85,9 +91,12 @@ namespace OpenRCT2::Ui::Windows
                 case WIDX_SIZE_UP:
                     _newSize = static_cast<uint16_t>(std::min(256, _newSize + 32));
                     break;
+                case WIDX_PRESET:
+                    _preset = static_cast<uint8_t>((_preset + 1) % std::size(kPresetNames));
+                    break;
                 case WIDX_CREATE:
                 {
-                    auto action = GameActions::FactoryCreateWorldAction(_newSize);
+                    auto action = GameActions::FactoryCreateWorldAction(_newSize, _preset);
                     GameActions::Execute(&action, getGameState());
                     break;
                 }
@@ -119,6 +128,7 @@ namespace OpenRCT2::Ui::Windows
                 auto ft = Formatter();
                 ft.Add<uint16_t>(id + 1);
                 drawText(rt, { 4, y + 1 }, STR_FT_WORLD_NAME, ft);
+                drawText(rt, { 140, y + 1 }, kPresetNames[std::min<size_t>(state.factory.parkExt.planet.preset, 3)]);
                 if (id == Worlds::viewed())
                     drawText(rt, { 80, y + 1 }, STR_FT_WORLD_VIEWING);
                 ft = Formatter();
@@ -136,6 +146,9 @@ namespace OpenRCT2::Ui::Windows
             ft.Add<uint16_t>(_newSize);
             ft.Add<uint16_t>(_newSize);
             drawText(rt, windowPos + ScreenCoordsXY{ 6, 134 }, STR_FT_WORLD_SIZE, ft);
+            auto kind = Formatter();
+            kind.Add<StringId>(kPresetNames[_preset]);
+            drawText(rt, windowPos + ScreenCoordsXY{ 6, 117 }, STR_FT_WORLD_KIND, kind);
         }
     };
 

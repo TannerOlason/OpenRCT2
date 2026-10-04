@@ -45,7 +45,7 @@ namespace OpenRCT2::Factory
     // 11 machine health and threats; 12 alerts; 13 freight cargo; 14 launch targets and transfers; 15 portals.
     constexpr uint16_t kFactoryPoolsVersion = 15;
     constexpr uint16_t kFactoryOreVersion = 1;
-    constexpr uint16_t kParkExtVersion = 4; // 2: scenario options; 3: guests toured; 4: ride damage
+    constexpr uint16_t kParkExtVersion = 5; // 2: scenario options; 3: guests toured; 4: ride damage; 5: planet params
 
     /**
      * Visitor that reads or writes record fields through an OrcaStream chunk.
