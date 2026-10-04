@@ -1,0 +1,185 @@
+{
+    "id": "factory-tour.factory_prototype.inserter_fast",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "inserter",
+        "frames": 8,
+        "swingTicks": 12,
+        "reach": 1,
+        "price": 70,
+        "removalPrice": -52,
+        "clearance": 8
+    },
+    "images": [
+        {
+            "path": "images/inserter_d0_f0.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d0_f1.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d0_f2.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d0_f3.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d0_f4.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d0_f5.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d0_f6.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d0_f7.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f0.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f1.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f2.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f3.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f4.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f5.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f6.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d1_f7.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f0.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f1.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f2.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f3.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f4.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f5.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f6.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d2_f7.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f0.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f1.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f2.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f3.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f4.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f5.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f6.png",
+            "x": -32,
+            "y": -28
+        },
+        {
+            "path": "images/inserter_d3_f7.png",
+            "x": -32,
+            "y": -28
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Fast inserter"
+        }
+    }
+}

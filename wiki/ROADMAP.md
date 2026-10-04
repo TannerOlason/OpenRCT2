@@ -151,7 +151,7 @@ Exhibit Paths.
   tile of a machine marks the guest toured. Content: the Factory exhibit walkway (path sprites from the player's
   RCT2 data, like upstream's official objects). Parks without exhibit paths keep upstream's random sequence.
 
-### M5 Progression and modding `[ ]`
+### M5 Progression and modding `[x]`
 
 Technology prototypes in the research system, labs, unified unlock tree, script bindings, hooks and d.ts,
 object-selection tabs, combat stub (health, damage, Threat, turret), first content pack. A modder can ship a
@@ -170,7 +170,10 @@ object-selection tabs, combat stub (health, damage, Threat, turret), first conte
 - [x] Combat stub (ADR 0013): machine health and wrecks, ride damage ending in a breakdown, Threats as factory
   records that walk at the nearest machine, turrets with ammunition, three actions, four hooks, script access, and
   a combat replay in the determinism pack.
-- [ ] First content pack (turret, longer technology chain) and a modding guide.
+- [x] First content pack: steel and engineering kits, fast inserters, Factory defence (turret and ammunition) and
+  Steel processing technologies (nine in all, two pack tiers). Modding guide `wiki/MODDING.md` with the example
+  turret mod `docs/examples/heavy_turret` (zipped to a `.parkobj` in a user `object` folder, it lists and loads in
+  object selection) and the example plugin `docs/examples/threat-waves.js`.
 
 ### M6 Logistics and polish `[ ]`
 

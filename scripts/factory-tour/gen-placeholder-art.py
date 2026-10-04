@@ -178,7 +178,7 @@ def draw_warehouse(body=(120, 130, 110, 255), roof=(150, 160, 140, 255), outline
     return img, h
 
 
-def draw_inserter(d, frame, frames):
+def draw_inserter(d, frame, frames, arm=(200, 160, 40, 255)):
     h = 28
     img = Image.new("RGBA", (64, 32 + h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -194,7 +194,7 @@ def draw_inserter(d, frame, frames):
     reach = 22
     hx = cx - ux * reach * math.cos(angle)
     hy = (cy - 10) - uy * reach * math.cos(angle) - 14 * math.sin(angle)
-    draw.line([(cx, cy - 10), (hx, hy)], fill=(200, 160, 40, 255), width=3)
+    draw.line([(cx, cy - 10), (hx, hy)], fill=arm, width=3)
     draw.ellipse([hx - 3, hy - 3, hx + 3, hy + 3], fill=(60, 60, 70, 255))
     return img, h
 
@@ -869,21 +869,49 @@ def write_research():
     def proto(name):
         return f"factory-tour.factory_prototype.{name}"
 
+    # Steel and the second research kit (the first content pack's longer chain).
+    icon, belt = draw_item_small((170, 180, 195), (80, 85, 100))
+    folder = write_object("steel_plate", "item", {"stackSize": 100, "marketPrice": 120},
+                          [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                          "Steel plate")
+    save(icon, folder, "icon.png")
+    save(belt, folder, "belt.png")
+    write_object("steel_smelting", "recipe", {
+        "ingredients": [{"item": proto("iron_plate"), "count": 5}],
+        "results": [{"item": proto("steel_plate"), "count": 1}],
+        "timeTicks": 512, "category": "smelting"}, [], "Steel plate")
+    icon, belt = draw_item_small((90, 190, 90), (30, 100, 30))
+    folder = write_object("engineering_kit", "item", {"stackSize": 200, "marketPrice": 90},
+                          [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                          "Engineering kit")
+    save(icon, folder, "icon.png")
+    save(belt, folder, "belt.png")
+    write_object("engineering_kit_recipe", "recipe", {
+        "ingredients": [{"item": proto("steel_plate"), "count": 1}, {"item": proto("iron_gear"), "count": 2}],
+        "results": [{"item": proto("engineering_kit"), "count": 1}],
+        "timeTicks": 240, "category": "crafting"}, [], "Engineering kit")
+
     kit = [{"item": proto("research_kit"), "count": 1}]
+    kits = kit + [{"item": proto("engineering_kit"), "count": 1}]
     technologies = [
-        ("tech_logistics", "Logistics", [], 10, [proto("splitter_basic"), proto("underground_belt_basic")], [], []),
-        ("tech_electric_mining", "Electric mining", [], 15, [proto("electric_drill")], [], []),
-        ("tech_steam_power", "Steam power", [], 20,
+        ("tech_logistics", "Logistics", [], kit, 10, [proto("splitter_basic"), proto("underground_belt_basic")], [], []),
+        ("tech_electric_mining", "Electric mining", [], kit, 15, [proto("electric_drill")], [], []),
+        ("tech_steam_power", "Steam power", [], kit, 20,
          [proto("offshore_pump"), proto("boiler"), proto("steam_engine"), proto("pipe_basic")], [], []),
-        ("tech_warehousing", "Warehousing", ["tech_logistics"], 15,
+        ("tech_warehousing", "Warehousing", ["tech_logistics"], kit, 15,
          [proto("warehouse_depot"), proto("export_depot")], [], []),
-        ("tech_souvenirs", "Souvenir manufacturing", [], 10,
+        ("tech_souvenirs", "Souvenir manufacturing", [], kit, 10,
          [proto("factory_model_recipe"), proto("gear_keyring_recipe")], ["factory-tour.ride.gift_shop"], []),
-        ("tech_factory_tours", "Factory tours", ["tech_logistics"], 15, [], ["factory-tour.ride.tour_tram"], []),
+        ("tech_factory_tours", "Factory tours", ["tech_logistics"], kit, 15, [], ["factory-tour.ride.tour_tram"], []),
+        ("tech_military", "Factory defence", [], kit, 10,
+         [proto("bolt_turret"), proto("bolt_magazine_recipe")], [], []),
+        ("tech_steel", "Steel processing", [], kit, 20, [proto("steel_smelting"), proto("engineering_kit_recipe")], [], []),
+        ("tech_fast_inserters", "Fast inserters", ["tech_steel", "tech_logistics"], kits, 25,
+         [proto("inserter_fast")], [], []),
     ]
-    for name, display, prerequisites, units, unlocks, rides, scenery in technologies:
+    for name, display, prerequisites, packs, units, unlocks, rides, scenery in technologies:
         write_object(name, "technology", {
-            "prerequisites": [proto(p) for p in prerequisites], "packs": kit, "units": units, "unitTicks": 400,
+            "prerequisites": [proto(p) for p in prerequisites], "packs": packs, "units": units, "unitTicks": 400,
             "unlocks": unlocks, "rideEntries": rides, "sceneryGroups": scenery}, [], display)
 
 
@@ -1104,25 +1132,29 @@ def main():
         json.dump(obj, fh, indent=4)
         fh.write("\n")
 
-    # Inserter: 4 directions x 8 frames.
-    frames = 8
-    images = []
-    folder = write_object(
-        "inserter_basic", "inserter",
-        {"frames": frames, "swingTicks": 24, "reach": 1, "price": 40, "removalPrice": -30, "clearance": 8},
-        [], "Basic inserter")
-    for d in range(4):
-        for f in range(frames):
-            name = f"inserter_d{d}_f{f}.png"
-            img, h = draw_inserter(d, f, frames)
-            save(img, folder, name)
-            images.append({"path": f"images/{name}", "x": -32, "y": -h})
-    with open(os.path.join(folder, "object.json")) as fh:
-        obj = json.load(fh)
-    obj["images"] = images
-    with open(os.path.join(folder, "object.json"), "w") as fh:
-        json.dump(obj, fh, indent=4)
-        fh.write("\n")
+    # Inserters: 4 directions x 8 frames; the fast one swings twice as quickly.
+    for inserter_name, display, swing, price, arm in (
+            ("inserter_basic", "Basic inserter", 24, 40, (200, 160, 40, 255)),
+            ("inserter_fast", "Fast inserter", 12, 70, (60, 120, 210, 255))):
+        frames = 8
+        images = []
+        folder = write_object(
+            inserter_name, "inserter",
+            {"frames": frames, "swingTicks": swing, "reach": 1, "price": price, "removalPrice": -(price * 3 // 4),
+             "clearance": 8},
+            [], display)
+        for d in range(4):
+            for f in range(frames):
+                name = f"inserter_d{d}_f{f}.png"
+                img, h = draw_inserter(d, f, frames, arm)
+                save(img, folder, name)
+                images.append({"path": f"images/{name}", "x": -32, "y": -h})
+        with open(os.path.join(folder, "object.json")) as fh:
+            obj = json.load(fh)
+        obj["images"] = images
+        with open(os.path.join(folder, "object.json"), "w") as fh:
+            json.dump(obj, fh, indent=4)
+            fh.write("\n")
 
     # Container: wooden chest, one rotation.
     img, h = draw_chest()

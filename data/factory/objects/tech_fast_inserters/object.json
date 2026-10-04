@@ -1,0 +1,39 @@
+{
+    "id": "factory-tour.factory_prototype.tech_fast_inserters",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [
+            "factory-tour.factory_prototype.tech_steel",
+            "factory-tour.factory_prototype.tech_logistics"
+        ],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            },
+            {
+                "item": "factory-tour.factory_prototype.engineering_kit",
+                "count": 1
+            }
+        ],
+        "units": 25,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.inserter_fast"
+        ],
+        "rideEntries": [],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Fast inserters"
+        }
+    }
+}

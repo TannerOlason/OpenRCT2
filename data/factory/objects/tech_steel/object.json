@@ -1,0 +1,33 @@
+{
+    "id": "factory-tour.factory_prototype.tech_steel",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            }
+        ],
+        "units": 20,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.steel_smelting",
+            "factory-tour.factory_prototype.engineering_kit_recipe"
+        ],
+        "rideEntries": [],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Steel processing"
+        }
+    }
+}

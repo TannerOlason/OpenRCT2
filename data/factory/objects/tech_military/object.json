@@ -1,0 +1,33 @@
+{
+    "id": "factory-tour.factory_prototype.tech_military",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            }
+        ],
+        "units": 10,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.bolt_turret",
+            "factory-tour.factory_prototype.bolt_magazine_recipe"
+        ],
+        "rideEntries": [],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Factory defence"
+        }
+    }
+}

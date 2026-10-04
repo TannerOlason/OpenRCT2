@@ -230,9 +230,11 @@ furnaces skip locked recipes. `Research.cpp` hooks (`withholdGatedResearch`, `ap
 `ResearchResetCurrentItem` and `ResearchFix` keep upstream's research lists and invented tables consistent; both do
 nothing without technologies. The "ignore research status" cheat unlocks everything. The target is set with
 `FactorySetParkOptionAction` option `researchTarget` (an available technology, or 0xFFFF) from the Factory research
-window (WindowClass 146). Content: research kits (gear + plate), the lab, and Logistics, Electric mining, Steam
-power, Warehousing (after Logistics), Souvenir manufacturing (unlocks the gift shop) and Factory tours (unlocks the
-tour tram, after Logistics). Longer chains (electricity, steel, oil, modules, rocket) come with their content.
+window (WindowClass 146). Content: research kits (gear + plate) and engineering kits (steel + 2 gears), the lab,
+and the technologies Logistics, Electric mining, Steam power, Warehousing (after Logistics), Souvenir manufacturing
+(unlocks the gift shop), Factory tours (unlocks the tour tram, after Logistics), Factory defence (turret and
+magazines), Steel processing (steel smelting, engineering kits) and Fast inserters (both kits, after Steel and
+Logistics). Longer chains (oil, modules, rocket) come with their content. Modding: `wiki/MODDING.md`.
 
 ## E6 Modding surface and combat stub
 

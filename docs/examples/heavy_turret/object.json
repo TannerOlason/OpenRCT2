@@ -1,0 +1,75 @@
+{
+    "id": "examplemod.factory_prototype.heavy_turret",
+    "authors": [
+        "Example Modder"
+    ],
+    "version": "1.0",
+    "sourceGame": "custom",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "machine",
+        "health": 900,
+        "machineKind": "turret",
+        "energy": "none",
+        "turretRange": 9,
+        "turretDamage": 45,
+        "turretCooldownTicks": 40,
+        "shotsPerAmmo": 10,
+        "ammoItem": "factory-tour.factory_prototype.bolt_magazine",
+        "photogenic": true,
+        "inputSlots": 1,
+        "outputSlots": 0,
+        "price": 150,
+        "removalPrice": -110,
+        "clearance": 5,
+        "frames": 2,
+        "rotations": 4
+    },
+    "images": [
+        {
+            "path": "images/m_d0_f0.png",
+            "x": -32,
+            "y": -12
+        },
+        {
+            "path": "images/m_d0_f1.png",
+            "x": -32,
+            "y": -12
+        },
+        {
+            "path": "images/m_d1_f0.png",
+            "x": -32,
+            "y": -12
+        },
+        {
+            "path": "images/m_d1_f1.png",
+            "x": -32,
+            "y": -12
+        },
+        {
+            "path": "images/m_d2_f0.png",
+            "x": -32,
+            "y": -12
+        },
+        {
+            "path": "images/m_d2_f1.png",
+            "x": -32,
+            "y": -12
+        },
+        {
+            "path": "images/m_d3_f0.png",
+            "x": -32,
+            "y": -12
+        },
+        {
+            "path": "images/m_d3_f1.png",
+            "x": -32,
+            "y": -12
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Heavy turret"
+        }
+    }
+}

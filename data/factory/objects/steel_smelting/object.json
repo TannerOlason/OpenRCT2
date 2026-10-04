@@ -1,0 +1,32 @@
+{
+    "id": "factory-tour.factory_prototype.steel_smelting",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "recipe",
+        "ingredients": [
+            {
+                "item": "factory-tour.factory_prototype.iron_plate",
+                "count": 5
+            }
+        ],
+        "results": [
+            {
+                "item": "factory-tour.factory_prototype.steel_plate",
+                "count": 1
+            }
+        ],
+        "timeTicks": 512,
+        "category": "smelting"
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Steel plate"
+        }
+    }
+}
