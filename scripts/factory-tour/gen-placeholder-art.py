@@ -788,6 +788,19 @@ def write_freight():
         save(img, folder, "depot.png")
 
 
+def write_interworld():
+    """Launch and landing pads: item transfer between worlds (ADR 0015)."""
+    for name, display, colours, key in (
+            ("launch_pad", "Launch pad", ((170, 170, 180, 255), (210, 90, 60, 255), (60, 60, 70, 255)), "launchPad"),
+            ("landing_pad", "Landing pad", ((170, 170, 180, 255), (80, 170, 90, 255), (60, 60, 70, 255)), "landingPad")):
+        img, h = draw_warehouse(*colours)
+        folder = write_object(
+            name, "container",
+            {"slots": 8, "rotations": 1, key: True, "price": 400, "removalPrice": -300, "clearance": 7},
+            [{"path": "images/depot.png", "x": -32, "y": -h}], display)
+        save(img, folder, "depot.png")
+
+
 def write_tour_tram():
     folder = os.path.join(ROOT, "tour_tram")
     os.makedirs(os.path.join(folder, "images"), exist_ok=True)
@@ -1019,6 +1032,8 @@ def write_research():
          [proto("inserter_fast")], [], []),
         ("tech_freight", "Freight railway", ["tech_logistics", "tech_steel"], kits, 30,
          [proto("freight_loader"), proto("freight_unloader")], ["factory-tour.ride.freight_train"], []),
+        ("tech_interworld", "Interworld logistics", ["tech_freight"], kits, 40,
+         [proto("launch_pad"), proto("landing_pad")], [], []),
     ]
     for name, display, prerequisites, packs, units, unlocks, rides, scenery in technologies:
         write_object(name, "technology", {
@@ -1171,6 +1186,9 @@ def main():
 
     # Freight railway wagons and their loader and unloader.
     write_freight()
+
+    # Launch and landing pads between worlds.
+    write_interworld()
 
     # Manufactured souvenirs, their recipes and the shop that sells them (stocked from the Warehouse).
     for name, display, colour, dark, shop_item in (("factory_model", "Factory model", (190, 120, 60), (110, 60, 30), "factory_model"),

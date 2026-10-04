@@ -147,12 +147,14 @@ namespace OpenRCT2::Factory
     struct ContainerRecord : RecordBase
     {
         std::vector<ItemStack> slots;
+        uint8_t targetWorld{ 0xFF }; // launch pads: the world they send to (0xFF = the next world)
 
         template<typename V>
         void visit(V& v)
         {
             visitBase(v);
             v.vec(slots, VisitElement{});
+            v(targetWorld);
         }
     };
 

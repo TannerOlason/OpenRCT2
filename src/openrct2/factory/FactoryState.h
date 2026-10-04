@@ -23,6 +23,7 @@
 #include "Pollution.h"
 #include "RideRatingsFactory.h"
 #include "Technology.h"
+#include "Transfers.h"
 
 #include <cstdint>
 
@@ -54,6 +55,7 @@ namespace OpenRCT2::Factory
         Pool<ThreatRecord> threats;
         AlertState alerts;
         FreightState freight;
+        TransferState transfers; // company state (moves with the active world)
         // Factory proximity totals of rides part-way through a rating calculation, sorted by ride id.
         std::vector<RideProximityEntry> rideProximity;
         PollutionLayer pollution;
@@ -110,6 +112,7 @@ namespace OpenRCT2::Factory
             threats.visit(v);
             alerts.visit(v);
             freight.visit(v);
+            transfers.visit(v);
         }
     };
 

@@ -8,6 +8,7 @@
 - Feature: [fork#1] Underground belts tunnel under other buildings, splitters alternate items between two output belts, and a belt ending at the side of another belt sideloads onto its near lane.
 - Feature: [fork#1] Dragging with a belt selected in the factory window builds a straight run of belts.
 - Feature: [fork#1] Factory alerts, a pollution overlay and production graphs.
+- Feature: [fork#1] Launch pads ship items to landing pads in other worlds.
 - Feature: [fork#1] Several worlds: create extra factory worlds that share the company’s money and research, and switch between them.
 - Feature: [fork#1] Freight railway: trains of cargo wagons carry goods between freight loaders and unloaders.
 - Feature: [fork#1] Factory blueprints: copy an area, rotate it, paste it, and share it as text.

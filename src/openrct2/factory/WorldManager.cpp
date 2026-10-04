@@ -129,6 +129,7 @@ namespace OpenRCT2::Factory::Worlds
             auto& fa = from.factory;
             auto& fb = to.factory;
             fb.research = fa.research;
+            fb.transfers = fa.transfers;
             fb.market = fa.market;
             fb.production = fa.production;
             fb.parkExt.constructionMode = fa.parkExt.constructionMode;

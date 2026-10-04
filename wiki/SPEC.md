@@ -340,7 +340,11 @@ options and date, upstream and fork research, cheats, Market, production, factor
 ticks every world in ascending order when there is more than one; network, replay, date and scenario, research, the
 action queue and script hooks run in world 0's pass, audio and provisional ghosts in the viewed world's. Actions
 carry their world in `CommandFlags` bits 16-23 and run with it active. Saves: world 0 top-level, others nested in
-chunk 0x44 (version 1). Not yet: item transfer between worlds (launch and landing pads), per-world guests (M8).
+chunk 0x44 (version 1). Item transfer (`factory/Transfers.cpp`, pools version 14): `ContainerRecord::targetWorld`
+(0xFF = next world) on containers with `launchPad`; every `kLaunchTicks` (200) a launch pad empties into
+`TransferState::queue` entries `{toWorld, item, count, arrivalTick = now + kTransitTicks (400)}`; each world, at the
+end of its factory tick, lands due entries into its `landingPad` containers (ascending id, partial delivery waits).
+The queue is company state. Not yet: per-world guests and portal rides (M8).
 
 ## E9 Theme, content, release
 

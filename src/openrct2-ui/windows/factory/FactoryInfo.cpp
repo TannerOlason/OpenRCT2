@@ -28,8 +28,10 @@
 #include <openrct2/factory/FactoryStringIds.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
+#include <openrct2/factory/WorldManager.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
+#include <openrct2/factory/actions/FactorySetLaunchTargetAction.h>
 #include <openrct2/factory/actions/FactorySetRecipeAction.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/object/ObjectList.h>
@@ -62,6 +64,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_OUTPUT_PRIORITY_DROPDOWN,
         WIDX_OUTPUT_PRIORITY_DROPDOWN_BUTTON,
         WIDX_WAREHOUSE_SCROLL,
+        WIDX_LAUNCH_TARGET,
     };
 
     // clang-format off
@@ -75,7 +78,8 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({212, 49}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_PRIORITY_TIP),
         makeWidget({ 96, 64}, {128, 12}, WidgetType::dropdownMenu, WindowColour::secondary                                     ),
         makeWidget({212, 65}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_PRIORITY_TIP),
-        makeWidget({  4, 44}, {222, 108}, WidgetType::scroll,      WindowColour::secondary, SCROLL_VERTICAL,    STR_FT_SELL_STACK_TIP)
+        makeWidget({  4, 44}, {222, 108}, WidgetType::scroll,      WindowColour::secondary, SCROLL_VERTICAL,    STR_FT_SELL_STACK_TIP),
+        makeWidget({150, 30}, { 74, 12}, WidgetType::button,      WindowColour::secondary, STR_FT_LAUNCH_CHANGE, STR_FT_LAUNCH_CHANGE_TIP)
     );
     // clang-format on
 
@@ -114,6 +118,19 @@ namespace OpenRCT2::Ui::Windows
         {
             if (widgetIndex == WIDX_CLOSE)
                 close();
+            if (widgetIndex == WIDX_LAUNCH_TARGET)
+            {
+                auto* container = FindContainer();
+                if (container == nullptr)
+                    return;
+                const auto here = Factory::Worlds::active();
+                const auto current = launchTargetOf(container->targetWorld, here, Factory::Worlds::count());
+                auto next = static_cast<uint8_t>((current + 1) % Factory::Worlds::count());
+                if (next == here)
+                    next = static_cast<uint8_t>((next + 1) % Factory::Worlds::count());
+                auto action = GameActions::FactorySetLaunchTargetAction(_loc, next);
+                GameActions::Execute(&action, getGameState());
+            }
         }
 
         ScreenSize onScrollGetSize(int32_t scrollIndex) override
@@ -225,6 +242,7 @@ namespace OpenRCT2::Ui::Windows
             }
 
             widgets[WIDX_WAREHOUSE_SCROLL].setVisible(IsWarehouseDepot());
+            widgets[WIDX_LAUNCH_TARGET].setVisible(IsLaunchPad() && Factory::Worlds::count() > 1);
 
             auto* splitter = FindSplitter();
             for (auto widx :
@@ -282,6 +300,26 @@ namespace OpenRCT2::Ui::Windows
                         rt, windowPos + ScreenCoordsXY{ 6, widgets[WIDX_WAREHOUSE_SCROLL].bottom + 3 }, STR_FT_MARKET_PRICE,
                         ft);
                     return;
+                }
+                if (proto != nullptr && proto->getContainer().launchPad)
+                {
+                    if (Factory::Worlds::count() > 1)
+                    {
+                        auto ft = Formatter();
+                        ft.Add<uint16_t>(
+                            launchTargetOf(container->targetWorld, Factory::Worlds::active(), Factory::Worlds::count()) + 1);
+                        drawText(rt, pos, STR_FT_LAUNCH_TARGET, ft);
+                    }
+                    else
+                    {
+                        drawText(rt, pos, STR_FT_LAUNCH_ONE_WORLD);
+                    }
+                    pos.y += 14;
+                }
+                if (proto != nullptr && proto->getContainer().landingPad)
+                {
+                    drawText(rt, pos, STR_FT_LANDING_PAD);
+                    pos.y += 12;
                 }
                 if (proto != nullptr && (proto->getContainer().freightLoader || proto->getContainer().freightUnloader))
                 {
@@ -490,6 +528,21 @@ namespace OpenRCT2::Ui::Windows
                     _recipeChoices.push_back(static_cast<ObjectEntryIndex>(i));
                 }
             }
+        }
+
+        ContainerRecord* FindContainer() const
+        {
+            auto* element = findFactoryElement(_loc);
+            if (element == nullptr || element->getSubtype() != FactoryElementSubtype::container)
+                return nullptr;
+            return getGameState().factory.containers.get(element->getRecordId());
+        }
+
+        bool IsLaunchPad() const
+        {
+            auto* container = FindContainer();
+            auto* proto = container != nullptr ? getPrototype(container->entry) : nullptr;
+            return proto != nullptr && proto->getContainer().launchPad;
         }
 
         static StringId StatusString(MachineStatus status)

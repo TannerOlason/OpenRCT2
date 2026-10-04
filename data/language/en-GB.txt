@@ -4043,3 +4043,8 @@ STR_20646   :{WINDOW_COLOUR_2}New world size: {BLACK}{COMMA16} x {COMMA16}
 STR_20647   :Worlds: view and create worlds
 STR_20648   :Click a world to view it
 STR_20649   :{WINDOW_COLOUR_2}{COMMA16} x {COMMA16} tiles, {BLACK}{COMMA32}{WINDOW_COLOUR_2} machines
+STR_20650   :{WINDOW_COLOUR_2}Launches to: {BLACK}World {COMMA16}
+STR_20651   :{WINDOW_COLOUR_2}Launches nowhere until there is another world
+STR_20652   :Next world
+STR_20653   :{WINDOW_COLOUR_2}Landing pad: receives shipments from other worlds
+STR_20654   :Send to the next world

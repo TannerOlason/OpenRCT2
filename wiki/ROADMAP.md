@@ -200,7 +200,7 @@ pollution overlay, machine audio and smoke.
   track fill and empty a standing train car by car (200 items of one kind per car, cargo in a side table); unlocked
   by the Freight railway technology; `factory.freight` lists cargo for scripts.
 
-### M7 Multi-world I `[ ]`
+### M7 Multi-world I `[x]`
 
 E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two worlds with item transfer
 (rocket silo), world selector, nested save, network map and tick changes.
@@ -214,7 +214,9 @@ E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two w
 - [x] Worlds window (WindowClass 149, from the build window): lists worlds with size and machine count, views one
   (closing windows that point into the old world), and creates flat, fully owned worlds through
   `FactoryCreateWorldAction` (command 16).
-- [ ] Item transfer between worlds (launch and landing pads).
+- [x] Item transfer between worlds: launch pads send their contents every 200 ticks to their target world (the
+  next world unless set with `FactorySetLaunchTargetAction`, command 17), where shipments land in landing pads 400
+  ticks later; the queue is company state. Unlocked by Interworld logistics. (Rocket art and launch animation: M9.)
 
 ### M8 Multi-world II `[ ]`
 

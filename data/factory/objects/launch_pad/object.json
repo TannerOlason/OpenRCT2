@@ -1,0 +1,30 @@
+{
+    "id": "factory-tour.factory_prototype.launch_pad",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "container",
+        "slots": 8,
+        "rotations": 1,
+        "launchPad": true,
+        "price": 400,
+        "removalPrice": -300,
+        "clearance": 7
+    },
+    "images": [
+        {
+            "path": "images/depot.png",
+            "x": -32,
+            "y": -22
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Launch pad"
+        }
+    }
+}

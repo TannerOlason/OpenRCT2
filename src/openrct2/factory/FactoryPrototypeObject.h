@@ -225,6 +225,8 @@ namespace OpenRCT2::Factory
         bool exportDepot = false;     // items put in are sold to the Market at once (unsellable items are refused)
         bool freightLoader = false;   // fills freight cars standing beside it at a station
         bool freightUnloader = false; // empties freight cars standing beside it at a station
+        bool launchPad = false;       // sends its contents to another world every kLaunchTicks
+        bool landingPad = false;      // receives shipments from other worlds
     };
 
     /**

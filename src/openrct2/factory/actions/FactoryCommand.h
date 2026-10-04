@@ -39,6 +39,7 @@ namespace OpenRCT2::GameActions
         threatSpawn = 14,
         threatDespawn = 15,
         createWorld = 16,
+        setLaunchTarget = 17,
         count,
     };
 

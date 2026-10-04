@@ -1,0 +1,39 @@
+{
+    "id": "factory-tour.factory_prototype.tech_interworld",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [
+            "factory-tour.factory_prototype.tech_freight"
+        ],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            },
+            {
+                "item": "factory-tour.factory_prototype.engineering_kit",
+                "count": 1
+            }
+        ],
+        "units": 40,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.launch_pad",
+            "factory-tour.factory_prototype.landing_pad"
+        ],
+        "rideEntries": [],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Interworld logistics"
+        }
+    }
+}

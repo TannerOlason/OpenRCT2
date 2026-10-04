@@ -757,6 +757,7 @@
     <ClInclude Include="factory\FactoryTopology.h" />
     <ClInclude Include="factory\Objectives.h" />
     <ClInclude Include="factory\Technology.h" />
+    <ClInclude Include="factory\Transfers.h" />
     <ClInclude Include="factory\WorldManager.h" />
     <ClInclude Include="factory\scripting\ScFactory.h" />
     <ClInclude Include="factory\Ore.h" />
@@ -768,6 +769,7 @@
     <ClInclude Include="factory\actions\FactorySetOreAction.h" />
     <ClInclude Include="factory\actions\FactoryPlaceBeltLineAction.h" />
     <ClInclude Include="factory\actions\FactoryMarketSellAction.h" />
+    <ClInclude Include="factory\actions\FactorySetLaunchTargetAction.h" />
     <ClInclude Include="factory\actions\FactoryCreateWorldAction.h" />
     <ClInclude Include="factory\actions\FactoryPlaceBlueprintAction.h" />
     <ClInclude Include="factory\actions\FactoryThreatDespawnAction.h" />
@@ -1379,6 +1381,7 @@
     <ClCompile Include="factory\FactoryTopology.cpp" />
     <ClCompile Include="factory\Objectives.cpp" />
     <ClCompile Include="factory\Technology.cpp" />
+    <ClCompile Include="factory\Transfers.cpp" />
     <ClCompile Include="factory\WorldManager.cpp" />
     <ClCompile Include="factory\scripting\ScFactory.cpp" />
     <ClCompile Include="factory\Ore.cpp" />
@@ -1389,6 +1392,7 @@
     <ClCompile Include="factory\actions\FactorySetOreAction.cpp" />
     <ClCompile Include="factory\actions\FactoryPlaceBeltLineAction.cpp" />
     <ClCompile Include="factory\actions\FactoryMarketSellAction.cpp" />
+    <ClCompile Include="factory\actions\FactorySetLaunchTargetAction.cpp" />
     <ClCompile Include="factory\actions\FactoryCreateWorldAction.cpp" />
     <ClCompile Include="factory\actions\FactoryPlaceBlueprintAction.cpp" />
     <ClCompile Include="factory\actions\FactoryThreatDespawnAction.cpp" />

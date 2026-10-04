@@ -1767,6 +1767,7 @@ const static EnumMap<GameCommand> ActionNameToType = {
     { "factorymarketsell", GameActions::toGameCommand(GameActions::FactoryCommand::marketSell) },
     { "factorydamage", GameActions::toGameCommand(GameActions::FactoryCommand::damage) },
     { "factorycreateworld", GameActions::toGameCommand(GameActions::FactoryCommand::createWorld) },
+    { "factorysetlaunchtarget", GameActions::toGameCommand(GameActions::FactoryCommand::setLaunchTarget) },
     { "factoryplaceblueprint", GameActions::toGameCommand(GameActions::FactoryCommand::placeBlueprint) },
     { "factorythreatspawn", GameActions::toGameCommand(GameActions::FactoryCommand::threatSpawn) },
     { "factorythreatdespawn", GameActions::toGameCommand(GameActions::FactoryCommand::threatDespawn) },

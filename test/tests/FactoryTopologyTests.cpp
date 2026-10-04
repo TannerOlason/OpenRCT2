@@ -51,6 +51,7 @@
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/factory/Technology.h>
+#include <openrct2/factory/Transfers.h>
 #include <openrct2/factory/WorldManager.h>
 #include <openrct2/factory/actions/FactoryDamageAction.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
@@ -2280,4 +2281,51 @@ TEST_F(FactoryTopologyTests, SecondWorldTicksInLockstepWithItsOwnMapAndSharedCom
     W::activate(W::kPrimaryWorld);
     W::adoptActiveAsPrimary();
     EXPECT_EQ(W::count(), 1u);
+}
+
+TEST_F(FactoryTopologyTests, LaunchPadsShipItemsToLandingPadsInAnotherWorld)
+{
+    namespace W = Factory::Worlds;
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto load = [&](const char* id) {
+        auto* object = objectManager.LoadObject(id);
+        return object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
+    };
+    const auto launchPad = load("factory-tour.factory_prototype.launch_pad");
+    const auto landingPad = load("factory-tour.factory_prototype.landing_pad");
+    ASSERT_NE(launchPad, kObjectEntryIndexNull);
+    ASSERT_NE(landingPad, kObjectEntryIndexNull);
+
+    auto* pad = PlaceAt(kRowX0, kRowY, 0, launchPad);
+    ASSERT_NE(pad, nullptr);
+    getGameState().factory.containers.get(pad->getRecordId())->slots[0] = { _plate, 30 };
+    // With one world nothing launches.
+    for (int i = 0; i < 300; i++)
+        gameStateUpdateLogic();
+    EXPECT_EQ(getGameState().factory.containers.get(pad->getRecordId())->slots[0].count, 30);
+
+    ASSERT_EQ(W::create({ 32, 32 }), 1);
+    RecordId landingId = kNullRecord;
+    {
+        W::Scope inWorld1(1);
+        const CoordsXYZ at{ 10 * kCoordsXYStep, 10 * kCoordsXYStep,
+                            MapGetSurfaceElementAt(CoordsXY{ 10 * kCoordsXYStep, 10 * kCoordsXYStep })->getBaseZ() };
+        auto* element = placeElement(getGameState(), at, 0, landingPad, false);
+        ASSERT_NE(element, nullptr);
+        landingId = element->getRecordId();
+    }
+    // The pad launches at the next kLaunchTicks boundary; the plates land kTransitTicks later in world 1.
+    for (uint32_t i = 0; i < kLaunchTicks + kTransitTicks + 2; i++)
+        gameStateUpdateLogic();
+    EXPECT_EQ(getGameState().factory.containers.get(pad->getRecordId())->slots[0].count, 0);
+    EXPECT_TRUE(getGameState().factory.transfers.queue.empty());
+    uint32_t landed = 0;
+    for (const auto& slot : W::state(1).factory.containers.get(landingId)->slots)
+        if (slot.item == _plate)
+            landed += slot.count;
+    EXPECT_EQ(landed, 30u);
+    EXPECT_EQ(launchTargetOf(kLaunchToNextWorld, 1, 2), 0);
+
+    W::activate(W::kPrimaryWorld);
+    W::adoptActiveAsPrimary();
 }
