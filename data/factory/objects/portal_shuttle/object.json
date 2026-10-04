@@ -1,0 +1,403 @@
+{
+    "id": "factory-tour.ride.portal_shuttle",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "ride",
+    "properties": {
+        "type": "portal_terminal",
+        "category": "transport",
+        "noCollisionCrashes": true,
+        "minCarsPerTrain": 2,
+        "maxCarsPerTrain": 4,
+        "numEmptyCars": 0,
+        "tabCar": 0,
+        "carColours": [
+            [
+                [
+                    "light_purple",
+                    "white",
+                    "black"
+                ]
+            ],
+            [
+                [
+                    "dark_water",
+                    "white",
+                    "black"
+                ]
+            ]
+        ],
+        "buildMenuPriority": 1,
+        "cars": [
+            {
+                "rotationFrameMask": 31,
+                "spacing": 120000,
+                "mass": 300,
+                "numSeats": 2,
+                "numSeatRows": 1,
+                "poweredAcceleration": 60,
+                "poweredMaxSpeed": 5,
+                "drawOrder": 9,
+                "spriteGroups": {
+                    "slopeFlat": 32
+                },
+                "isPowered": true,
+                "loadingPositions": [
+                    3,
+                    -3
+                ]
+            }
+        ]
+    },
+    "images": [
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/car_00.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_01.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_02.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_03.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_04.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_05.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_06.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_07.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_08.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_09.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_10.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_11.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_12.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_13.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_14.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_15.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_16.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_17.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_18.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_19.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_20.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_21.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_22.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_23.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_24.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_25.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_26.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_27.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_28.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_29.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_30.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/car_31.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_00.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_01.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_02.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_03.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_04.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_05.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_06.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_07.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_08.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_09.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_10.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_11.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_12.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_13.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_14.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_15.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_16.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_17.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_18.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_19.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_20.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_21.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_22.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_23.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_24.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_25.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_26.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_27.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_28.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_29.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_30.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/rider_31.png",
+            "x": -24,
+            "y": -26
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Portal shuttle"
+        },
+        "description": {
+            "en-GB": "Shuttle cars that run through the portal to the terminal in the next world"
+        },
+        "capacity": {
+            "en-GB": "2 passengers per car"
+        }
+    }
+}

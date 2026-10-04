@@ -749,6 +749,8 @@
     <ClInclude Include="factory\Materials.h" />
     <ClInclude Include="factory\ParkExt.h" />
     <ClInclude Include="factory\Pollution.h" />
+    <ClInclude Include="factory\PortalTerminalRTD.h" />
+    <ClInclude Include="factory\Portals.h" />
     <ClInclude Include="factory\RideRatingsFactory.h" />
     <ClInclude Include="factory\Fluids.h" />
     <ClInclude Include="factory\FactoryPool.hpp" />
@@ -1372,6 +1374,7 @@
     <ClCompile Include="factory\Materials.cpp" />
     <ClCompile Include="factory\ParkExt.cpp" />
     <ClCompile Include="factory\Pollution.cpp" />
+    <ClCompile Include="factory\Portals.cpp" />
     <ClCompile Include="factory\RideRatingsFactory.cpp" />
     <ClCompile Include="factory\Fluids.cpp" />
     <ClCompile Include="factory\FactoryPrototypeObject.cpp" />

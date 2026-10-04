@@ -46,6 +46,7 @@ namespace OpenRCT2::Factory
         alerts = AlertState{};
         freight.cargo.clear();
         transfers.queue.clear();
+        portals = PortalState{};
         rideProximity.clear();
         pollution.clear();
         warehouse.stock.clear();
@@ -62,7 +63,7 @@ namespace OpenRCT2::Factory
     bool State::isEmpty() const
     {
         return recordCount() == 0 && topologyVersion == 0 && ore.isEmpty() && parkExt.isEmpty() && warehouse.isEmpty()
-            && research.isEmpty();
+            && research.isEmpty() && transfers.queue.empty() && portals.isEmpty();
     }
 
     size_t State::recordCount() const
@@ -1228,6 +1229,7 @@ namespace OpenRCT2::Factory
             updateThreats(gameState);
             updateFreight(gameState);
             updateTransfers(gameState);
+            updatePortals(gameState);
             return;
         }
         using Clock = std::chrono::steady_clock;
@@ -1251,6 +1253,7 @@ namespace OpenRCT2::Factory
         updateThreats(gameState);
         updateFreight(gameState);
         updateTransfers(gameState);
+        updatePortals(gameState);
         lap(times->machines);
     }
 } // namespace OpenRCT2::Factory

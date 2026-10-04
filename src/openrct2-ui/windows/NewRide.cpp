@@ -71,6 +71,7 @@ namespace OpenRCT2::Ui::Windows
         // Transport rides
         RIDE_TYPE_MINIATURE_RAILWAY,
         RIDE_TYPE_FREIGHT_RAILWAY, // FACTORY-TOUR
+        RIDE_TYPE_PORTAL_TERMINAL, // FACTORY-TOUR
         RIDE_TYPE_MONORAIL,
         RIDE_TYPE_SUSPENDED_MONORAIL,
         RIDE_TYPE_CHAIRLIFT,
@@ -169,7 +170,7 @@ namespace OpenRCT2::Ui::Windows
         RIDE_TYPE_DRINK_STALL,
         // FACTORY-TOUR: RIDE_TYPE_1F became the freight railway, listed with the transport rides
         RIDE_TYPE_SHOP,
-        RIDE_TYPE_22,
+        // FACTORY-TOUR: RIDE_TYPE_22 became the Portal Terminal, listed with the transport rides
         RIDE_TYPE_INFORMATION_KIOSK,
         RIDE_TYPE_FIRST_AID,
         RIDE_TYPE_CASH_MACHINE,

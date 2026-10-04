@@ -615,7 +615,8 @@ namespace OpenRCT2
         RIDE_TYPE_FREIGHT_RAILWAY,
         RIDE_TYPE_SHOP,
         RIDE_TYPE_MERRY_GO_ROUND,
-        RIDE_TYPE_22,
+        // FACTORY-TOUR: the free 22 slot is the Portal Terminal (ADR 0016)
+        RIDE_TYPE_PORTAL_TERMINAL,
         RIDE_TYPE_INFORMATION_KIOSK,
         RIDE_TYPE_TOILETS,
         RIDE_TYPE_FERRIS_WHEEL,

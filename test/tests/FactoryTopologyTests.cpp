@@ -31,6 +31,7 @@
 #include <openrct2/actions/track/TrackPlaceAction.h>
 #include <openrct2/core/DataSerialiser.h>
 #include <openrct2/core/MemoryStream.h>
+#include <openrct2/entity/EntityList.h>
 #include <openrct2/entity/EntityRegistry.h>
 #include <openrct2/entity/Guest.h>
 #include <openrct2/factory/Alerts.h>
@@ -48,6 +49,7 @@
 #include <openrct2/factory/Objectives.h>
 #include <openrct2/factory/ParkExt.h>
 #include <openrct2/factory/Pollution.h>
+#include <openrct2/factory/Portals.h>
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/factory/Technology.h>
@@ -219,18 +221,20 @@ protected:
     // A Factory Tour ride on a 4x2 flat circuit: a two-tile station at (x0, y0) and (x0 + 1, y0) heading east, four
     // one-tile left turns and two straights, with its entrance and exit north of the station. Returns RideId::GetNull()
     // on failure.
-    static RideId BuildFactoryTourLoop(int32_t x0, int32_t y0)
+    static RideId BuildFactoryTourLoop(
+        int32_t x0, int32_t y0, ride_type_t rideType = RIDE_TYPE_FACTORY_TOUR,
+        const char* object = "factory-tour.ride.tour_tram")
     {
         auto& gameState = getGameState();
         gameState.cheats.sandboxMode = true;
         auto& objectManager = GetContext()->GetObjectManager();
-        auto* tram = objectManager.LoadObject("factory-tour.ride.tour_tram");
+        auto* tram = objectManager.LoadObject(object);
         if (tram == nullptr)
             return RideId::GetNull();
         const auto entry = objectManager.GetLoadedObjectEntryIndex(tram);
-        RideTypeSetInvented(RIDE_TYPE_FACTORY_TOUR);
+        RideTypeSetInvented(rideType);
         RideEntrySetInvented(entry);
-        auto create = GameActions::RideCreateAction(RIDE_TYPE_FACTORY_TOUR, entry, 0, 0, 0, RideInspection::every10Minutes);
+        auto create = GameActions::RideCreateAction(rideType, entry, 0, 0, 0, RideInspection::every10Minutes);
         auto created = GameActions::ExecuteNested(&create, gameState);
         if (created.error != GameActions::Status::ok)
             return RideId::GetNull();
@@ -263,8 +267,8 @@ protected:
         for (const auto& piece : pieces)
         {
             auto place = GameActions::TrackPlaceAction(
-                rideId, piece.type, RIDE_TYPE_FACTORY_TOUR,
-                CoordsXYZD{ piece.tx * kCoordsXYStep, piece.ty * kCoordsXYStep, z, piece.dir }, 0, 0, 0, {}, false);
+                rideId, piece.type, rideType, CoordsXYZD{ piece.tx * kCoordsXYStep, piece.ty * kCoordsXYStep, z, piece.dir }, 0,
+                0, 0, {}, false);
             if (GameActions::ExecuteNested(&place, gameState).error != GameActions::Status::ok)
                 return RideId::GetNull();
         }
@@ -2325,6 +2329,71 @@ TEST_F(FactoryTopologyTests, LaunchPadsShipItemsToLandingPadsInAnotherWorld)
             landed += slot.count;
     EXPECT_EQ(landed, 30u);
     EXPECT_EQ(launchTargetOf(kLaunchToNextWorld, 1, 2), 0);
+
+    W::activate(W::kPrimaryWorld);
+    W::adoptActiveAsPrimary();
+}
+
+TEST_F(FactoryTopologyTests, PortalTerminalsSendRidersToTheNextWorld)
+{
+    namespace W = Factory::Worlds;
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto* surfaceObject = objectManager.LoadObject("rct2.footpath_surface.tarmac");
+    auto* railingsObject = objectManager.LoadObject("rct2.footpath_railings.wood");
+    ASSERT_NE(surfaceObject, nullptr);
+    ASSERT_NE(railingsObject, nullptr);
+    const auto surface = objectManager.GetLoadedObjectEntryIndex(surfaceObject);
+    const auto railings = objectManager.GetLoadedObjectEntryIndex(railingsObject);
+
+    // A terminal in each world, with a footpath beside its exit at (x0 + 1, y0 - 1).
+    auto buildTerminal = [&](int32_t x0, int32_t y0) {
+        const auto rideId = BuildFactoryTourLoop(x0, y0, RIDE_TYPE_PORTAL_TERMINAL, "factory-tour.ride.portal_shuttle");
+        EXPECT_FALSE(rideId.IsNull());
+        const auto z = MapGetSurfaceElementAt(TileCoordsXY{ x0 + 1, y0 - 2 })->getBaseZ();
+        auto path = GameActions::FootpathPlaceAction(
+            CoordsXYZ{ (x0 + 1) * kCoordsXYStep, (y0 - 2) * kCoordsXYStep, z }, {}, surface, railings);
+        EXPECT_EQ(GameActions::ExecuteNested(&path, getGameState()).error, GameActions::Status::ok);
+        return rideId;
+    };
+    const RideId terminal0 = buildTerminal(kRowX0 + 2, kRowY + 3);
+    ASSERT_FALSE(terminal0.IsNull());
+    ASSERT_EQ(W::create({ 32, 32 }), 1);
+    {
+        W::Scope inWorld1(1);
+        ASSERT_FALSE(buildTerminal(10, 10).IsNull());
+        EXPECT_EQ(getGameState().park.numGuestsInPark, 0u);
+    }
+
+    // A guest finishes a ride on world 0's terminal.
+    auto* guest = Guest::generate(Tile(kRowX0 + 3));
+    ASSERT_NE(guest, nullptr);
+    guest->outsideOfPark = false;
+    IncrementGuestsInPark();
+    guest->happiness = 201;
+    guest->cashInPocket = 12.34_GBP;
+    const auto name = guest->getName();
+    const auto guestsBefore = getGameState().park.numGuestsInPark;
+    onGuestExitRide(getGameState(), *guest, *GetRide(terminal0));
+    EXPECT_EQ(getGameState().factory.portals.arrivals.size(), 1u);
+    gameStateUpdateLogic();
+
+    // Gone from world 0, standing beside world 1's terminal exit with the same mood, money and name.
+    EXPECT_EQ(getGameState().park.numGuestsInPark, guestsBefore - 1);
+    EXPECT_TRUE(getGameState().factory.portals.isEmpty());
+    {
+        W::Scope inWorld1(1);
+        auto& gameState = getGameState();
+        EXPECT_EQ(gameState.park.numGuestsInPark, 1u);
+        const Guest* arrived = nullptr;
+        for (auto* g : EntityList<Guest>())
+            arrived = g;
+        ASSERT_NE(arrived, nullptr);
+        EXPECT_EQ(arrived->happiness, 201);
+        EXPECT_EQ(arrived->cashInPocket, 12.34_GBP);
+        EXPECT_EQ(arrived->getName(), name);
+        EXPECT_FALSE(arrived->outsideOfPark);
+        EXPECT_EQ(TileCoordsXY(arrived->getLocation()), (TileCoordsXY{ 11, 8 }));
+    }
 
     W::activate(W::kPrimaryWorld);
     W::adoptActiveAsPrimary();

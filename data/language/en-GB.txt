@@ -4048,3 +4048,5 @@ STR_20651   :{WINDOW_COLOUR_2}Launches nowhere until there is another world
 STR_20652   :Next world
 STR_20653   :{WINDOW_COLOUR_2}Landing pad: receives shipments from other worlds
 STR_20654   :Send to the next world
+STR_20655   :Portal Terminal
+STR_20656   :A short shuttle ride whose passengers step out of the matching terminal in the next world

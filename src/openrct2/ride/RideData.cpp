@@ -120,6 +120,7 @@
 // FACTORY-TOUR
 #include "../factory/FactoryTourRTD.h"
 #include "../factory/FreightRailwayRTD.h"
+#include "../factory/PortalTerminalRTD.h"
 
 #include <iterator>
 
@@ -291,7 +292,7 @@ namespace OpenRCT2
         /* RIDE_TYPE_FREIGHT_RAILWAY (FACTORY-TOUR)     */ kFreightRailwayRTD,
         /* RIDE_TYPE_SHOP                               */ kShopRTD,
         /* RIDE_TYPE_MERRY_GO_ROUND                     */ kMerryGoRoundRTD,
-        /* RIDE_TYPE_22                                 */ kDummyRTD,
+        /* RIDE_TYPE_PORTAL_TERMINAL (FACTORY-TOUR)     */ kPortalTerminalRTD,
         /* RIDE_TYPE_INFORMATION_KIOSK                  */ kInformationKioskRTD,
         /* RIDE_TYPE_TOILETS                            */ kToiletsRTD,
         /* RIDE_TYPE_FERRIS_WHEEL                       */ kFerrisWheelRTD,

@@ -156,6 +156,10 @@ The ride type in the 1F slot whose cars carry cargo (side table, not a `CarEntry
 Freight Unloader containers beside its stations (ADR 0014).
 _Avoid_: cargo train ride, goods monorail
 
+**Portal Terminal**:
+The ride type in the 22 slot whose riders step out of the matching terminal in the next world (ADR 0016).
+_Avoid_: teleporter, gateway ride
+
 **Lab**:
 A machine of kind `lab` that consumes the current Technology's packs to research it.
 _Avoid_: research centre

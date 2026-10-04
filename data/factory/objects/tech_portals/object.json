@@ -1,0 +1,38 @@
+{
+    "id": "factory-tour.factory_prototype.tech_portals",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [
+            "factory-tour.factory_prototype.tech_interworld"
+        ],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            },
+            {
+                "item": "factory-tour.factory_prototype.engineering_kit",
+                "count": 1
+            }
+        ],
+        "units": 50,
+        "unitTicks": 400,
+        "unlocks": [],
+        "rideEntries": [
+            "factory-tour.ride.portal_shuttle"
+        ],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Portal terminals"
+        }
+    }
+}

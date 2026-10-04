@@ -344,7 +344,10 @@ chunk 0x44 (version 1). Item transfer (`factory/Transfers.cpp`, pools version 14
 (0xFF = next world) on containers with `launchPad`; every `kLaunchTicks` (200) a launch pad empties into
 `TransferState::queue` entries `{toWorld, item, count, arrivalTick = now + kTransitTicks (400)}`; each world, at the
 end of its factory tick, lands due entries into its `landingPad` containers (ascending id, partial delivery waits).
-The queue is company state. Not yet: per-world guests and portal rides (M8).
+The queue is company state. Portals (ADR 0016, `factory/Portals.cpp`, pools version 15): `Guest::onExitRide` calls
+`onGuestExitRide`, which for a Portal Terminal queues a `GuestTransfer` (world-neutral fields) to the next world and
+a `GuestDeparture`; `updatePortals` (each world's factory tick) removes departing guests of the active world and
+generates arrivals beside the matching terminal's exit (terminal index mod terminal count).
 
 ## E9 Theme, content, release
 

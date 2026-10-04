@@ -27,6 +27,7 @@
 #include "../entity/Particle.h"
 #include "../factory/GuestFactory.h" // FACTORY-TOUR
 #include "../factory/Materials.h"    // FACTORY-TOUR
+#include "../factory/Portals.h" // FACTORY-TOUR
 #include "../interface/WindowBase.h"
 #include "../localisation/Formatter.h"
 #include "../localisation/Formatting.h"
@@ -1731,9 +1732,10 @@ namespace OpenRCT2
      */
     void Guest::onExitRide(Ride& ride)
     {
-        // FACTORY-TOUR: a Factory Tour counts as touring the factory
+        // FACTORY-TOUR: a Factory Tour counts as touring the factory; a Portal Terminal sends riders to the next world
         if (Factory::isFactoryTourRide(ride))
             Factory::markGuestToured(getGameState(), id.ToUnderlying());
+        Factory::onGuestExitRide(getGameState(), *this, ride);
 
         if (peepFlags.has(PeepFlag::rideShouldBeMarkedAsFavourite))
         {

@@ -863,6 +863,30 @@ def write_tour_tram():
         fh.write("\n")
 
 
+def write_portal_shuttle():
+    """The Portal Terminal's shuttle (ADR 0016): the tour tram's cars in portal colours."""
+    import shutil
+    src = os.path.join(ROOT, "tour_tram")
+    folder = os.path.join(ROOT, "portal_shuttle")
+    if os.path.isdir(os.path.join(folder, "images")):
+        shutil.rmtree(os.path.join(folder, "images"))
+    shutil.copytree(os.path.join(src, "images"), os.path.join(folder, "images"))
+    with open(os.path.join(src, "object.json")) as fh:
+        obj = json.load(fh)
+    obj["id"] = "factory-tour.ride.portal_shuttle"
+    obj["properties"]["type"] = "portal_terminal"
+    obj["properties"]["category"] = "transport"
+    obj["properties"]["carColours"] = [[["light_purple", "white", "black"]], [["dark_water", "white", "black"]]]
+    obj["strings"] = {
+        "name": {"en-GB": "Portal shuttle"},
+        "description": {"en-GB": "Shuttle cars that run through the portal to the terminal in the next world"},
+        "capacity": {"en-GB": "2 passengers per car"},
+    }
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
 def draw_gift_shop(d):
     """A kiosk with a striped awning (primary remap ramp, so it takes the shop's colour) facing view direction d."""
     h = 30
@@ -1034,6 +1058,7 @@ def write_research():
          [proto("freight_loader"), proto("freight_unloader")], ["factory-tour.ride.freight_train"], []),
         ("tech_interworld", "Interworld logistics", ["tech_freight"], kits, 40,
          [proto("launch_pad"), proto("landing_pad")], [], []),
+        ("tech_portals", "Portal terminals", ["tech_interworld"], kits, 50, [], ["factory-tour.ride.portal_shuttle"], []),
     ]
     for name, display, prerequisites, packs, units, unlocks, rides, scenery in technologies:
         write_object(name, "technology", {
@@ -1176,6 +1201,7 @@ def main():
 
     # The Factory Tour ride's vehicle and the walkway that draws visitors past the machines.
     write_tour_tram()
+    write_portal_shuttle()
     write_exhibit_path()
 
     # Research: kits, labs and the starter technology tree.

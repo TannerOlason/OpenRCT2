@@ -223,6 +223,13 @@ E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two w
 E8 stages 3–4: Portal Terminal rides, guest transfer, Planet Params, per-world climate, water and terrain,
 first weird-dimension content pack, `context.worlds` binding.
 
+- [x] Portal Terminals (ADR 0016): `RIDE_TYPE_PORTAL_TERMINAL` in the 22 slot, a short shuttle ride (Portal
+  shuttle cars, Portal terminals technology); guests leaving one are removed from their world and appear beside the
+  exit of the matching terminal (same index, wrapping) in the next world with their mood, needs, money and name.
+- [ ] Planet Params and per-world terrain, water and weather.
+- [ ] Weird-dimension content pack.
+- [ ] `factory.worlds` script binding.
+
 ### M9 Theme and release `[ ]`
 
 Theme bible, full content pass, trailer scenarios, packaging, licensing, naming.

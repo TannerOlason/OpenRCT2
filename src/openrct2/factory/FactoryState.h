@@ -21,6 +21,7 @@
 #include "Ore.h"
 #include "ParkExt.h"
 #include "Pollution.h"
+#include "Portals.h"
 #include "RideRatingsFactory.h"
 #include "Technology.h"
 #include "Transfers.h"
@@ -56,6 +57,7 @@ namespace OpenRCT2::Factory
         AlertState alerts;
         FreightState freight;
         TransferState transfers; // company state (moves with the active world)
+        PortalState portals;     // company state (moves with the active world)
         // Factory proximity totals of rides part-way through a rating calculation, sorted by ride id.
         std::vector<RideProximityEntry> rideProximity;
         PollutionLayer pollution;
@@ -113,6 +115,7 @@ namespace OpenRCT2::Factory
             alerts.visit(v);
             freight.visit(v);
             transfers.visit(v);
+            portals.visit(v);
         }
     };
 
