@@ -254,7 +254,8 @@ namespace OpenRCT2
             const utf8* identifier = sb.GetBuffer();
 
             int32_t stringId;
-            if (sscanf(identifier, "STR_%4d", &stringId) != 1)
+            // FACTORY-TOUR: five digits so the fork string block 20481-40959 (0x5001-0x9FFF) can be used.
+            if (sscanf(identifier, "STR_%5d", &stringId) != 1)
             {
                 // Ignore line entirely
                 return;

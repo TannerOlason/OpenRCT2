@@ -24,6 +24,7 @@
 #include "../core/Path.hpp"
 #include "../core/String.hpp"
 #include "../core/Zip.h"
+#include "../factory/FactoryPrototypeObject.h" // FACTORY-TOUR
 #include "../sawyer_coding/SawyerChunkReader.h"
 #include "AudioObject.h"
 #include "BannerObject.h"
@@ -414,6 +415,10 @@ namespace OpenRCT2::ObjectFactory
             case ObjectType::climate:
                 result = std::make_unique<ClimateObject>();
                 break;
+            // FACTORY-TOUR
+            case ObjectType::factoryPrototype:
+                result = std::make_unique<Factory::FactoryPrototypeObject>();
+                break;
             default:
                 throw std::runtime_error("Invalid object type");
         }
@@ -442,6 +447,7 @@ namespace OpenRCT2::ObjectFactory
         { "peep_names", ObjectType::peepNames },
         { "peep_animations", ObjectType::peepAnimations },
         { "climate", ObjectType::climate },
+        { "factory_prototype", ObjectType::factoryPrototype }, // FACTORY-TOUR
     };
 
     std::unique_ptr<Object> CreateObjectFromZipFile(std::string_view path, bool loadImages)

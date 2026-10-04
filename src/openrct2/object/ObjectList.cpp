@@ -33,10 +33,17 @@ namespace OpenRCT2
         kMaxParkEntranceObjects, // park entrance
         kMaxWaterObjects,        // water
         kMaxScenarioMetaObjects, // scenario meta
-        kMaxTerrainSurfaceObjects, kMaxTerrainEdgeObjects,     kMaxStationObjects,
-        kMaxMusicObjects,          kMaxFootpathSurfaceObjects, kMaxFootpathRailingsObjects,
-        kMaxAudioObjects,          kMaxPeepNamesObjects,       kMaxPeepAnimationsObjects,
+        kMaxTerrainSurfaceObjects,
+        kMaxTerrainEdgeObjects,
+        kMaxStationObjects,
+        kMaxMusicObjects,
+        kMaxFootpathSurfaceObjects,
+        kMaxFootpathRailingsObjects,
+        kMaxAudioObjects,
+        kMaxPeepNamesObjects,
+        kMaxPeepAnimationsObjects,
         kMaxClimateObjects,
+        kMaxFactoryPrototypeObjects, // FACTORY-TOUR
     };
     static_assert(std::size(kObjectEntryGroupCounts) == EnumValue(ObjectType::count));
 

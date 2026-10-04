@@ -1,0 +1,29 @@
+{
+    "id": "factory-tour.factory_prototype.chest_wooden",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "container",
+        "slots": 16,
+        "rotations": 1,
+        "price": 30,
+        "removalPrice": -20,
+        "clearance": 6
+    },
+    "images": [
+        {
+            "path": "images/chest.png",
+            "x": -32,
+            "y": -20
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Wooden chest"
+        }
+    }
+}

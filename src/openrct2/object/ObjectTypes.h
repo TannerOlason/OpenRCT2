@@ -43,12 +43,14 @@ namespace OpenRCT2
         peepNames,
         peepAnimations,
         climate,
+        // FACTORY-TOUR: one object type for all factory content, see factory/FactoryPrototypeObject.h (ADR 0005)
+        factoryPrototype,
 
         count,
         none = 255
     };
 
-    static constexpr size_t kNumTransientObjectTypes = 19;
+    static constexpr size_t kNumTransientObjectTypes = 20; // FACTORY-TOUR: +factoryPrototype
     static constexpr size_t kNumIntransientObjectTypes = 2;
 
     bool ObjectTypeIsTransient(ObjectType type);

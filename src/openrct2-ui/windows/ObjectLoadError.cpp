@@ -21,6 +21,7 @@
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/RenderTarget.h>
 #include <openrct2/drawing/Text.h>
+#include <openrct2/factory/FactoryStringIds.h> // FACTORY-TOUR
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/localisation/Formatting.h>
 #include <openrct2/localisation/StringIds.h>
@@ -352,6 +353,9 @@ namespace OpenRCT2::Ui::Windows
                 return STR_OBJECT_SELECTION_PEEP_ANIMATIONS;
             case ObjectType::climate:
                 return STR_OBJECT_SELECTION_CLIMATE;
+            // FACTORY-TOUR
+            case ObjectType::factoryPrototype:
+                return STR_FT_OBJECT_SELECTION_FACTORY_PROTOTYPES;
             // Intransient objects, should never pop up here
             case ObjectType::scenarioMeta:
                 return STR_OBJECT_SELECTION_SCENARIO_TEXTS;

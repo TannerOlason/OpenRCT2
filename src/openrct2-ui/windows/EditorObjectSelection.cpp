@@ -31,6 +31,7 @@
 #include <openrct2/drawing/Palette.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/Text.h>
+#include <openrct2/factory/FactoryStringIds.h> // FACTORY-TOUR
 #include <openrct2/interface/WidgetIndexGlobals.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/localisation/Formatting.h>
@@ -190,6 +191,8 @@ namespace OpenRCT2::Ui::Windows
         { STR_OBJECT_SELECTION_TERRAIN_SURFACES,          ObjectType::terrainSurface,  SPR_G2_MAP_GEN_TERRAIN_TAB, kTerrainObjectSubTabs },
         { STR_OBJECT_SELECTION_MUSIC,                     ObjectType::music,           SPR_TAB_MUSIC_0,            {} },
         { STR_OBJECT_SELECTION_GUESTS_AND_STAFF,          ObjectType::peepNames,       SPR_TAB_GUESTS_0,           kPeepObjectSubTabs },
+        // FACTORY-TOUR
+        { STR_FT_OBJECT_SELECTION_FACTORY_PROTOTYPES,     ObjectType::factoryPrototype, SPR_TAB_GEARS_0,           {} },
     };
     // clang-format on
 

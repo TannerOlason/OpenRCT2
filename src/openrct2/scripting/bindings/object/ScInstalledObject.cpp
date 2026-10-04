@@ -37,6 +37,7 @@ namespace OpenRCT2::Scripting
         { "peep_names", ObjectType::peepNames },
         { "peep_animations", ObjectType::peepAnimations },
         { "climate", ObjectType::climate },
+        { "factory_prototype", ObjectType::factoryPrototype }, // FACTORY-TOUR
     };
 
     std::string_view objectTypeToString(ObjectType type)

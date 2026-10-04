@@ -652,7 +652,8 @@ declare global {
         "audio" |
         "peep_names" |
         "peep_animations" |
-        "climate";
+        "climate" |
+        "factory_prototype";
 
     type HookType =
         "action.execute" |
@@ -1807,7 +1808,7 @@ declare global {
     }
 
     type TileElementType =
-        "surface" | "footpath" | "track" | "small_scenery" | "wall" | "entrance" | "large_scenery" | "banner";
+        "surface" | "footpath" | "track" | "small_scenery" | "wall" | "entrance" | "large_scenery" | "banner" | "factory";
 
     type Direction = 0 | 1 | 2 | 3;
     type Direction8 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;

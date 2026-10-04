@@ -70,7 +70,7 @@ namespace OpenRCT2
     {
     private:
         static constexpr uint32_t kMagicNumber = 0x5844494F; // OIDX
-        static constexpr uint16_t kVersion = 31;
+        static constexpr uint16_t kVersion = 32;             // FACTORY-TOUR: 31 -> 32 (factory_prototype objects)
         static constexpr auto kPattern = "*.dat;*.pob;*.json;*.parkobj";
 
     public:
@@ -80,6 +80,8 @@ namespace OpenRCT2
                   std::vector<std::string>{
                       env.GetDirectoryPath(DirBase::openrct2, DirId::objects),
                       env.GetDirectoryPath(DirBase::user, DirId::objects),
+                      // FACTORY-TOUR: fork content pack root (appended; IsTrackReadOnly indexes the first two)
+                      Path::Combine(env.GetDirectoryPath(DirBase::openrct2), u8"factory", u8"objects"),
                   })
         {
         }

@@ -1,0 +1,504 @@
+{
+    "id": "factory-tour.factory_prototype.belt_basic",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "belt",
+        "speed": 12,
+        "frames": 8,
+        "price": 20,
+        "removalPrice": -15,
+        "clearance": 2
+    },
+    "images": [
+        {
+            "path": "images/belt_s0_d0_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d0_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d0_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d0_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d0_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d0_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d0_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d0_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d1_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d2_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s0_d3_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d0_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d1_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d2_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s1_d3_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d0_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d1_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d2_f7.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f0.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f1.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f2.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f3.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f4.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f5.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f6.png",
+            "x": -32,
+            "y": -2
+        },
+        {
+            "path": "images/belt_s2_d3_f7.png",
+            "x": -32,
+            "y": -2
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Basic transport belt"
+        }
+    }
+}

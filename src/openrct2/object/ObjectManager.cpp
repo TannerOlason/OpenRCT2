@@ -140,7 +140,9 @@ namespace OpenRCT2
             size_t index = GetLoadedObjectIndex(object);
             if (index != SIZE_MAX)
             {
-                ObjectGetTypeEntryIndex(index, nullptr, &result);
+                // FACTORY-TOUR: the index is already per type; ObjectGetTypeEntryIndex would mis-map indices >= 2047
+                // (factoryPrototype allows 8192). Identical result for every upstream type.
+                result = static_cast<ObjectEntryIndex>(index);
             }
             return result;
         }

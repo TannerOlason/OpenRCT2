@@ -38,6 +38,7 @@
 #include "../entity/EntityList.h"
 #include "../entity/EntityRegistry.h"
 #include "../entity/Staff.h"
+#include "../factory/FactoryStringIds.h" // FACTORY-TOUR
 #include "../interface/WindowBase.h"
 #include "../localisation/Formatting.h"
 #include "../localisation/StringIds.h"
@@ -1140,6 +1141,7 @@ constexpr auto _objectTypeNames = std::to_array<StringId>({
     STR_OBJECT_SELECTION_PEEP_NAMES,
     STR_OBJECT_SELECTION_PEEP_ANIMATIONS,
     STR_OBJECT_SELECTION_CLIMATE,
+    STR_FT_OBJECT_SELECTION_FACTORY_PROTOTYPES, // FACTORY-TOUR
 });
 static_assert(_objectTypeNames.size() == EnumValue(ObjectType::count));
 

@@ -435,9 +435,10 @@ namespace OpenRCT2::Editor
                     }
                     break;
                 }
-                // FACTORY-TOUR: must not fall into the surface default (asSurface() would be null). Marks the
-                // prototype in use once ObjectType::factoryPrototype exists.
+                // FACTORY-TOUR: must not fall into the surface default (asSurface() would be null).
                 case TileElementType::factory:
+                    type = iter.element->asFactory()->getEntryIndex();
+                    Editor::SetSelectedObject(ObjectType::factoryPrototype, type, ObjectSelectionFlag::inUse);
                     break;
             }
         } while (TileElementIteratorNext(&iter));
@@ -949,6 +950,10 @@ namespace OpenRCT2::Editor
 
                     // Avoid deleting peep animation objects, as it ensures we don't delete the last ones for a kind of peep.
                     if (objectType == ObjectType::peepAnimations)
+                        continue;
+
+                    // FACTORY-TOUR: items, recipes and technologies are referenced from pools, not tiles.
+                    if (objectType == ObjectType::factoryPrototype)
                         continue;
 
                     // Avoid deleting climate objects, as they're not bound to entities.
