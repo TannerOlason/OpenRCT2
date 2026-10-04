@@ -14,6 +14,7 @@
 #include "Alerts.h"
 #include "FactoryPool.hpp"
 #include "FactoryRecords.h"
+#include "Freight.h"
 #include "Market.h"
 #include "Materials.h"
 #include "Objectives.h"
@@ -52,6 +53,7 @@ namespace OpenRCT2::Factory
         Pool<FluidNetworkRecord> fluidNetworks;
         Pool<ThreatRecord> threats;
         AlertState alerts;
+        FreightState freight;
         // Factory proximity totals of rides part-way through a rating calculation, sorted by ride id.
         std::vector<RideProximityEntry> rideProximity;
         PollutionLayer pollution;
@@ -107,6 +109,7 @@ namespace OpenRCT2::Factory
             research.visit(v);
             threats.visit(v);
             alerts.visit(v);
+            freight.visit(v);
         }
     };
 

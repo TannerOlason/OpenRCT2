@@ -291,6 +291,8 @@ namespace OpenRCT2::Factory
                 _container.rotations = Json::GetNumber<uint8_t>(properties["rotations"], 1) == 4 ? 4 : 1;
                 _container.warehouse = Json::GetBoolean(properties["warehouse"], false);
                 _container.exportDepot = Json::GetBoolean(properties["exportDepot"], false);
+                _container.freightLoader = Json::GetBoolean(properties["freightLoader"], false);
+                _container.freightUnloader = Json::GetBoolean(properties["freightUnloader"], false);
                 break;
             case PrototypeKind::pole:
                 _pole.wireReach = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["wireReach"], 7), 1, 30);

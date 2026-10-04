@@ -304,6 +304,21 @@ namespace OpenRCT2::Factory
             return JS_NewBool(ctx, result.error == GameActions::Status::ok);
         }
 
+        JSValue freightGet(JSContext* ctx, JSValue)
+        {
+            JSValue array = JS_NewArray(ctx);
+            int64_t index = 0;
+            for (const auto& entry : getGameState().factory.freight.cargo)
+            {
+                if (entry.count == 0)
+                    continue;
+                JSValue obj = stackToJS(ctx, entry.item, entry.count);
+                JS_SetPropertyStr(ctx, obj, "vehicle", JS_NewUint32(ctx, entry.vehicle));
+                JS_SetPropertyInt64(ctx, array, index++, obj);
+            }
+            return array;
+        }
+
         JSValue isUnlocked(JSContext* ctx, JSValue, int argc, JSValue* argv)
         {
             JS_UNPACK_STR(identifier, ctx, argv[0]);
@@ -327,6 +342,7 @@ namespace OpenRCT2::Factory
                     JS_CGETSET_DEF("researchTarget", researchTargetGet, researchTargetSet),
                     JS_CFUNC_DEF("isUnlocked", 1, isUnlocked),
                     JS_CGETSET_DEF("threats", threatsGet, nullptr),
+                    JS_CGETSET_DEF("freight", freightGet, nullptr),
                     JS_CFUNC_DEF("spawnThreat", 3, spawnThreat),
                     JS_CFUNC_DEF("damage", 4, damage),
                 };

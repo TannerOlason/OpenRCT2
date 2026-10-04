@@ -2372,6 +2372,9 @@ namespace OpenRCT2
 
         if (ride->getRideTypeDescriptor().flags.has(RtdFlag::isShopOrFacility))
             return { true };
+        // FACTORY-TOUR: freight trains carry items, not guests, so freight stations need no entrance or exit
+        if (ride->type == RIDE_TYPE_FREIGHT_RAILWAY)
+            return { true };
 
         uint8_t entrance = 0;
         uint8_t exit = 0;

@@ -4027,3 +4027,7 @@ STR_20630   :{WINDOW_COLOUR_2}Cost: {BLACK}{CURRENCY}
 STR_20631   :{WINDOW_COLOUR_2}Drag over an area to copy it
 STR_20632   :{WINDOW_COLOUR_2}Click to place, Rotate to turn
 STR_20633   :Blueprints: copy and paste factory areas
+STR_20634   :Freight Railway
+STR_20635   :Trains of cargo wagons that carry factory goods between freight loaders and unloaders built beside their stations
+STR_20636   :{WINDOW_COLOUR_2}Freight loader: fills trains at the adjacent station
+STR_20637   :{WINDOW_COLOUR_2}Freight unloader: empties trains at the adjacent station

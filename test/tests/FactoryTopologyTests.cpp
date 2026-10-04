@@ -41,6 +41,7 @@
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
+#include <openrct2/factory/Freight.h>
 #include <openrct2/factory/GuestFactory.h>
 #include <openrct2/factory/Market.h>
 #include <openrct2/factory/Objectives.h>
@@ -65,6 +66,7 @@
 #include <openrct2/ride/RideData.h>
 #include <openrct2/ride/RideRatings.h>
 #include <openrct2/ride/ShopItem.h>
+#include <openrct2/ride/Vehicle.h>
 #include <openrct2/ride/ted/TrackElemType.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/scenario/ScenarioObjective.h>
@@ -2061,4 +2063,121 @@ TEST_F(FactoryTopologyTests, BlueprintsCaptureRotateAndPaste)
     // Pasting onto the same place again fits nothing.
     auto again = GameActions::FactoryPlaceBlueprintAction(origin, 1, text);
     EXPECT_NE(GameActions::QueryNested(&again, gameState).error, GameActions::Status::ok);
+}
+
+TEST_F(FactoryTopologyTests, FreightTrainsLoadAndUnloadAtStations)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    gameState.cheats.sandboxMode = true;
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto* trainObject = objectManager.LoadObject("factory-tour.ride.freight_train");
+    auto* loaderObject = objectManager.LoadObject("factory-tour.factory_prototype.freight_loader");
+    auto* unloaderObject = objectManager.LoadObject("factory-tour.factory_prototype.freight_unloader");
+    ASSERT_NE(trainObject, nullptr);
+    ASSERT_NE(loaderObject, nullptr);
+    ASSERT_NE(unloaderObject, nullptr);
+    const auto trainEntry = objectManager.GetLoadedObjectEntryIndex(trainObject);
+    const auto loader = objectManager.GetLoadedObjectEntryIndex(loaderObject);
+    const auto unloader = objectManager.GetLoadedObjectEntryIndex(unloaderObject);
+    RideTypeSetInvented(RIDE_TYPE_FREIGHT_RAILWAY);
+    RideEntrySetInvented(trainEntry);
+    auto create = GameActions::RideCreateAction(RIDE_TYPE_FREIGHT_RAILWAY, trainEntry, 0, 0, 0, RideInspection::never);
+    auto created = GameActions::ExecuteNested(&create, gameState);
+    ASSERT_EQ(created.error, GameActions::Status::ok);
+    const RideId rideId = created.getData<RideId>();
+
+    // A loop of 3-tile quarter turns south of (x0, y0): a two-tile station heading east (+x), then left turns, which
+    // from east head south (+y).
+    const int32_t x0 = kRowX0 + 4, y0 = kRowY + 1;
+    const int32_t z = GroundZ(kRowX0);
+    for (int32_t ty = y0 - 2; ty <= y0 + 4; ty++)
+        for (int32_t tx = x0 - 3; tx <= x0 + 4; tx++)
+        {
+            auto* surface = MapGetSurfaceElementAt(TileCoordsXY{ tx, ty });
+            surface->setSlope(0);
+            surface->setBaseZ(z);
+            surface->setClearanceZ(z);
+        }
+    struct Piece
+    {
+        TrackElemType type;
+        int32_t tx, ty;
+        Direction dir;
+    };
+    const Piece pieces[] = {
+        { TrackElemType::endStation, x0, y0, 2 },
+        { TrackElemType::endStation, x0 + 1, y0, 2 },
+        { TrackElemType::leftQuarterTurn3Tiles, x0 + 2, y0, 2 },
+        { TrackElemType::leftQuarterTurn3Tiles, x0 + 3, y0 + 2, 1 },
+        { TrackElemType::flat, x0 + 1, y0 + 3, 0 },
+        { TrackElemType::flat, x0, y0 + 3, 0 },
+        { TrackElemType::leftQuarterTurn3Tiles, x0 - 1, y0 + 3, 0 },
+        { TrackElemType::leftQuarterTurn3Tiles, x0 - 2, y0 + 1, 3 },
+    };
+    for (const auto& piece : pieces)
+    {
+        auto place = GameActions::TrackPlaceAction(
+            rideId, piece.type, RIDE_TYPE_FREIGHT_RAILWAY,
+            CoordsXYZD{ piece.tx * kCoordsXYStep, piece.ty * kCoordsXYStep, z, piece.dir }, 0, 0, 0, {}, false);
+        ASSERT_EQ(GameActions::ExecuteNested(&place, gameState).error, GameActions::Status::ok)
+            << "piece at " << piece.tx << "," << piece.ty;
+    }
+
+    // Loaders on both station tiles' north side, stocked with plates. No entrance or exit is needed.
+    auto* loaderA = PlaceAt(x0, y0 - 1, 0, loader);
+    auto* loaderB = PlaceAt(x0 + 1, y0 - 1, 0, loader);
+    ASSERT_NE(loaderA, nullptr);
+    ASSERT_NE(loaderB, nullptr);
+    for (auto* element : { loaderA, loaderB })
+        for (auto& slot : state.containers.get(element->getRecordId())->slots)
+            slot = { _plate, 50 };
+    auto testing = GameActions::RideSetStatusAction(rideId, RideStatus::testing);
+    const auto testResult = GameActions::ExecuteNested(&testing, gameState);
+    ASSERT_EQ(testResult.error, GameActions::Status::ok) << "message " << std::get<StringId>(testResult.errorMessage);
+
+    // Run the whole game until some wagon carries plates.
+    auto cargoTotal = [&]() {
+        uint32_t total = 0;
+        for (const auto& entry : state.freight.cargo)
+            if (entry.item == _plate)
+                total += entry.count;
+        return total;
+    };
+    int32_t ticks = 0;
+    while (cargoTotal() == 0 && ticks < 4000)
+    {
+        gameStateUpdateLogic();
+        ticks++;
+    }
+    EXPECT_GT(cargoTotal(), 0u) << "no cargo after " << ticks << " ticks";
+    const auto loaded = cargoTotal();
+    uint32_t inLoaders = 0;
+    for (auto* element : { loaderA, loaderB })
+        for (const auto& slot : state.containers.get(element->getRecordId())->slots)
+            inLoaders += slot.count;
+    EXPECT_EQ(inLoaders + loaded, 2u * 8u * 50u); // nothing lost or duplicated
+    if (const char* out = std::getenv("FT_FREIGHT_PARK_OUT"); out != nullptr)
+    {
+        auto open = GameActions::RideSetStatusAction(rideId, RideStatus::open);
+        GameActions::ExecuteNested(&open, gameState);
+        ASSERT_EQ(ScenarioSave(getGameState(), out, {}), 1);
+    }
+
+    // Swap both loaders for unloaders: whatever the wagons carry comes back out at the next stop.
+    for (int32_t tx : { x0, x0 + 1 })
+    {
+        const CoordsXYZ at{ tx * kCoordsXYStep, (y0 - 1) * kCoordsXYStep, z };
+        if (auto* element = findFactoryElement(at))
+            removeElement(gameState, *element, at);
+        PlaceAt(tx, y0 - 1, 0, unloader);
+    }
+    for (int32_t i = 0; i < 6000 && cargoTotal() > 0; i++)
+        gameStateUpdateLogic();
+    EXPECT_EQ(cargoTotal(), 0u);
+
+    auto close = GameActions::RideSetStatusAction(rideId, RideStatus::closed);
+    GameActions::ExecuteNested(&close, gameState);
+    auto demolish = GameActions::RideDemolishAction(rideId, GameActions::RideModifyType::demolish);
+    GameActions::ExecuteNested(&demolish, gameState);
 }

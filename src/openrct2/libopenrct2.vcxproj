@@ -743,6 +743,7 @@
     <ClInclude Include="factory\Combat.h" />
     <ClInclude Include="factory\FactoryBench.h" />
     <ClInclude Include="factory\FactoryTourRTD.h" />
+    <ClInclude Include="factory\FreightRailwayRTD.h" />
     <ClInclude Include="factory\GuestFactory.h" />
     <ClInclude Include="factory\Market.h" />
     <ClInclude Include="factory\Materials.h" />
@@ -776,6 +777,7 @@
     <ClInclude Include="factory\FactoryRecords.h" />
     <ClInclude Include="factory\FactorySerialisation.h" />
     <ClInclude Include="factory\FactoryState.h" />
+    <ClInclude Include="factory\Freight.h" />
     <ClInclude Include="factory\SyncChecksum.h" />
     <ClInclude Include="world\tile_element\EntranceElement.h" />
     <ClInclude Include="world\tile_element\LargeSceneryElement.h" />
@@ -1371,6 +1373,7 @@
     <ClCompile Include="factory\FactoryPrototypeObject.cpp" />
     <ClCompile Include="factory\FactorySerialisation.cpp" />
     <ClCompile Include="factory\FactoryState.cpp" />
+    <ClCompile Include="factory\Freight.cpp" />
     <ClCompile Include="factory\FactoryTopology.cpp" />
     <ClCompile Include="factory\Objectives.cpp" />
     <ClCompile Include="factory\Technology.cpp" />

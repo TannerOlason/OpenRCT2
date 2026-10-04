@@ -283,6 +283,11 @@ namespace OpenRCT2::Ui::Windows
                         ft);
                     return;
                 }
+                if (proto != nullptr && (proto->getContainer().freightLoader || proto->getContainer().freightUnloader))
+                {
+                    drawText(rt, pos, proto->getContainer().freightLoader ? STR_FT_FREIGHT_LOADER : STR_FT_FREIGHT_UNLOADER);
+                    pos.y += 12;
+                }
                 drawText(rt, pos, STR_FT_CONTENTS);
                 pos.y += 12;
                 DrawSlots(rt, pos, container->slots);

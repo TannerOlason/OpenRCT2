@@ -679,6 +679,115 @@ def draw_tram_frame(i, riders):
     return img, ox, oy
 
 
+def draw_wagon_frame(i):
+    """Frame i of 32 of a freight wagon (same projection as the tour tram): a low remap-coloured flat car stacked with
+    crates, a lamp at the front."""
+    w, h, ox, oy = 48, 40, 24, 26
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    a = 2 * math.pi * i / 32
+    fx, fy = -math.cos(a), math.sin(a)
+    rx, ry = fy, -fx
+    half_l, half_w = 12, 6
+
+    def corner(sl, sw, z):
+        return project(fx * sl * half_l + rx * sw * half_w, fy * sl * half_l + ry * sw * half_w, z, ox, oy)
+
+    dark, side, light, top = palette_rgb(246), palette_rgb(248), palette_rgb(250), palette_rgb(252)
+    black = snap((30, 30, 30)) + (255,)
+    crate, crate_dark = snap((170, 120, 60)) + (255,), snap((100, 65, 30)) + (255,)
+    for sl in (-0.75, 0.75):
+        for sw in (-1, 1):
+            cx, cy = corner(sl, sw, 1)
+            draw.ellipse([cx - 2, cy - 1.5, cx + 2, cy + 1.5], fill=black)
+    faces = [((1, -1), (1, 1), (fx, fy)), ((-1, 1), (-1, -1), (-fx, -fy)),
+             ((1, 1), (-1, 1), (rx, ry)), ((-1, -1), (1, -1), (-rx, -ry))]
+    for (a0, a1), normal in [((f[0], f[1]), f[2]) for f in faces]:
+        if normal[0] + normal[1] <= 0:
+            continue
+        pts = [corner(a0[0], a0[1], 3), corner(a1[0], a1[1], 3), corner(a1[0], a1[1], 6), corner(a0[0], a0[1], 6)]
+        draw.polygon(pts, fill=side if abs(normal[0]) > abs(normal[1]) else light, outline=dark)
+    deck = [corner(1, 1, 6), corner(1, -1, 6), corner(-1, -1, 6), corner(-1, 1, 6)]
+    draw.polygon(deck, fill=top, outline=dark)
+    # Two crates on the deck, back one first.
+    for sl in sorted((-0.45, 0.45), key=lambda v: -(fx * v + fy * v)):
+        pts_top = [corner(sl + 0.35, 0.7, 13), corner(sl + 0.35, -0.7, 13), corner(sl - 0.35, -0.7, 13), corner(sl - 0.35, 0.7, 13)]
+        base = [corner(sl + 0.35, 0.7, 6), corner(sl - 0.35, 0.7, 6), corner(sl - 0.35, 0.7, 13), corner(sl + 0.35, 0.7, 13)]
+        draw.polygon(base, fill=crate_dark)
+        draw.polygon(pts_top, fill=crate, outline=crate_dark)
+    hx, hy = corner(1.05, 0, 5)
+    draw.ellipse([hx - 1.5, hy - 1.5, hx + 1.5, hy + 1.5], fill=snap((255, 235, 120)) + (255,))
+    return img, ox, oy
+
+
+def write_freight():
+    """The freight railway's wagons, its loader and unloader containers (ADR 0014)."""
+    folder = os.path.join(ROOT, "freight_train")
+    os.makedirs(os.path.join(folder, "images"), exist_ok=True)
+    images = []
+    preview = Image.new("RGBA", (112, 64), (0, 0, 0, 0))
+    for k, x in enumerate((20, 52, 84)):
+        frame, ox, oy = draw_wagon_frame(12)
+        preview.alpha_composite(frame, (x - ox, 34 - oy + k * 4))
+    save(preview, folder, "preview.png")
+    for _ in range(3):
+        images.append({"path": "images/preview.png", "x": 0, "y": 0})
+    for i in range(32):
+        img, ox, oy = draw_wagon_frame(i)
+        name = f"wagon_{i:02d}.png"
+        img.save(os.path.join(folder, "images", name))  # exact palette colours already: snapping would drop remaps
+        images.append({"path": f"images/{name}", "x": -ox, "y": -oy})
+    obj = {
+        "id": "factory-tour.ride.freight_train",
+        "authors": [AUTHOR],
+        "version": "1.0",
+        "sourceGame": "official",
+        "objectType": "ride",
+        "properties": {
+            "type": "freight_railway",
+            "category": "transport",
+            "noCollisionCrashes": True,
+            "minCarsPerTrain": 2,
+            "maxCarsPerTrain": 8,
+            "numEmptyCars": 0,
+            "tabCar": 0,
+            "carColours": [[["dark_brown", "grey", "black"]], [["dark_green", "grey", "black"]]],
+            "buildMenuPriority": 1,
+            "cars": [{
+                "rotationFrameMask": 31,
+                "spacing": 130000,
+                "mass": 600,
+                "numSeats": 0,
+                "numSeatRows": 0,
+                "poweredAcceleration": 50,
+                "poweredMaxSpeed": 8,
+                "drawOrder": 9,
+                "spriteGroups": {"slopeFlat": 32},
+                "isPowered": True,
+            }],
+        },
+        "images": images,
+        "strings": {
+            "name": {"en-GB": "Freight train"},
+            "description": {"en-GB": "Flat wagons that carry factory goods between freight loaders and unloaders"},
+            "capacity": {"en-GB": "200 items per wagon"},
+        },
+    }
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+    for name, display, colours, key in (
+            ("freight_loader", "Freight loader", ((90, 110, 150, 255), (120, 140, 180, 255), (35, 45, 70, 255)), "freightLoader"),
+            ("freight_unloader", "Freight unloader", ((150, 100, 90, 255), (180, 130, 120, 255), (70, 40, 35, 255)), "freightUnloader")):
+        img, h = draw_warehouse(*colours)
+        folder = write_object(
+            name, "container",
+            {"slots": 8, "rotations": 1, key: True, "price": 180, "removalPrice": -130, "clearance": 7},
+            [{"path": "images/depot.png", "x": -32, "y": -h}], display)
+        save(img, folder, "depot.png")
+
+
 def write_tour_tram():
     folder = os.path.join(ROOT, "tour_tram")
     os.makedirs(os.path.join(folder, "images"), exist_ok=True)
@@ -908,6 +1017,8 @@ def write_research():
         ("tech_steel", "Steel processing", [], kit, 20, [proto("steel_smelting"), proto("engineering_kit_recipe")], [], []),
         ("tech_fast_inserters", "Fast inserters", ["tech_steel", "tech_logistics"], kits, 25,
          [proto("inserter_fast")], [], []),
+        ("tech_freight", "Freight railway", ["tech_logistics", "tech_steel"], kits, 30,
+         [proto("freight_loader"), proto("freight_unloader")], ["factory-tour.ride.freight_train"], []),
     ]
     for name, display, prerequisites, packs, units, unlocks, rides, scenery in technologies:
         write_object(name, "technology", {
@@ -1057,6 +1168,9 @@ def main():
 
     # Combat stub: a threat, a turret and its ammunition.
     write_combat()
+
+    # Freight railway wagons and their loader and unloader.
+    write_freight()
 
     # Manufactured souvenirs, their recipes and the shop that sells them (stocked from the Warehouse).
     for name, display, colour, dark, shop_item in (("factory_model", "Factory model", (190, 120, 60), (110, 60, 30), "factory_model"),

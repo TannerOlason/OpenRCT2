@@ -44,6 +44,7 @@ namespace OpenRCT2::Factory
         fluidNetworks.clear();
         threats.clear();
         alerts = AlertState{};
+        freight.cargo.clear();
         rideProximity.clear();
         pollution.clear();
         warehouse.stock.clear();
@@ -1224,6 +1225,7 @@ namespace OpenRCT2::Factory
             updateFluidNetworks(state);
             updateMachines(gameState);
             updateThreats(gameState);
+            updateFreight(gameState);
             return;
         }
         using Clock = std::chrono::steady_clock;
@@ -1245,6 +1247,7 @@ namespace OpenRCT2::Factory
         lap(times->fluids);
         updateMachines(gameState);
         updateThreats(gameState);
+        updateFreight(gameState);
         lap(times->machines);
     }
 } // namespace OpenRCT2::Factory

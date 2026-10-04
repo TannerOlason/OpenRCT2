@@ -1,0 +1,239 @@
+{
+    "id": "factory-tour.ride.freight_train",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "ride",
+    "properties": {
+        "type": "freight_railway",
+        "category": "transport",
+        "noCollisionCrashes": true,
+        "minCarsPerTrain": 2,
+        "maxCarsPerTrain": 8,
+        "numEmptyCars": 0,
+        "tabCar": 0,
+        "carColours": [
+            [
+                [
+                    "dark_brown",
+                    "grey",
+                    "black"
+                ]
+            ],
+            [
+                [
+                    "dark_green",
+                    "grey",
+                    "black"
+                ]
+            ]
+        ],
+        "buildMenuPriority": 1,
+        "cars": [
+            {
+                "rotationFrameMask": 31,
+                "spacing": 130000,
+                "mass": 600,
+                "numSeats": 0,
+                "numSeatRows": 0,
+                "poweredAcceleration": 50,
+                "poweredMaxSpeed": 8,
+                "drawOrder": 9,
+                "spriteGroups": {
+                    "slopeFlat": 32
+                },
+                "isPowered": true
+            }
+        ]
+    },
+    "images": [
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/wagon_00.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_01.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_02.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_03.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_04.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_05.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_06.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_07.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_08.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_09.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_10.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_11.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_12.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_13.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_14.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_15.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_16.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_17.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_18.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_19.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_20.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_21.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_22.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_23.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_24.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_25.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_26.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_27.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_28.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_29.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_30.png",
+            "x": -24,
+            "y": -26
+        },
+        {
+            "path": "images/wagon_31.png",
+            "x": -24,
+            "y": -26
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Freight train"
+        },
+        "description": {
+            "en-GB": "Flat wagons that carry factory goods between freight loaders and unloaders"
+        },
+        "capacity": {
+            "en-GB": "200 items per wagon"
+        }
+    }
+}

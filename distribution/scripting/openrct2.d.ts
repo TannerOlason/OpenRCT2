@@ -1942,6 +1942,11 @@ declare global {
         readonly target: number | null;
     }
 
+    interface FactoryFreightCargo extends FactoryItemStack {
+        /** The car's entity id (see map.getEntity). */
+        readonly vehicle: number;
+    }
+
     interface FactoryTechnology {
         readonly object: string;
         readonly name: string;
@@ -1979,6 +1984,8 @@ declare global {
         isUnlocked(object: string): boolean;
         /** Every Threat, in ascending id order. */
         readonly threats: FactoryThreat[];
+        /** What each freight railway car carries (cars with cargo only), by car entity id. */
+        readonly freight: FactoryFreightCargo[];
         /** Spawns a Threat of the given threat prototype at (x, y) in world units (factorythreatspawn). */
         spawnThreat(object: string, x: number, y: number): boolean;
         /**

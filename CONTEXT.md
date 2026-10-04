@@ -151,6 +151,11 @@ research (ADR 0012). Researching it unlocks factory prototypes, ride entries and
 they are locked (Prototypes) or withheld from upstream's research lists (rides, scenery).
 _Avoid_: research item (that is upstream's funded research)
 
+**Freight Railway**:
+The ride type in the 1F slot whose cars carry cargo (side table, not a `CarEntry` field) between Freight Loader and
+Freight Unloader containers beside its stations (ADR 0014).
+_Avoid_: cargo train ride, goods monorail
+
 **Lab**:
 A machine of kind `lab` that consumes the current Technology's packs to research it.
 _Avoid_: research centre

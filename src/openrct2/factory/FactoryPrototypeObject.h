@@ -220,9 +220,11 @@ namespace OpenRCT2::Factory
     struct ContainerProperties
     {
         uint16_t slots = 16;
-        uint8_t rotations = 1;    // 1 or 4 images
-        bool warehouse = false;   // items put in go to the park-wide Warehouse instead of its slots
-        bool exportDepot = false; // items put in are sold to the Market at once (unsellable items are refused)
+        uint8_t rotations = 1;        // 1 or 4 images
+        bool warehouse = false;       // items put in go to the park-wide Warehouse instead of its slots
+        bool exportDepot = false;     // items put in are sold to the Market at once (unsellable items are refused)
+        bool freightLoader = false;   // fills freight cars standing beside it at a station
+        bool freightUnloader = false; // empties freight cars standing beside it at a station
     };
 
     /**

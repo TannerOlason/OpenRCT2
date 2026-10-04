@@ -291,7 +291,14 @@ piece: multi-tile machines at footprint 0, splitters at their record tile; under
 256 x 256 tiles), and `rotateBlueprint` maps (x, y) to (y, width - size - x) with d -> d + 1.
 `FactoryPlaceBlueprintAction {origin, rotation, blueprint}` (command 7) runs nested place and set-recipe actions.
 
-Freight: `RIDE_TYPE_1F` → `freightRailway` cloned from Miniature Railway with a `CarEntry` carrying
+Freight (ADR 0014, `factory/Freight.cpp`, `FreightRailwayRTD.h`, pools chunk version 13): `RIDE_TYPE_FREIGHT_RAILWAY`
+takes the 1F slot; `RideCheckForEntranceExit` exempts it; `updateFreight` (each tick, after threats) finds trains
+whose head car is stationary and, for each car on a station track element, trades with freight containers on the
+two tiles beside it (`freightLoader` puts one item a tick in, `freightUnloader` takes one out; one item kind per car,
+`kFreightCarCapacity` 200); `FreightState::cargo` is pruned every 256 ticks. Planned refinement: departure that
+waits for loading to finish.
+
+Original plan: `RIDE_TYPE_1F` → `freightRailway` cloned from Miniature Railway with a `CarEntry` carrying
 `InvSlot[]`; loader and unloader Factory Elements adjacent to stations; vehicle hook on station arrival in
 `ride/Vehicle.cpp`. Later: logistic bots as factory records painted per tile group. Also lane filters,
 priorities, blueprint rotation and flip, copy/paste tool, production graphs, alerts (no power, no ore, output

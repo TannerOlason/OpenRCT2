@@ -611,7 +611,8 @@ namespace OpenRCT2
         // FACTORY-TOUR: the free 1D slot is the Factory Tour ride
         RIDE_TYPE_FACTORY_TOUR,
         RIDE_TYPE_DRINK_STALL = 30,
-        RIDE_TYPE_1F,
+        // FACTORY-TOUR: the free 1F slot is the freight railway (ADR 0014)
+        RIDE_TYPE_FREIGHT_RAILWAY,
         RIDE_TYPE_SHOP,
         RIDE_TYPE_MERRY_GO_ROUND,
         RIDE_TYPE_22,

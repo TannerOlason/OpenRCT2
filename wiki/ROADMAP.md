@@ -175,7 +175,7 @@ object-selection tabs, combat stub (health, damage, Threat, turret), first conte
   turret mod `docs/examples/heavy_turret` (zipped to a `.parkobj` in a user `object` folder, it lists and loads in
   object selection) and the example plugin `docs/examples/threat-waves.js`.
 
-### M6 Logistics and polish `[ ]`
+### M6 Logistics and polish `[x]`
 
 Freight railway with cargo cars and loader stations, blueprints and copy/paste, production graphs, alerts,
 pollution overlay, machine audio and smoke.
@@ -195,7 +195,10 @@ pollution overlay, machine audio and smoke.
 - [x] Machine audio and smoke: working machines with `noise` >= 30 clank (one-shot 3D sounds, staggered, at most
   two a tick, from a touch point beside `VehicleSoundsUpdate`); turrets click when they fire; machines with `smoke`
   (default: burner machines) puff steam-particle smoke from their centre tile, drawn in paint only.
-- [ ] Freight railway with cargo cars and loader stations.
+- [x] Freight railway (ADR 0014): `RIDE_TYPE_FREIGHT_RAILWAY` in the 1F slot (flat miniature-railway track, no
+  entrance or exit) with the Freight train's crate wagons; freight loader and unloader containers beside station
+  track fill and empty a standing train car by car (200 items of one kind per car, cargo in a side table); unlocked
+  by the Freight railway technology; `factory.freight` lists cargo for scripts.
 
 ### M7 Multi-world I `[ ]`
 
