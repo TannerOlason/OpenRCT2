@@ -43,6 +43,7 @@ namespace OpenRCT2::Factory
             { "generator", PrototypeKind::generator },
             { "ore", PrototypeKind::ore },
             { "technology", PrototypeKind::technology },
+            { "threat", PrototypeKind::threat },
         });
 
     std::string_view prototypeKindName(PrototypeKind kind)
@@ -238,6 +239,13 @@ namespace OpenRCT2::Factory
                 _machine.inputFluid.identifier = Json::GetString(properties["inputFluid"]);
                 _machine.outputFluid.identifier = Json::GetString(properties["outputFluid"]);
                 _machine.fluidRate = Json::GetNumber<uint32_t>(properties["fluidRate"], 0);
+                _machine.health = Json::GetNumber<uint16_t>(properties["health"], 0);
+                _machine.turretRange = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["turretRange"], 0), 0, 30);
+                _machine.turretDamage = Json::GetNumber<uint16_t>(properties["turretDamage"], 0);
+                _machine.turretCooldownTicks = std::max<uint16_t>(
+                    1, Json::GetNumber<uint16_t>(properties["turretCooldownTicks"], 20));
+                _machine.shotsPerAmmo = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["shotsPerAmmo"], 10));
+                _machine.ammoItem.identifier = Json::GetString(properties["ammoItem"]);
                 auto boxes = properties["fluidBoxes"];
                 if (boxes.is_array())
                 {
@@ -290,6 +298,13 @@ namespace OpenRCT2::Factory
             case PrototypeKind::pipe:
                 _pipe.capacity = std::max<uint32_t>(1, Json::GetNumber<uint32_t>(properties["capacity"], 1000));
                 break;
+            case PrototypeKind::threat:
+                _threat.health = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["health"], 100));
+                _threat.speedQ8 = Json::GetNumber<uint16_t>(properties["speedQ8"], 128);
+                _threat.damage = Json::GetNumber<uint16_t>(properties["damage"], 10);
+                _threat.attackTicks = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["attackTicks"], 40));
+                _threat.frames = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["frames"], 1));
+                break;
             case PrototypeKind::technology:
             {
                 auto readStrings = [](json_t& array) {
@@ -335,6 +350,8 @@ namespace OpenRCT2::Factory
                 return group == 0 || group == 4;
             case PrototypeKind::technology:
                 return group == 0 || group == 5;
+            case PrototypeKind::threat:
+                return group == 0 || group == 4;
             default:
                 return group == 0 || group == 3;
         }
@@ -436,6 +453,13 @@ namespace OpenRCT2::Factory
     ImageIndex FactoryPrototypeObject::getSplitterImage(uint8_t side, uint8_t direction) const
     {
         return imageAt((side & 1) * 4u + (direction & 3));
+    }
+
+    ImageIndex FactoryPrototypeObject::getThreatImage(uint8_t direction, uint8_t frame) const
+    {
+        if (_kind != PrototypeKind::threat)
+            return kImageIndexUndefined;
+        return imageAt((direction & 3) * _threat.frames + (frame % _threat.frames));
     }
 
     ImageIndex FactoryPrototypeObject::getTechnologyIcon() const

@@ -430,6 +430,9 @@ declare global {
         queryAction(action: "factorysetrecipe", args: FactorySetRecipeArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorymarketsell", args: FactoryMarketSellArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorydamage", args: FactoryDamageArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorythreatspawn", args: FactoryThreatSpawnArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorythreatdespawn", args: FactoryThreatDespawnArgs, callback?: (result: GameActionResult) => void): void;
 
         /**
          * Executes a game action. In a network game, this will send a request to the server and wait
@@ -531,6 +534,9 @@ declare global {
         executeAction(action: "factorysetrecipe", args: FactorySetRecipeArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorymarketsell", args: FactoryMarketSellArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorydamage", args: FactoryDamageArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorythreatspawn", args: FactoryThreatSpawnArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorythreatdespawn", args: FactoryThreatDespawnArgs, callback?: (result: GameActionResult) => void): void;
 
         /**
          * Subscribes to the given hook.
@@ -557,6 +563,10 @@ declare global {
         // FACTORY-TOUR
         subscribe(hook: "factory.machine.status", callback: (e: FactoryMachineStatusArgs) => void): IDisposable;
         subscribe(hook: "factory.research.complete", callback: (e: FactoryResearchCompleteArgs) => void): IDisposable;
+        subscribe(hook: "factory.damage", callback: (e: FactoryDamageEventArgs) => void): IDisposable;
+        subscribe(hook: "factory.threat.spawn", callback: (e: FactoryThreatEventArgs) => void): IDisposable;
+        subscribe(hook: "factory.threat.despawn", callback: (e: FactoryThreatEventArgs) => void): IDisposable;
+        subscribe(hook: "factory.turret.fire", callback: (e: FactoryTurretFireArgs) => void): IDisposable;
 
         /**
          * Can only be used in intransient plugins.
@@ -703,7 +713,11 @@ declare global {
         "vehicle.crash" |
         // FACTORY-TOUR
         "factory.machine.status" |
-        "factory.research.complete";
+        "factory.research.complete" |
+        "factory.damage" |
+        "factory.threat.spawn" |
+        "factory.threat.despawn" |
+        "factory.turret.fire";
 
     type ExpenditureType =
         "ride_construction" |
@@ -812,7 +826,10 @@ declare global {
         "factorysetore" |
         "factorysetrecipe" |
         "factorysetparkoption" |
-        "factorymarketsell";
+        "factorymarketsell" |
+        "factorydamage" |
+        "factorythreatspawn" |
+        "factorythreatdespawn";
 
 
     interface GameActionArgs {
@@ -1735,6 +1752,27 @@ declare global {
         count: number;
     }
 
+    interface FactoryDamageArgs extends GameActionArgs {
+        /** 0 machine (id = machine id), 1 ride (id = ride id), 2 threat (id = threat id) */
+        target: number;
+        id: number;
+        amount: number;
+        /** Free for scripts; reported by the factory.damage hook. */
+        damageType: number;
+    }
+
+    interface FactoryThreatSpawnArgs extends GameActionArgs {
+        /** factory_prototype entry index of a threat */
+        object: number;
+        /** World units (32 per tile). */
+        x: number;
+        y: number;
+    }
+
+    interface FactoryThreatDespawnArgs extends GameActionArgs {
+        id: number;
+    }
+
     interface FactorySetParkOptionArgs extends GameActionArgs {
         /**
          * 0 construction mode (0 money, 1 hybrid, 2 materials), 1 shop stock mode (0 infinite, 1 warehouse),
@@ -1835,7 +1873,8 @@ declare global {
     type FactoryMachineKind = "drill" | "furnace" | "assembler" | "boiler" | "engine" | "pump" | "lab" | "turret" |
         "export_depot";
     type FactoryMachineStatus = "idle" | "working" | "no_input" | "output_full" | "no_fuel" | "no_power" | "no_ore" |
-        "no_recipe";
+        "no_recipe" | "destroyed" | "no_ammo";
+    type FactoryDamageTarget = "machine" | "ride" | "threat";
 
     interface FactoryItemStack {
         /** The item's factory_prototype identifier. */
@@ -1865,6 +1904,24 @@ declare global {
         readonly fuel: FactoryItemStack | null;
         /** Attached to a power network (which may still lack supply). */
         readonly powered: boolean;
+        /** 0 and 0 for indestructible machines. */
+        readonly health: number;
+        readonly maxHealth: number;
+    }
+
+    /**
+     * A snapshot of a Threat: it walks straight at the nearest destructible machine and hits it when adjacent.
+     */
+    interface FactoryThreat {
+        readonly id: number;
+        readonly object: string;
+        /** World units (32 per tile). */
+        readonly x: number;
+        readonly y: number;
+        readonly z: number;
+        readonly health: number;
+        /** The machine id it is heading for. */
+        readonly target: number | null;
     }
 
     interface FactoryTechnology {
@@ -1902,6 +1959,15 @@ declare global {
         researchTarget: string | null;
         /** False while a loaded technology withholds the prototype. */
         isUnlocked(object: string): boolean;
+        /** Every Threat, in ascending id order. */
+        readonly threats: FactoryThreat[];
+        /** Spawns a Threat of the given threat prototype at (x, y) in world units (factorythreatspawn). */
+        spawnThreat(object: string, x: number, y: number): boolean;
+        /**
+         * Damages a machine, ride or threat by id (factorydamage). Machines at zero health are destroyed, rides break
+         * down and threats despawn.
+         */
+        damage(target: FactoryDamageTarget, id: number, amount: number, damageType?: number): boolean;
     }
 
     interface FactoryMachineStatusArgs {
@@ -1914,6 +1980,33 @@ declare global {
 
     interface FactoryResearchCompleteArgs {
         readonly technology: string;
+    }
+
+    interface FactoryDamageEventArgs {
+        readonly target: FactoryDamageTarget;
+        readonly id: number;
+        readonly amount: number;
+        readonly damageType: number;
+        /** Health left (rides: before their next breakdown). */
+        readonly health: number;
+        /** This hit destroyed the machine or threat, or broke the ride down. */
+        readonly destroyed: boolean;
+    }
+
+    interface FactoryThreatEventArgs {
+        readonly id: number;
+        /** World units. */
+        readonly x: number;
+        readonly y: number;
+    }
+
+    interface FactoryTurretFireArgs {
+        /** The turret's tile. */
+        readonly x: number;
+        readonly y: number;
+        readonly object: string;
+        /** The threat id fired at. */
+        readonly threat: number;
     }
 
     /**

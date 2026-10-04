@@ -26,3 +26,6 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
 
 // Draws the ore layer cell under a surface tile (ViewportFlag::factoryOre).
 void PaintFactoryOreOverlay(PaintSession& session, const CoordsXY& tile, int32_t height);
+
+// Threats standing on `tile` (called from the entity paint pass, like sprites).
+void PaintFactoryThreats(PaintSession& session, const CoordsXY& tile);

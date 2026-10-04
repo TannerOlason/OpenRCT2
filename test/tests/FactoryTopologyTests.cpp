@@ -33,6 +33,7 @@
 #include <openrct2/entity/EntityRegistry.h>
 #include <openrct2/entity/Guest.h>
 #include <openrct2/factory/Belts.h>
+#include <openrct2/factory/Combat.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactorySerialisation.h>
 #include <openrct2/factory/FactoryState.h>
@@ -46,9 +47,11 @@
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/factory/Technology.h>
+#include <openrct2/factory/actions/FactoryDamageAction.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetParkOptionAction.h>
+#include <openrct2/factory/actions/FactoryThreatSpawnAction.h>
 #include <openrct2/management/Research.h>
 #include <openrct2/object/FootpathEntry.h>
 #include <openrct2/object/FootpathSurfaceObject.h>
@@ -1865,3 +1868,83 @@ TEST_F(FactoryTopologyTests, ScriptApiReadsMachinesAndResearchAndFiresHooks)
     state.research.reset();
 }
 #endif
+
+TEST_F(FactoryTopologyTests, ThreatsAttackMachinesAndTurretsShootThem)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto load = [&](const char* id) {
+        auto* object = objectManager.LoadObject(id);
+        return object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
+    };
+    const auto crawler = load("factory-tour.factory_prototype.scrap_crawler");
+    const auto turret = load("factory-tour.factory_prototype.bolt_turret");
+    const auto magazine = load("factory-tour.factory_prototype.bolt_magazine");
+    ASSERT_NE(crawler, kObjectEntryIndexNull);
+    ASSERT_NE(turret, kObjectEntryIndexNull);
+    ASSERT_NE(magazine, kObjectEntryIndexNull);
+    auto centre = [](int32_t tx, int32_t ty) { return CoordsXYZ{ tx * kCoordsXYStep + 16, ty * kCoordsXYStep + 16, 0 }; };
+
+    // A furnace has 300 health; a crawler spawned five tiles west walks to it and hits it until it is destroyed.
+    auto* furnaceElement = PlaceAt(kRowX0 + 6, kRowY, 0, _furnace);
+    ASSERT_NE(furnaceElement, nullptr);
+    const RecordId furnaceId = furnaceElement->getRecordId();
+    EXPECT_EQ(machineHealth(*state.machines.get(furnaceId)).first, 300);
+    EXPECT_EQ(machineHealth(*state.machines.get(furnaceId)).second, 300);
+    auto spawn = GameActions::FactoryThreatSpawnAction(crawler, centre(kRowX0 + 1, kRowY).x, centre(kRowX0 + 1, kRowY).y);
+    ASSERT_EQ(GameActions::ExecuteNested(&spawn, gameState).error, GameActions::Status::ok);
+    ASSERT_EQ(state.threats.aliveCount(), 1u);
+    RecordId threatId = kNullRecord;
+    state.threats.forEach([&](RecordId id, const ThreatRecord&) { threatId = id; });
+    const int32_t startX = state.threats.get(threatId)->x;
+    Tick(100);
+    EXPECT_GT(state.threats.get(threatId)->x, startX); // walking east
+    EXPECT_EQ(state.threats.get(threatId)->target, furnaceId);
+    Tick(400);
+    const auto health = state.machines.get(furnaceId)->health;
+    EXPECT_LT(health, 300);
+    Tick(1000);
+    EXPECT_EQ(state.machines.get(furnaceId)->health, 0);
+    EXPECT_EQ(state.machines.get(furnaceId)->getStatus(), MachineStatus::destroyed);
+    EXPECT_FALSE(machineInsertInput(state, *state.machines.get(furnaceId), _ironOre));
+
+    // A turret two tiles from the crawler, loaded with a magazine, shoots it (60 health, 20 per shot).
+    auto* turretElement = PlaceAt(kRowX0 + 4, kRowY + 2, 0, turret);
+    ASSERT_NE(turretElement, nullptr);
+    auto& turretRecord = *state.machines.get(turretElement->getRecordId());
+    EXPECT_FALSE(machineInsertInput(state, turretRecord, _plate));
+    EXPECT_TRUE(machineInsertInput(state, turretRecord, magazine));
+    Tick(100);
+    EXPECT_EQ(state.threats.aliveCount(), 0u);
+    EXPECT_EQ(state.machines.get(turretElement->getRecordId())->fuelEnergy, 7u); // 3 of 10 rounds used
+    EXPECT_EQ(state.machines.get(turretElement->getRecordId())->getStatus(), MachineStatus::idle);
+
+    // The damage action reaches machines and rides; a ride breaks down once its damage reaches kRideHealth.
+    auto hit = GameActions::FactoryDamageAction(
+        static_cast<uint8_t>(DamageTarget::machine), turretElement->getRecordId(), 100, 0);
+    ASSERT_EQ(GameActions::ExecuteNested(&hit, gameState).error, GameActions::Status::ok);
+    EXPECT_EQ(state.machines.get(turretElement->getRecordId())->health, 400);
+    auto missing = GameActions::FactoryDamageAction(static_cast<uint8_t>(DamageTarget::threat), 99, 10, 0);
+    EXPECT_NE(GameActions::Query(&missing, gameState).error, GameActions::Status::ok);
+    const RideId rideId = BuildFactoryTourLoop(kRowX0 + 2, kRowY + 6);
+    ASSERT_FALSE(rideId.IsNull());
+    auto rideHit = GameActions::FactoryDamageAction(static_cast<uint8_t>(DamageTarget::ride), rideId.ToUnderlying(), 600, 0);
+    ASSERT_EQ(GameActions::ExecuteNested(&rideHit, gameState).error, GameActions::Status::ok);
+    EXPECT_EQ(state.parkExt.rideDamage(rideId.ToUnderlying()), 600);
+    EXPECT_FALSE(GetRide(rideId)->flags.has(RideFlag::breakdownPending));
+    ASSERT_EQ(GameActions::ExecuteNested(&rideHit, gameState).error, GameActions::Status::ok);
+    EXPECT_EQ(state.parkExt.rideDamage(rideId.ToUnderlying()), 0);
+    EXPECT_TRUE(GetRide(rideId)->flags.has(RideFlag::breakdownPending));
+    GetRide(rideId)->flags.unset(RideFlag::breakdownPending);
+
+    // With FT_COMBAT_PARK_OUT, save a park with walking crawlers and the wrecked furnace for a GUI check.
+    if (const char* out = std::getenv("FT_COMBAT_PARK_OUT"); out != nullptr)
+    {
+        for (int32_t i = 0; i < 3; i++)
+            spawnThreat(gameState, crawler, centre(kRowX0 + 12 + i, kRowY - 3 + i));
+        Tick(30);
+        ASSERT_EQ(ScenarioSave(getGameState(), out, {}), 1);
+    }
+    state.threats.clear();
+}

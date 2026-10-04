@@ -42,6 +42,7 @@ namespace OpenRCT2::Factory
         generator,
         ore,
         technology,
+        threat,
         count,
     };
 
@@ -71,6 +72,7 @@ namespace OpenRCT2::Factory
      *   splitter:  [side * 4 + direction], side 0 = origin tile (left of travel)
      *   pipe:      [mask], 16 images; bit d of mask = connected towards view direction d
      *   technology: [0] icon (optional)
+     *   threat:    [direction * frames + frame], direction in view space
      */
     enum class BeltShape : uint8_t
     {
@@ -182,6 +184,22 @@ namespace OpenRCT2::Factory
         PrototypeRef inputFluid;  // boilers and steam engines: what the input box must hold
         PrototypeRef outputFluid; // pumps and boilers: what the output box receives
         uint32_t fluidRate = 0;   // fluid units per tick moved (pump), converted (boiler) or burnt (engine)
+        uint16_t health = 0;      // 0 = indestructible
+        // Turrets: shoot the nearest Threat within `turretRange` tiles, one `ammoItem` per `shotsPerAmmo` shots.
+        uint8_t turretRange = 0;
+        uint16_t turretDamage = 0;
+        uint16_t turretCooldownTicks = 20;
+        uint8_t shotsPerAmmo = 10;
+        PrototypeRef ammoItem;
+    };
+
+    struct ThreatProperties
+    {
+        uint16_t health = 100;
+        uint16_t speedQ8 = 128;    // world units per tick, Q8 (128 = half a unit, a tile in 64 ticks)
+        uint16_t damage = 10;      // per hit
+        uint16_t attackTicks = 40; // between hits
+        uint8_t frames = 1;        // walking frames per direction
     };
 
     struct BeltProperties
@@ -236,6 +254,7 @@ namespace OpenRCT2::Factory
         PoleProperties _pole{};
         PipeProperties _pipe{};
         TechnologyProperties _technology{};
+        ThreatProperties _threat{};
         money64 _price = 0;
         money64 _removalPrice = 0;
         uint8_t _clearance = 8; // height of the placed element in z units (kCoordsZStep multiples)
@@ -311,6 +330,10 @@ namespace OpenRCT2::Factory
         {
             return _technology;
         }
+        const ThreatProperties& getThreat() const
+        {
+            return _threat;
+        }
         bool isFluid() const
         {
             return _kind == PrototypeKind::item && _item.fluid;
@@ -345,6 +368,7 @@ namespace OpenRCT2::Factory
         ImageIndex getSplitterImage(uint8_t side, uint8_t direction) const;
         ImageIndex getPipeImage(uint8_t viewMask) const;
         ImageIndex getTechnologyIcon() const;
+        ImageIndex getThreatImage(uint8_t direction, uint8_t frame) const;
 
     private:
         ImageIndex imageAt(uint32_t offset) const;

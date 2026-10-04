@@ -1,0 +1,104 @@
+{
+    "id": "factory-tour.factory_prototype.scrap_crawler",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "threat",
+        "health": 60,
+        "speedQ8": 96,
+        "damage": 15,
+        "attackTicks": 40,
+        "frames": 4
+    },
+    "images": [
+        {
+            "path": "images/t_d0_f0.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d0_f1.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d0_f2.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d0_f3.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d1_f0.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d1_f1.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d1_f2.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d1_f3.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d2_f0.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d2_f1.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d2_f2.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d2_f3.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d3_f0.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d3_f1.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d3_f2.png",
+            "x": -14,
+            "y": -16
+        },
+        {
+            "path": "images/t_d3_f3.png",
+            "x": -14,
+            "y": -16
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Scrap crawler"
+        }
+    }
+}

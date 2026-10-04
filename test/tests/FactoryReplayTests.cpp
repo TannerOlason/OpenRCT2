@@ -32,13 +32,16 @@
 #include <openrct2/core/Path.hpp>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/actions/FactoryDamageAction.h>
 #include <openrct2/factory/actions/FactoryPlaceAction.h>
 #include <openrct2/factory/actions/FactoryPlaceBeltLineAction.h>
 #include <openrct2/factory/actions/FactoryRemoveAction.h>
 #include <openrct2/factory/actions/FactoryRotateAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetOreAction.h>
+#include <openrct2/factory/actions/FactorySetParkOptionAction.h>
 #include <openrct2/factory/actions/FactorySetRecipeAction.h>
+#include <openrct2/factory/actions/FactoryThreatSpawnAction.h>
 #include <openrct2/object/ObjectManager.h>
 #include <openrct2/world/Map.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
@@ -329,6 +332,72 @@ TEST(FactoryReplayTests, RecordSteamAndPower)
         });
 }
 
+TEST(FactoryReplayTests, RecordCombatAndResearch)
+{
+    if (!Recording())
+        GTEST_SKIP() << "FT_RECORD_REPLAYS not set";
+    auto context = OpenTestPark();
+    ASSERT_NE(context, nullptr);
+    Recorder r(*context);
+    const auto inserter = r.Load("inserter_basic");
+    const auto chest = r.Load("chest_wooden");
+    const auto pole = r.Load("small_pole");
+    const auto generator = r.Load("burner_generator");
+    const auto lab = r.Load("lab");
+    const auto kit = r.Load("research_kit");
+    const auto logistics = r.Load("tech_logistics");
+    const auto turret = r.Load("bolt_turret");
+    const auto magazine = r.Load("bolt_magazine");
+    const auto crawler = r.Load("scrap_crawler");
+    const auto furnace = r.Load("stone_furnace");
+    const auto coal = r.Load("coal");
+    r.Load("splitter_basic");
+    r.Load("underground_belt_basic");
+    r.PrepareGround();
+    auto stock = [&](int32_t tx, int32_t ty, ObjectEntryIndex item, uint16_t count) {
+        auto* element = r.PlaceDirect(tx, ty, 2, chest);
+        ASSERT_NE(element, nullptr);
+        for (auto& slot : getGameState().factory.containers.get(element->getRecordId())->slots)
+            slot = { item, count };
+    };
+    stock(6, 10, coal, 50);
+    stock(9, 13, kit, 100);
+    stock(12, 13, magazine, 20);
+    auto worldX = [&](int32_t tx) { return tx * kCoordsXYStep + 16; };
+
+    const Direction east = 2;
+    const Direction north = 3;
+    r.Record(
+        "FactoryCombatAndResearch", 3600,
+        {
+            { 2, [&] { r.Do(FactoryPlaceAction(r.At(8, 10), east, generator)); } },
+            { 3, [&] { r.Do(FactoryPlaceAction(r.At(7, 10), east, inserter)); } },
+            { 4, [&] { r.Do(FactoryPlaceAction(r.At(9, 10), east, pole)); } },
+            { 5, [&] { r.Do(FactoryPlaceAction(r.At(9, 11), east, lab)); } },
+            { 6, [&] { r.Do(FactoryPlaceAction(r.At(9, 12), north, inserter)); } },
+            { 7, [&] { r.Do(FactorySetParkOptionAction(FactoryParkOption::researchTarget, logistics)); } },
+            { 8, [&] { r.Do(FactoryPlaceAction(r.At(12, 11), east, turret)); } },
+            { 9, [&] { r.Do(FactoryPlaceAction(r.At(12, 12), north, inserter)); } },
+            { 10, [&] { r.Do(FactoryPlaceAction(r.At(5, 6), east, furnace)); } },
+            // Threats from two sides: some reach the furnace, the turret shoots those that pass it.
+            { 300, [&] { r.Do(FactoryThreatSpawnAction(crawler, worldX(2), worldX(6))); } },
+            { 600, [&] { r.Do(FactoryThreatSpawnAction(crawler, worldX(18), worldX(11))); } },
+            { 900, [&] { r.Do(FactoryThreatSpawnAction(crawler, worldX(17), worldX(14))); } },
+            { 1500, [&] { r.Do(FactoryDamageAction(0, 0, 50, 3)); } },
+            { 2000, [&] { r.Do(FactoryThreatSpawnAction(crawler, worldX(2), worldX(14))); } },
+        });
+    // The recording exercised research, turret kills and machine damage.
+    const auto& state = getGameState().factory;
+    EXPECT_GT(state.research.unitsDone(logistics) + (state.research.isResearched(logistics) ? 10u : 0u), 0u);
+    EXPECT_LT(state.threats.aliveCount(), 4u);
+    bool damaged = false;
+    state.machines.forEach([&](RecordId, const MachineRecord& machine) {
+        auto* proto = getPrototype(machine.entry);
+        damaged |= proto != nullptr && machine.health < proto->getMachine().health;
+    });
+    EXPECT_TRUE(damaged);
+}
+
 TEST(FactoryReplayTests, ForkReplayPackPlaysBackInSync)
 {
     gOpenRCT2Headless = true;
@@ -337,7 +406,7 @@ TEST(FactoryReplayTests, ForkReplayPackPlaysBackInSync)
     std::vector<std::string> files;
     while (scanner->next())
         files.push_back(Path::GetAbsolute(scanner->getPath()));
-    ASSERT_GE(files.size(), 3u) << "fork replay pack missing from " << ReplayDir();
+    ASSERT_GE(files.size(), 4u) << "fork replay pack missing from " << ReplayDir();
     for (const auto& file : files)
     {
         SCOPED_TRACE(file);

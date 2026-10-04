@@ -30,6 +30,7 @@
 #include "entity/Paint.SteamParticle.h"
 #include "entity/Paint.Vehicle.h"
 #include "entity/Paint.VehicleCrashParticle.h"
+#include "tile_element/Paint.Factory.h" // FACTORY-TOUR
 
 #include <cassert>
 
@@ -59,6 +60,8 @@ void EntityPaintSetup(PaintSession& session, const CoordsXY& pos)
     }
 
     const bool highlightPathIssues = session.ViewFlags.has(ViewportFlag::highlightPathIssues);
+    if (!highlightPathIssues)
+        PaintFactoryThreats(session, pos); // FACTORY-TOUR: Threats are factory records, painted like sprites
 
     for (auto* entity : EntityTileList(pos))
     {

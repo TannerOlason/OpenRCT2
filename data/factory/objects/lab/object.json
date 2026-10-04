@@ -8,6 +8,7 @@
     "objectType": "factory_prototype",
     "properties": {
         "kind": "machine",
+        "health": 300,
         "machineKind": "lab",
         "energy": "electric",
         "speedQ8": 256,

@@ -8,6 +8,7 @@
     "objectType": "factory_prototype",
     "properties": {
         "kind": "machine",
+        "health": 900,
         "machineKind": "drill",
         "energy": "electric",
         "speedQ8": 256,

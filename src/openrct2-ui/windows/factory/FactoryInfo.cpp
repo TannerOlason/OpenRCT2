@@ -22,6 +22,7 @@
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/RenderTarget.h>
 #include <openrct2/drawing/Text.h>
+#include <openrct2/factory/Combat.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryStringIds.h>
@@ -311,6 +312,13 @@ namespace OpenRCT2::Ui::Windows
             if (machine == nullptr)
                 return;
             drawText(rt, pos, StatusString(machine->getStatus()));
+            if (const auto [health, maxHealth] = machineHealth(*machine); maxHealth > 0)
+            {
+                auto ft = Formatter();
+                ft.Add<int32_t>(health);
+                ft.Add<int32_t>(maxHealth);
+                drawText(rt, pos + ScreenCoordsXY{ 112, 0 }, STR_FT_HEALTH, ft);
+            }
             pos.y += 12;
             if (proto != nullptr && machine->getKind() == MachineKind::assembler)
             {
@@ -497,6 +505,10 @@ namespace OpenRCT2::Ui::Windows
                     return STR_FT_STATUS_NO_ORE;
                 case MachineStatus::noRecipe:
                     return STR_FT_STATUS_NO_RECIPE;
+                case MachineStatus::destroyed:
+                    return STR_FT_STATUS_DESTROYED;
+                case MachineStatus::noAmmo:
+                    return STR_FT_STATUS_NO_AMMO;
                 default:
                     return STR_FT_STATUS_IDLE;
             }

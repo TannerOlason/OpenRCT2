@@ -18,6 +18,7 @@
 #include "../profiling/Profiling.h"
 #include "../world/tile_element/FactoryElement.h"
 #include "Belts.h"
+#include "Combat.h"
 #include "FactoryPrototypeObject.h"
 #include "FactoryTopology.h"
 #include "Fluids.h"
@@ -41,6 +42,7 @@ namespace OpenRCT2::Factory
         powerNetworks.clear();
         pipes.clear();
         fluidNetworks.clear();
+        threats.clear();
         rideProximity.clear();
         pollution.clear();
         warehouse.stock.clear();
@@ -63,7 +65,7 @@ namespace OpenRCT2::Factory
     size_t State::recordCount() const
     {
         return containers.aliveCount() + inserters.aliveCount() + beltSegments.aliveCount() + machines.aliveCount()
-            + splitters.aliveCount() + poles.aliveCount() + pipes.aliveCount();
+            + splitters.aliveCount() + poles.aliveCount() + pipes.aliveCount() + threats.aliveCount();
     }
 
     static void updateBelts(State& state)
@@ -381,7 +383,7 @@ namespace OpenRCT2::Factory
     bool machineAcceptsInput(const State& state, const MachineRecord& machine, ObjectEntryIndex item)
     {
         auto* machineProto = getPrototype(machine.entry);
-        if (machineProto == nullptr || item == kObjectEntryIndexNull)
+        if (machineProto == nullptr || item == kObjectEntryIndexNull || machine.isDestroyed())
             return false;
         const auto& props = machineProto->getMachine();
         if (props.energy == EnergySource::burner && isFuel(item)
@@ -391,6 +393,8 @@ namespace OpenRCT2::Factory
         {
             case MachineKind::drill:
                 return false;
+            case MachineKind::turret:
+                return turretAcceptsAmmo(machine, *machineProto, item);
             case MachineKind::lab:
             {
                 // Packs of the technology being researched, at most two units' worth of each.
@@ -473,12 +477,15 @@ namespace OpenRCT2::Factory
             }
         }
         const uint16_t limit = machine.getKind() == MachineKind::furnace ? std::min<uint16_t>(stackSizeOf(item), 50)
+            : machine.getKind() == MachineKind::turret                   ? std::min<uint16_t>(stackSizeOf(item), 10)
                                                                          : stackSizeOf(item);
         return stackAdd(machine.inputs, item, 1, limit);
     }
 
     bool machineTakeOutput(MachineRecord& machine, ItemStack& hand)
     {
+        if (machine.isDestroyed())
+            return false;
         for (auto& slot : machine.outputs)
         {
             if (!slot.isEmpty())
@@ -1137,7 +1144,7 @@ namespace OpenRCT2::Factory
         auto& state = gameState.factory;
         state.machines.forEach([&](RecordId, MachineRecord& machine) {
             auto* proto = getPrototype(machine.entry);
-            if (proto == nullptr)
+            if (proto == nullptr || machine.isDestroyed())
                 return;
             // Last tick's work pollutes now; centre of the footprint.
             if (machine.isWorking() && proto->getMachine().pollution > 0)
@@ -1168,6 +1175,9 @@ namespace OpenRCT2::Factory
                     break;
                 case MachineKind::lab:
                     updateLab(gameState, machine, *proto);
+                    break;
+                case MachineKind::turret:
+                    updateTurret(gameState, machine, *proto);
                     break;
                 default:
                     setMachineStatus(machine, MachineStatus::idle);
@@ -1201,6 +1211,7 @@ namespace OpenRCT2::Factory
             updatePower(state);
             updateFluidNetworks(state);
             updateMachines(gameState);
+            updateThreats(gameState);
             return;
         }
         using Clock = std::chrono::steady_clock;
@@ -1221,6 +1232,7 @@ namespace OpenRCT2::Factory
         updateFluidNetworks(state);
         lap(times->fluids);
         updateMachines(gameState);
+        updateThreats(gameState);
         lap(times->machines);
     }
 } // namespace OpenRCT2::Factory

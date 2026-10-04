@@ -296,6 +296,8 @@ namespace OpenRCT2::Factory
         noPower,
         noOre,
         noRecipe,
+        destroyed, // health ran out; the machine stays until removed
+        noAmmo,    // turrets
     };
 
     // Work units: a recipe taking T ticks at speed 1.0 costs T * kWorkUnitsPerTick; a machine adds speedQ8
@@ -317,6 +319,7 @@ namespace OpenRCT2::Factory
         RecordId powerNetwork{ kNullRecord };
         uint32_t topologyVersionSeen{};
         std::vector<RecordId> fluidNetworks; // one per fluid box of the prototype, kNullRecord until rebuilt
+        uint16_t health{};                   // meaningful only when the prototype has health (0 there = indestructible)
 
         MachineKind getKind() const
         {
@@ -348,6 +351,11 @@ namespace OpenRCT2::Factory
             v(powerNetwork);
             v(topologyVersionSeen);
             v.vec(fluidNetworks, [](RecordId& id, auto& vv) { vv(id); });
+            v(health);
+        }
+        bool isDestroyed() const
+        {
+            return getStatus() == MachineStatus::destroyed;
         }
     };
 
@@ -480,6 +488,47 @@ namespace OpenRCT2::Factory
             source.visit(v);
             target.visit(v);
             v(topologyVersionSeen);
+        }
+    };
+
+    enum class ThreatTargetKind : uint8_t
+    {
+        none,
+        machine,
+    };
+
+    /**
+     * A Threat (ADR 0013): a fork record that walks straight at a machine and hits it when adjacent. Positions are in
+     * world units (32 per tile) so threats move smoothly; everything smarter is left to scripts.
+     */
+    struct ThreatRecord
+    {
+        int32_t x{};
+        int32_t y{};
+        int32_t z{};
+        ObjectEntryIndex entry{ kObjectEntryIndexNull }; // threat prototype
+        uint16_t health{};
+        uint8_t direction{};  // facing, 0-3 like CoordsDirectionDelta
+        uint8_t targetKind{}; // ThreatTargetKind
+        RecordId target{ kNullRecord };
+        uint16_t cooldown{};  // ticks until the next hit
+        uint16_t subStep{};   // movement remainder, Q8 world units
+        uint32_t animation{}; // ticks walked, for frames
+
+        template<typename V>
+        void visit(V& v)
+        {
+            v(x);
+            v(y);
+            v(z);
+            v(entry);
+            v(health);
+            v(direction);
+            v(targetKind);
+            v(target);
+            v(cooldown);
+            v(subStep);
+            v(animation);
         }
     };
 } // namespace OpenRCT2::Factory

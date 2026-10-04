@@ -3988,3 +3988,7 @@ STR_20591   :Recipes
 STR_20592   :Belts, inserters, containers, pipes and poles
 STR_20593   :Machines
 STR_20594   :Technologies
+STR_20595   :No such target
+STR_20596   :{RED}Destroyed
+STR_20597   :{RED}No ammunition
+STR_20598   :{WINDOW_COLOUR_2}Health: {BLACK}{COMMA32} / {COMMA32}

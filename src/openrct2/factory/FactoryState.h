@@ -49,6 +49,7 @@ namespace OpenRCT2::Factory
         Pool<PowerNetworkRecord> powerNetworks;
         Pool<PipeRecord> pipes;
         Pool<FluidNetworkRecord> fluidNetworks;
+        Pool<ThreatRecord> threats;
         // Factory proximity totals of rides part-way through a rating calculation, sorted by ride id.
         std::vector<RideProximityEntry> rideProximity;
         PollutionLayer pollution;
@@ -102,6 +103,7 @@ namespace OpenRCT2::Factory
             market.visit(v);
             production.visit(v);
             research.visit(v);
+            threats.visit(v);
         }
     };
 

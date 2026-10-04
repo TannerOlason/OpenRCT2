@@ -512,6 +512,7 @@ def write_underground_and_splitter():
 
 def write_machine(name, display, props, draw_fn, frames):
     images = []
+    props = {"health": 300, **props}  # destructible by Threats (the combat stub)
     folder = write_object(name, "machine", {**props, "frames": frames, "rotations": 4}, [], display)
     for d in range(4):
         for f in range(frames):
@@ -583,6 +584,7 @@ def compose_preview(n, slices, h):
 def write_multitile_machine(name, display, props, n, h, colours, centre_detail, frames):
     body, roof, outline = colours
     images = []
+    props = {"health": 300 * n, **props}
     folder = write_object(name, "machine", {**props, "frames": frames, "rotations": 4, "size": n}, [], display)
     preview_slices = {}
     for d in range(4):
@@ -885,6 +887,74 @@ def write_research():
             "unlocks": unlocks, "rideEntries": rides, "sceneryGroups": scenery}, [], display)
 
 
+def draw_turret(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        # A barrel pointing along the view direction; recoils on the firing frame.
+        vx, vy = [(1, -0.5), (1, 0.5), (-1, 0.5), (-1, -0.5)][d]
+        length = 14 - (4 if frame == 1 else 0)
+        draw.ellipse([cx - 8, cy - 5, cx + 8, cy + 3], fill=(70, 80, 70, 255), outline=(30, 35, 30, 255))
+        draw.line([(cx, cy - 2), (cx + vx * length, cy - 2 + vy * length)], fill=(40, 40, 45, 255), width=4)
+        if frame == 1:
+            draw.ellipse([cx + vx * length - 3, cy - 5 + vy * length, cx + vx * length + 3, cy + 1 + vy * length],
+                         fill=(250, 210, 60, 255))
+
+    return draw_machine_box(d, (90, 100, 80, 255), (120, 130, 105, 255), (35, 40, 30, 255), 12, top_detail)
+
+
+def draw_crawler(d, frame, frames):
+    """A small rusty crawler seen from the view direction d; legs alternate with the frame."""
+    img = Image.new("RGBA", (28, 20), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    vx, vy = [(1, -0.5), (1, 0.5), (-1, 0.5), (-1, -0.5)][d]
+    cx, cy = 14, 12
+    for k, side in enumerate((-1, 1)):
+        for leg in range(3):
+            phase = (leg + frame + k) % 2
+            ox = cx + (leg - 1) * 5 * vx + side * 6 * -vy * 2 * 0.5
+            oy = cy + (leg - 1) * 5 * vy * 0.5 + side * 3
+            draw.line([(ox, oy), (ox + side * (3 + phase), oy + 4)], fill=(60, 35, 20, 255), width=1)
+    draw.ellipse([cx - 8, cy - 5, cx + 8, cy + 4], fill=(150, 80, 40, 255), outline=(70, 35, 15, 255))
+    hx, hy = cx + vx * 7, cy + vy * 7
+    draw.ellipse([hx - 4, hy - 4, hx + 4, hy + 3], fill=(110, 55, 30, 255), outline=(60, 30, 10, 255))
+    draw.point([(hx + vx * 2 - 1, hy - 1), (hx + vx * 2 + 1, hy - 1)], fill=(250, 220, 60, 255))
+    return img
+
+
+def write_combat():
+    """The combat stub's content: a Threat, a turret and its ammunition (ADR 0013)."""
+    frames = 4
+    images = []
+    folder = write_object("scrap_crawler", "threat", {"health": 60, "speedQ8": 96, "damage": 15, "attackTicks": 40,
+                                                       "frames": frames}, [], "Scrap crawler")
+    for d in range(4):
+        for f in range(frames):
+            fname = f"t_d{d}_f{f}.png"
+            save(draw_crawler(d, f, frames), folder, fname)
+            images.append({"path": f"images/{fname}", "x": -14, "y": -16})
+    with open(os.path.join(folder, "object.json")) as fh:
+        obj = json.load(fh)
+    obj["images"] = images
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+    icon, belt = draw_item_small((200, 170, 60), (110, 90, 20))
+    folder = write_object("bolt_magazine", "item", {"stackSize": 50, "marketPrice": 15},
+                          [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                          "Bolt magazine")
+    save(icon, folder, "icon.png")
+    save(belt, folder, "belt.png")
+    write_object("bolt_magazine_recipe", "recipe", {
+        "ingredients": [{"item": "factory-tour.factory_prototype.iron_plate", "count": 2}],
+        "results": [{"item": "factory-tour.factory_prototype.bolt_magazine", "count": 1}],
+        "timeTicks": 60, "category": "crafting"}, [], "Bolt magazine")
+    write_machine("bolt_turret", "Bolt turret", {
+        "machineKind": "turret", "energy": "none", "health": 500, "turretRange": 6, "turretDamage": 20,
+        "turretCooldownTicks": 20, "shotsPerAmmo": 10, "ammoItem": "factory-tour.factory_prototype.bolt_magazine",
+        "photogenic": True, "inputSlots": 1, "outputSlots": 0, "price": 150, "removalPrice": -110, "clearance": 5},
+        draw_turret, 2)
+
+
 def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0, market_price=0):
     icon, belt = draw_item_small(colour, dark)
     item_props = {"stackSize": 50}
@@ -956,6 +1026,9 @@ def main():
 
     # Research: kits, labs and the starter technology tree.
     write_research()
+
+    # Combat stub: a threat, a turret and its ammunition.
+    write_combat()
 
     # Manufactured souvenirs, their recipes and the shop that sells them (stocked from the Warehouse).
     for name, display, colour, dark, shop_item in (("factory_model", "Factory model", (190, 120, 60), (110, 60, 30), "factory_model"),

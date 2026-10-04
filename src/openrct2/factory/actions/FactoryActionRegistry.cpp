@@ -11,6 +11,7 @@
 
 #include "FactoryActionRegistry.h"
 
+#include "FactoryDamageAction.h"
 #include "FactoryMarketSellAction.h"
 #include "FactoryPlaceAction.h"
 #include "FactoryPlaceBeltLineAction.h"
@@ -20,6 +21,8 @@
 #include "FactorySetOreAction.h"
 #include "FactorySetParkOptionAction.h"
 #include "FactorySetRecipeAction.h"
+#include "FactoryThreatDespawnAction.h"
+#include "FactoryThreatSpawnAction.h"
 
 #include <array>
 
@@ -49,6 +52,9 @@ namespace OpenRCT2::GameActions::Factory
         Make<FactorySetFilterAction>("FactorySetFilterAction", "factorysetfilter"),
         Make<FactorySetParkOptionAction>("FactorySetParkOptionAction", "factorysetparkoption"),
         Make<FactoryMarketSellAction>("FactoryMarketSellAction", "factorymarketsell"),
+        Make<FactoryDamageAction>("FactoryDamageAction", "factorydamage"),
+        Make<FactoryThreatSpawnAction>("FactoryThreatSpawnAction", "factorythreatspawn"),
+        Make<FactoryThreatDespawnAction>("FactoryThreatDespawnAction", "factorythreatdespawn"),
     };
 
     static constexpr std::array<GameCommand, kEntries.size()> kCommands = [] {

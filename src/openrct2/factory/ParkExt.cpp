@@ -13,6 +13,7 @@
 
 #include "../GameState.h"
 #include "../entity/Guest.h"
+#include "../ride/Ride.h"
 
 #include <algorithm>
 
@@ -47,11 +48,36 @@ namespace OpenRCT2::Factory
             std::count_if(guests.begin(), guests.end(), [&](const GuestExt& guest) { return (guest.flags & flags) == flags; }));
     }
 
+    uint16_t ParkExt::rideDamage(uint16_t id) const
+    {
+        auto it = std::lower_bound(rides.begin(), rides.end(), id, [](const RideExt& ride, uint16_t v) { return ride.id < v; });
+        return it != rides.end() && it->id == id ? it->damage : 0;
+    }
+
+    void ParkExt::setRideDamage(uint16_t id, uint16_t damage)
+    {
+        auto it = std::lower_bound(rides.begin(), rides.end(), id, [](const RideExt& ride, uint16_t v) { return ride.id < v; });
+        const bool found = it != rides.end() && it->id == id;
+        if (damage == 0)
+        {
+            if (found)
+                rides.erase(it);
+            return;
+        }
+        if (found)
+            it->damage = damage;
+        else
+            rides.insert(it, RideExt{ id, damage });
+    }
+
     void pruneParkExt(GameState_t& gameState)
     {
         auto& guests = gameState.factory.parkExt.guests;
         std::erase_if(guests, [&](const GuestExt& guest) {
             return gameState.entities.tryGetEntity<Guest>(EntityId::FromUnderlying(guest.id)) == nullptr;
+        });
+        std::erase_if(gameState.factory.parkExt.rides, [](const RideExt& ride) {
+            return GetRide(RideId::FromUnderlying(ride.id)) == nullptr;
         });
     }
 } // namespace OpenRCT2::Factory

@@ -39,6 +39,10 @@ static const EnumMap<HookType> HooksLookupTable(
         // FACTORY-TOUR
         { "factory.machine.status", HookType::factoryMachineStatus },
         { "factory.research.complete", HookType::factoryResearchComplete },
+        { "factory.damage", HookType::factoryDamage },
+        { "factory.threat.spawn", HookType::factoryThreatSpawn },
+        { "factory.threat.despawn", HookType::factoryThreatDespawn },
+        { "factory.turret.fire", HookType::factoryTurretFire },
     });
 
 HookType OpenRCT2::Scripting::GetHookType(const std::string& name)

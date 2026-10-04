@@ -737,6 +737,7 @@
     <ClInclude Include="world\tile_element\BannerElement.h" />
     <ClInclude Include="world\tile_element\FactoryElement.h" />
     <ClInclude Include="factory\Belts.h" />
+    <ClInclude Include="factory\Combat.h" />
     <ClInclude Include="factory\FactoryBench.h" />
     <ClInclude Include="factory\FactoryTourRTD.h" />
     <ClInclude Include="factory\GuestFactory.h" />
@@ -762,6 +763,9 @@
     <ClInclude Include="factory\actions\FactorySetOreAction.h" />
     <ClInclude Include="factory\actions\FactoryPlaceBeltLineAction.h" />
     <ClInclude Include="factory\actions\FactoryMarketSellAction.h" />
+    <ClInclude Include="factory\actions\FactoryThreatDespawnAction.h" />
+    <ClInclude Include="factory\actions\FactoryThreatSpawnAction.h" />
+    <ClInclude Include="factory\actions\FactoryDamageAction.h" />
     <ClInclude Include="factory\actions\FactorySetFilterAction.h" />
     <ClInclude Include="factory\actions\FactorySetParkOptionAction.h" />
     <ClInclude Include="factory\actions\FactorySetRecipeAction.h" />
@@ -1348,6 +1352,7 @@
     <ClCompile Include="world\tile_element\BannerElement.cpp" />
     <ClCompile Include="world\tile_element\FactoryElement.cpp" />
     <ClCompile Include="factory\Belts.cpp" />
+    <ClCompile Include="factory\Combat.cpp" />
     <ClCompile Include="factory\FactoryBench.cpp" />
     <ClCompile Include="factory\GuestFactory.cpp" />
     <ClCompile Include="factory\Market.cpp" />
@@ -1371,6 +1376,9 @@
     <ClCompile Include="factory\actions\FactorySetOreAction.cpp" />
     <ClCompile Include="factory\actions\FactoryPlaceBeltLineAction.cpp" />
     <ClCompile Include="factory\actions\FactoryMarketSellAction.cpp" />
+    <ClCompile Include="factory\actions\FactoryThreatDespawnAction.cpp" />
+    <ClCompile Include="factory\actions\FactoryThreatSpawnAction.cpp" />
+    <ClCompile Include="factory\actions\FactoryDamageAction.cpp" />
     <ClCompile Include="factory\actions\FactorySetFilterAction.cpp" />
     <ClCompile Include="factory\actions\FactorySetParkOptionAction.cpp" />
     <ClCompile Include="factory\actions\FactorySetRecipeAction.cpp" />

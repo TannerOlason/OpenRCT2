@@ -37,6 +37,19 @@ namespace OpenRCT2::Factory
         }
     };
 
+    struct RideExt
+    {
+        uint16_t id{};     // RideId
+        uint16_t damage{}; // towards Factory::kRideHealth
+
+        template<typename V>
+        void visit(V& v)
+        {
+            v(id);
+            v(damage);
+        }
+    };
+
     /**
      * Fork fields that belong to upstream objects (guests now; rides and scenario options later), keyed by their
      * upstream id and kept sorted so iteration and serialisation are deterministic. Entries for guests that left are
@@ -45,6 +58,7 @@ namespace OpenRCT2::Factory
     struct ParkExt
     {
         std::vector<GuestExt> guests;
+        std::vector<RideExt> rides; // sorted by ride id; only rides with damage
         // Scenario options (Factory::ConstructionMode, ShopStockMode); 0 is upstream behaviour.
         uint8_t constructionMode{};
         uint8_t shopStockMode{};
@@ -53,11 +67,12 @@ namespace OpenRCT2::Factory
 
         bool isEmpty() const
         {
-            return guests.empty() && constructionMode == 0 && shopStockMode == 0 && guestsToured == 0;
+            return guests.empty() && rides.empty() && constructionMode == 0 && shopStockMode == 0 && guestsToured == 0;
         }
         void reset()
         {
             guests.clear();
+            rides.clear();
             constructionMode = 0;
             shopStockMode = 0;
             guestsToured = 0;
@@ -65,6 +80,8 @@ namespace OpenRCT2::Factory
         uint8_t guestFlags(uint16_t id) const;
         void addGuestFlags(uint16_t id, uint8_t flags);
         size_t countGuestsWith(uint8_t flags) const;
+        uint16_t rideDamage(uint16_t id) const;
+        void setRideDamage(uint16_t id, uint16_t damage);
 
         template<typename V>
         void visit(V& v)
@@ -73,6 +90,7 @@ namespace OpenRCT2::Factory
             v(constructionMode);
             v(shopStockMode);
             v(guestsToured);
+            v.vec(rides, [](RideExt& ride, auto& vv) { ride.visit(vv); });
         }
     };
 

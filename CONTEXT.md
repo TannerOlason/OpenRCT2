@@ -156,9 +156,9 @@ A machine of kind `lab` that consumes the current Technology's packs to research
 _Avoid_: research centre
 
 **Threat**:
-The single stub `EntityType::threat` that walks straight at a target and hits when adjacent. Everything
-smarter is a modder's job.
-_Avoid_: biter, enemy AI
+A fork record (not an entity, ADR 0013) of a `threat` Prototype that walks straight at the nearest destructible
+machine and hits it when adjacent. Everything smarter is a modder's job.
+_Avoid_: biter, enemy AI, enemy entity
 
 ## Multi-world
 

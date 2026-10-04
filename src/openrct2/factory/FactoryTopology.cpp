@@ -823,6 +823,7 @@ namespace OpenRCT2::Factory
                     record.inputs.assign(props.inputSlots, ItemStack{});
                     record.outputs.assign(props.outputSlots, ItemStack{});
                     record.status = static_cast<uint8_t>(MachineStatus::idle);
+                    record.health = props.health;
                     element->setRecordId(id);
                     for (const auto& at : extraTiles)
                         if (auto* extra = findFactoryElement(at))

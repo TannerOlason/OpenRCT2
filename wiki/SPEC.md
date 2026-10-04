@@ -252,18 +252,26 @@ percent, `inputs, outputs, fuel, powered`), `setRecipe(x, y, recipe)`, `warehous
 (get/set) and `isUnlocked(object)`. Objects are named by identifier. Setters run the fork's game actions
 (`factorysetrecipe`, `factorysetparkoption`), so they are queued for the next tick and work in multiplayer. Hooks
 (non-mutable, only with subscribers): `factory.machine.status {x, y, object, status, previousStatus}` when a
-machine's status changes and `factory.research.complete {technology}`. Planned with the combat stub:
-`spawnThreat()`, `factory.damage`, `factory.threat.spawn/despawn`, `factory.turret.fire`. No `factory.tick`:
+machine's status changes and `factory.research.complete {technology}`; the combat stub adds `threats`,
+`spawnThreat(object, x, y)`, `damage(target, id, amount, damageType)`, machine `health`/`maxHealth` and the hooks
+`factory.damage`, `factory.threat.spawn/despawn` and `factory.turret.fire` (plugin API 135). No `factory.tick`:
 `interval.tick` already covers it. `openrct2.d.ts` now also lists the upstream `map.resize` and `ride.breakdown`
 hook names that were missing from `HookType`.
 
-Combat stub: `health/maxHealth` on machine records (0xFFFF = indestructible; ride health in `parkExt`);
-`FactoryDamageAction {target variant<tile, RideId, EntityId>, amount, damageType, sourceId}`; destroyed
-machines stop and show a damaged frame; rides get `RideFlag::brokenDown` with `Breakdown::damage`;
-`ThreatEntity` as `EntityType::threat` appended before `count` and added to the park-file type lists,
-checksum, snapshots, paint and `ScEntity`; `ThreatSpawn/DespawnAction`; turret kind consumes `ammoItem`,
-nearest-threat scan, fires the hook. Not built: AI, pathing, waves, evolution, guest reactions, rubble, repair,
-vehicle damage.
+Combat stub (ADR 0013, `factory/Combat.cpp`, pools chunk version 11, parkExt version 4): machine prototypes
+take `health` (0 = indestructible) and machine records carry `health`; at zero a machine becomes
+`MachineStatus::destroyed`, stops, refuses items and is painted as a dark wreck until removed. Rides collect damage in
+`ParkExt::rides`; reaching `kRideHealth` (1000) triggers a safety cut-out breakdown and clears it. Threats are
+`ThreatRecord`s in `State::threats` (world-unit position, health, target, cooldown) of prototypes with
+`kind: "threat"` (`health, speedQ8, damage, attackTicks, frames`); each tick a threat targets the nearest
+destructible machine (lowest id on ties), walks straight at its footprint centre and hits it every `attackTicks` once
+within 12 units of the footprint. Turret machines (`machineKind: "turret"`, `turretRange, turretDamage,
+turretCooldownTicks, shotsPerAmmo, ammoItem`) load one ammo item into `shotsPerAmmo` rounds (kept in `fuelEnergy`),
+pick the nearest threat in range and fire every cooldown. Actions: `FactoryDamageAction {target, id, amount,
+damageType}` (13), `FactoryThreatSpawnAction {object, x, y}` (14), `FactoryThreatDespawnAction {id}` (15). Hooks:
+`factory.damage`, `factory.threat.spawn`, `factory.threat.despawn`, `factory.turret.fire`. Content: the Scrap
+crawler, the Bolt turret and Bolt magazines. Not built: AI, pathing, waves, evolution, guest reactions, rubble,
+repair, vehicle damage.
 
 ## E7 Logistics at scale
 

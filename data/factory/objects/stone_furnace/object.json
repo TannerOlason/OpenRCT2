@@ -8,6 +8,7 @@
     "objectType": "factory_prototype",
     "properties": {
         "kind": "machine",
+        "health": 300,
         "machineKind": "furnace",
         "energy": "burner",
         "speedQ8": 256,

@@ -167,7 +167,9 @@ object-selection tabs, combat stub (health, damage, Threat, turret), first conte
 - [x] Object selection sub-tabs on the factory page: all, items/fluids/ores, recipes, logistics, machines,
   technologies. The kind is kept in the object index (`ObjectRepositoryItem::FactoryPrototypeInfo`, index
   version 33) so the list filters without loading objects.
-- [ ] Combat stub: machine health, `FactoryDamageAction`, Threat entity, turret machines.
+- [x] Combat stub (ADR 0013): machine health and wrecks, ride damage ending in a breakdown, Threats as factory
+  records that walk at the nearest machine, turrets with ammunition, three actions, four hooks, script access, and
+  a combat replay in the determinism pack.
 - [ ] First content pack (turret, longer technology chain) and a modding guide.
 
 ### M6 Logistics and polish `[ ]`

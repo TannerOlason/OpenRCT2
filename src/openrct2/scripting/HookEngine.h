@@ -46,6 +46,10 @@ namespace OpenRCT2::Scripting
         // FACTORY-TOUR
         factoryMachineStatus,
         factoryResearchComplete,
+        factoryDamage,
+        factoryThreatSpawn,
+        factoryThreatDespawn,
+        factoryTurretFire,
         count,
         notDefined = -1,
     };

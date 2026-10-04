@@ -1,0 +1,32 @@
+{
+    "id": "factory-tour.factory_prototype.bolt_magazine_recipe",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "recipe",
+        "ingredients": [
+            {
+                "item": "factory-tour.factory_prototype.iron_plate",
+                "count": 2
+            }
+        ],
+        "results": [
+            {
+                "item": "factory-tour.factory_prototype.bolt_magazine",
+                "count": 1
+            }
+        ],
+        "timeTicks": 60,
+        "category": "crafting"
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Bolt magazine"
+        }
+    }
+}

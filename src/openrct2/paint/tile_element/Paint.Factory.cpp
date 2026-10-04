@@ -223,6 +223,9 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
             {
                 auto* record = state.machines.get(factoryElement.getRecordId());
                 const auto& props = proto->getMachine();
+                // Destroyed machines are drawn as dark wrecks until removed.
+                if (record != nullptr && record->isDestroyed() && !factoryElement.isGhost())
+                    imageTemplate = ImageId().WithRemap(FilterPaletteID::paletteDarken3);
                 if (record != nullptr && record->isWorking() && props.frames > 1)
                 {
                     // Cycle the working frames at roughly 10 frames per second.
@@ -291,4 +294,30 @@ void PaintFactoryOreOverlay(PaintSession& session, const CoordsXY& tile, int32_t
         return;
     // Drawn as a child of the surface so it never sorts above things standing on the tile.
     PaintAddImageAsChild(session, ImageId(image), { 0, 0, height + 1 }, { { 0, 0, height + 1 }, { 32, 32, 1 } });
+}
+
+void PaintFactoryThreats(PaintSession& session, const CoordsXY& tile)
+{
+    const auto& threats = getGameState().factory.threats;
+    if (threats.aliveCount() == 0)
+        return;
+    const auto tileX = tile.x / kCoordsXYStep;
+    const auto tileY = tile.y / kCoordsXYStep;
+    threats.forEach([&](RecordId, const ThreatRecord& threat) {
+        if (threat.x / kCoordsXYStep != tileX || threat.y / kCoordsXYStep != tileY)
+            return;
+        auto* proto = getPrototype(threat.entry);
+        if (proto == nullptr)
+            return;
+        const auto& props = proto->getThreat();
+        const uint8_t viewDirection = static_cast<uint8_t>((threat.direction + session.CurrentRotation) & 3);
+        const uint8_t frame = static_cast<uint8_t>((threat.animation / 6) % props.frames);
+        const auto image = proto->getThreatImage(viewDirection, frame);
+        if (image == kImageIndexUndefined)
+            return;
+        session.CurrentlyDrawnEntity = nullptr;
+        session.SpritePosition = { threat.x, threat.y };
+        session.InteractionType = ViewportInteractionItem::none;
+        PaintAddImageAsParent(session, ImageId(image), { 0, 0, threat.z }, { { 0, 0, threat.z }, { 1, 1, 12 } });
+    });
 }

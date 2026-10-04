@@ -17,12 +17,15 @@
 #include "../../world/Map.h"
 #include "../../world/TileElementsView.h"
 #include "../../world/tile_element/FactoryElement.h"
+#include "../Combat.h"
 #include "../FactoryPrototypeObject.h"
 #include "../FactoryState.h"
 #include "../FactoryTopology.h"
 #include "../Technology.h"
+#include "../actions/FactoryDamageAction.h"
 #include "../actions/FactorySetParkOptionAction.h"
 #include "../actions/FactorySetRecipeAction.h"
+#include "../actions/FactoryThreatSpawnAction.h"
 
 #ifdef ENABLE_SCRIPTING
     #include "../../actions/GameActionRunner.h"
@@ -42,8 +45,9 @@ namespace OpenRCT2::Factory
             "drill", "furnace", "assembler", "boiler", "engine", "pump", "lab", "turret", "export_depot",
         };
         constexpr const char* kMachineStatusNames[] = {
-            "idle", "working", "no_input", "output_full", "no_fuel", "no_power", "no_ore", "no_recipe",
+            "idle", "working", "no_input", "output_full", "no_fuel", "no_power", "no_ore", "no_recipe", "destroyed", "no_ammo",
         };
+        constexpr const char* kDamageTargetNames[] = { "machine", "ride", "threat" };
 
         template<size_t N>
         const char* nameAt(const char* const (&names)[N], uint8_t index)
@@ -106,6 +110,9 @@ namespace OpenRCT2::Factory
             JS_SetPropertyStr(
                 ctx, obj, "fuel", machine.fuel.isEmpty() ? JS_NULL : stackToJS(ctx, machine.fuel.item, machine.fuel.count));
             JS_SetPropertyStr(ctx, obj, "powered", JS_NewBool(ctx, machine.powerNetwork != kNullRecord));
+            const auto [health, maxHealth] = machineHealth(machine);
+            JS_SetPropertyStr(ctx, obj, "health", JS_NewUint32(ctx, health));
+            JS_SetPropertyStr(ctx, obj, "maxHealth", JS_NewUint32(ctx, maxHealth));
             return obj;
         }
 
@@ -243,6 +250,60 @@ namespace OpenRCT2::Factory
             return JS_UNDEFINED;
         }
 
+        JSValue threatsGet(JSContext* ctx, JSValue)
+        {
+            JSValue array = JS_NewArray(ctx);
+            int64_t index = 0;
+            getGameState().factory.threats.forEach([&](RecordId id, const ThreatRecord& threat) {
+                JSValue obj = JS_NewObject(ctx);
+                JS_SetPropertyStr(ctx, obj, "id", JS_NewUint32(ctx, id));
+                JS_SetPropertyStr(ctx, obj, "object", identifierOf(ctx, threat.entry));
+                JS_SetPropertyStr(ctx, obj, "x", JS_NewInt32(ctx, threat.x));
+                JS_SetPropertyStr(ctx, obj, "y", JS_NewInt32(ctx, threat.y));
+                JS_SetPropertyStr(ctx, obj, "z", JS_NewInt32(ctx, threat.z));
+                JS_SetPropertyStr(ctx, obj, "health", JS_NewUint32(ctx, threat.health));
+                JS_SetPropertyStr(
+                    ctx, obj, "target",
+                    threat.targetKind == static_cast<uint8_t>(ThreatTargetKind::machine) ? JS_NewUint32(ctx, threat.target)
+                                                                                         : JS_NULL);
+                JS_SetPropertyInt64(ctx, array, index++, obj);
+            });
+            return array;
+        }
+
+        JSValue spawnThreat(JSContext* ctx, JSValue, int argc, JSValue* argv)
+        {
+            JS_UNPACK_STR(identifier, ctx, argv[0]);
+            JS_UNPACK_INT32(x, ctx, argv[1]);
+            JS_UNPACK_INT32(y, ctx, argv[2]);
+            const auto entry = entryOf(identifier);
+            if (entry == kObjectEntryIndexNull)
+                return JS_ThrowPlainError(ctx, "Unknown threat.");
+            auto action = GameActions::FactoryThreatSpawnAction(entry, x, y);
+            auto result = GameActions::Execute(&action, getGameState());
+            return JS_NewBool(ctx, result.error == GameActions::Status::ok);
+        }
+
+        JSValue damage(JSContext* ctx, JSValue, int argc, JSValue* argv)
+        {
+            JS_UNPACK_STR(targetName, ctx, argv[0]);
+            JS_UNPACK_UINT32(id, ctx, argv[1]);
+            JS_UNPACK_UINT32(amount, ctx, argv[2]);
+            uint32_t damageType = 0;
+            if (argc > 3 && JS_IsNumber(argv[3]))
+                JS_ToUint32(ctx, &damageType, argv[3]);
+            uint8_t target = static_cast<uint8_t>(DamageTarget::count);
+            for (uint8_t i = 0; i < std::size(kDamageTargetNames); i++)
+                if (targetName == kDamageTargetNames[i])
+                    target = i;
+            if (target == static_cast<uint8_t>(DamageTarget::count))
+                return JS_ThrowPlainError(ctx, "Unknown damage target.");
+            auto action = GameActions::FactoryDamageAction(
+                target, id, static_cast<uint16_t>(std::min<uint32_t>(amount, 0xFFFF)), static_cast<uint8_t>(damageType));
+            auto result = GameActions::Execute(&action, getGameState());
+            return JS_NewBool(ctx, result.error == GameActions::Status::ok);
+        }
+
         JSValue isUnlocked(JSContext* ctx, JSValue, int argc, JSValue* argv)
         {
             JS_UNPACK_STR(identifier, ctx, argv[0]);
@@ -265,6 +326,9 @@ namespace OpenRCT2::Factory
                     JS_CGETSET_DEF("technologies", technologiesGet, nullptr),
                     JS_CGETSET_DEF("researchTarget", researchTargetGet, researchTargetSet),
                     JS_CFUNC_DEF("isUnlocked", 1, isUnlocked),
+                    JS_CGETSET_DEF("threats", threatsGet, nullptr),
+                    JS_CFUNC_DEF("spawnThreat", 3, spawnThreat),
+                    JS_CFUNC_DEF("damage", 4, damage),
                 };
                 RegisterBase(ctx, "Factory", nullptr, funcs);
             }
@@ -330,6 +394,50 @@ namespace OpenRCT2::Factory
         JS_SetPropertyStr(ctx, obj, "technology", identifierOf(ctx, technology));
         hookEngine->Call(HookType::factoryResearchComplete, obj, false);
     }
+    void invokeDamageHook(
+        DamageTarget target, uint32_t id, uint16_t amount, uint8_t damageType, uint16_t health, bool destroyed)
+    {
+        auto* hookEngine = hookEngineWith(HookType::factoryDamage);
+        if (hookEngine == nullptr)
+            return;
+        JSContext* ctx = GetContext()->GetScriptEngine().GetContext();
+        JSValue obj = JS_NewObject(ctx);
+        JS_SetPropertyStr(ctx, obj, "target", JSFromStdString(ctx, nameAt(kDamageTargetNames, static_cast<uint8_t>(target))));
+        JS_SetPropertyStr(ctx, obj, "id", JS_NewUint32(ctx, id));
+        JS_SetPropertyStr(ctx, obj, "amount", JS_NewUint32(ctx, amount));
+        JS_SetPropertyStr(ctx, obj, "damageType", JS_NewUint32(ctx, damageType));
+        JS_SetPropertyStr(ctx, obj, "health", JS_NewUint32(ctx, health));
+        JS_SetPropertyStr(ctx, obj, "destroyed", JS_NewBool(ctx, destroyed));
+        hookEngine->Call(HookType::factoryDamage, obj, false);
+    }
+
+    void invokeThreatHook(bool spawned, RecordId id, int32_t x, int32_t y)
+    {
+        const auto type = spawned ? HookType::factoryThreatSpawn : HookType::factoryThreatDespawn;
+        auto* hookEngine = hookEngineWith(type);
+        if (hookEngine == nullptr)
+            return;
+        JSContext* ctx = GetContext()->GetScriptEngine().GetContext();
+        JSValue obj = JS_NewObject(ctx);
+        JS_SetPropertyStr(ctx, obj, "id", JS_NewUint32(ctx, id));
+        JS_SetPropertyStr(ctx, obj, "x", JS_NewInt32(ctx, x));
+        JS_SetPropertyStr(ctx, obj, "y", JS_NewInt32(ctx, y));
+        hookEngine->Call(type, obj, false);
+    }
+
+    void invokeTurretFireHook(const MachineRecord& turret, RecordId threat)
+    {
+        auto* hookEngine = hookEngineWith(HookType::factoryTurretFire);
+        if (hookEngine == nullptr)
+            return;
+        JSContext* ctx = GetContext()->GetScriptEngine().GetContext();
+        JSValue obj = JS_NewObject(ctx);
+        JS_SetPropertyStr(ctx, obj, "x", JS_NewInt32(ctx, turret.x));
+        JS_SetPropertyStr(ctx, obj, "y", JS_NewInt32(ctx, turret.y));
+        JS_SetPropertyStr(ctx, obj, "object", identifierOf(ctx, turret.entry));
+        JS_SetPropertyStr(ctx, obj, "threat", JS_NewUint32(ctx, threat));
+        hookEngine->Call(HookType::factoryTurretFire, obj, false);
+    }
 #else
     void registerScriptClasses(JSContext*)
     {
@@ -344,6 +452,15 @@ namespace OpenRCT2::Factory
     {
     }
     void invokeResearchCompleteHook(ObjectEntryIndex)
+    {
+    }
+    void invokeDamageHook(DamageTarget, uint32_t, uint16_t, uint8_t, uint16_t, bool)
+    {
+    }
+    void invokeThreatHook(bool, RecordId, int32_t, int32_t)
+    {
+    }
+    void invokeTurretFireHook(const MachineRecord&, RecordId)
     {
     }
 #endif

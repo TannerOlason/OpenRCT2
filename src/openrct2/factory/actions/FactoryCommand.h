@@ -35,6 +35,9 @@ namespace OpenRCT2::GameActions
         setOre = 10,
         setParkOption = 11,
         marketSell = 12,
+        damage = 13,
+        threatSpawn = 14,
+        threatDespawn = 15,
         count,
     };
 
