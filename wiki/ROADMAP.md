@@ -136,7 +136,10 @@ Exhibit Paths.
   export depots sell what is put in, `FactoryMarketSellAction` sells Warehouse stock (click a stack in the depot
   window). Money is booked under Shop sales instead of new expenditure rows (ADR 0011: the expenditure table's save
   format depends on the enum's size).
-- [ ] Warehouse-stocked shops and souvenir shop items.
+- [x] Warehouse-stocked shops and souvenir shop items: `ShopItem::factoryModel` (56) and `gearKeyring` (57) with
+  their own strings and plugin names, made by assembler recipes and sold by the Factory gift shop stall. In warehouse
+  stock mode a shop item that a factory item maps to (item `shopItem`) is taken from the Warehouse instead of paying
+  the stock cost, and guests think "It's sold out!" when it runs out.
 - [ ] Park rating terms (pollution near paths, uptime) and park flags.
 - [ ] Objectives and scenario editor options.
 - [ ] Exhibit Paths.

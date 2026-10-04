@@ -26,6 +26,7 @@
 #include "../entity/MoneyEffect.h"
 #include "../entity/Particle.h"
 #include "../factory/GuestFactory.h" // FACTORY-TOUR
+#include "../factory/Materials.h"    // FACTORY-TOUR
 #include "../interface/WindowBase.h"
 #include "../localisation/Formatter.h"
 #include "../localisation/Formatting.h"
@@ -1472,6 +1473,13 @@ namespace OpenRCT2
             return false;
         }
 
+        // FACTORY-TOUR: shops stocked from the Warehouse can run out
+        if (Factory::shopItemSoldOut(getGameState(), EnumValue(shopItem)))
+        {
+            guest.insertNewThought(PeepThoughtType::soldOut);
+            return false;
+        }
+
         const auto& shopItemDescriptor = GetShopItemDescriptor(shopItem);
         if (shopItemDescriptor.IsFoodOrDrink())
         {
@@ -1662,7 +1670,8 @@ namespace OpenRCT2
             guest.amountOfSouvenirs++;
         }
 
-        if (!gameState.park.flags.has(ParkFlag::noMoney))
+        // FACTORY-TOUR: Warehouse stock replaces the stock cost
+        if (!Factory::takeShopStock(gameState, EnumValue(shopItem)) && !gameState.park.flags.has(ParkFlag::noMoney))
             FinancePayment(shopItemDescriptor.Cost, expenditure);
 
         // Sets the expenditure type to *_FOODDRINK_SALES or *_SHOP_SALES appropriately.

@@ -44,10 +44,12 @@
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/management/Research.h>
 #include <openrct2/object/ObjectManager.h>
+#include <openrct2/object/RideObject.h>
 #include <openrct2/ride/Ride.h>
 #include <openrct2/ride/RideConstruction.h>
 #include <openrct2/ride/RideData.h>
 #include <openrct2/ride/RideRatings.h>
+#include <openrct2/ride/ShopItem.h>
 #include <openrct2/ride/ted/TrackElemType.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/world/Map.h>
@@ -1458,4 +1460,40 @@ TEST_F(FactoryTopologyTests, ExportDepotSellsAndTheWarehouseSellsByAction)
     GameActions::FactoryMarketSellAction nothing(_gear, 1);
     EXPECT_EQ(GameActions::Query(&nothing, gameState).error, GameActions::Status::invalidParameters);
     gameState.park.flags.set(ParkFlag::noMoney);
+}
+
+TEST_F(FactoryTopologyTests, WarehouseStocksShopsAndTheGiftShopSellsSouvenirs)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    auto& objectManager = GetContext()->GetObjectManager();
+    EXPECT_TRUE(GetShopItemDescriptor(ShopItem::factoryModel).IsSouvenir());
+    EXPECT_EQ(RideObject::ParseShopItem("gear_keyring"), ShopItem::gearKeyring);
+
+    auto* shop = static_cast<RideObject*>(objectManager.LoadObject("factory-tour.ride.gift_shop"));
+    ASSERT_NE(shop, nullptr);
+    EXPECT_EQ(shop->GetEntry().shop_item[0], ShopItem::factoryModel);
+    EXPECT_EQ(shop->GetEntry().shop_item[1], ShopItem::gearKeyring);
+    auto* modelObject = objectManager.LoadObject("factory-tour.factory_prototype.factory_model");
+    ASSERT_NE(modelObject, nullptr);
+    const auto model = objectManager.GetLoadedObjectEntryIndex(modelObject);
+
+    // A factory element so the state is not empty; infinite stock mode leaves shops alone.
+    Place(kRowX0, 2, _chest);
+    EXPECT_EQ(shopStockItem(gameState, EnumValue(ShopItem::factoryModel)), kObjectEntryIndexNull);
+    EXPECT_FALSE(shopItemSoldOut(gameState, EnumValue(ShopItem::factoryModel)));
+
+    // Warehouse stock mode: sold out until the factory delivers, then each sale takes one.
+    state.parkExt.shopStockMode = 1;
+    EXPECT_EQ(shopStockItem(gameState, EnumValue(ShopItem::factoryModel)), model);
+    EXPECT_TRUE(shopItemSoldOut(gameState, EnumValue(ShopItem::factoryModel)));
+    state.warehouse.deposit(model, 2);
+    EXPECT_FALSE(shopItemSoldOut(gameState, EnumValue(ShopItem::factoryModel)));
+    EXPECT_TRUE(takeShopStock(gameState, EnumValue(ShopItem::factoryModel)));
+    EXPECT_TRUE(takeShopStock(gameState, EnumValue(ShopItem::factoryModel)));
+    EXPECT_TRUE(shopItemSoldOut(gameState, EnumValue(ShopItem::factoryModel)));
+    // Items no factory item makes are bought in as usual.
+    EXPECT_FALSE(shopItemSoldOut(gameState, EnumValue(ShopItem::burger)));
+    EXPECT_FALSE(takeShopStock(gameState, EnumValue(ShopItem::burger)));
+    state.parkExt.shopStockMode = 0;
 }

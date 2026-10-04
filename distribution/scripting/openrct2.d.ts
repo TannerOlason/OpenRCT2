@@ -3881,7 +3881,10 @@ declare global {
         "empty_cup" |
         "empty_drink_carton" |
         "empty_juice_cup" |
-        "rubbish";
+        "rubbish" |
+        // FACTORY-TOUR
+        "factory_model" |
+        "gear_keyring";
 
     type VoucherType =
         "entry_free" |

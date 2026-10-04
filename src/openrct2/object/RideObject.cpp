@@ -1083,6 +1083,9 @@ namespace OpenRCT2
         { "hat", ShopItem::hat },
         { "tshirt", ShopItem::tShirt },
         { "sunglasses", ShopItem::sunglasses },
+        // FACTORY-TOUR
+        { "factory_model", ShopItem::factoryModel },
+        { "gear_keyring", ShopItem::gearKeyring },
     };
 
     ShopItem RideObject::ParseShopItem(const std::string& s)

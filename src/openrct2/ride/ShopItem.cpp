@@ -9,6 +9,7 @@
 
 #include "ShopItem.h"
 
+#include "../factory/FactoryStringIds.h" // FACTORY-TOUR
 #include "../GameState.h"
 #include "../SpriteIds.h"
 #include "../entity/Guest.h"
@@ -81,6 +82,12 @@ constexpr ShopItemDescriptor kShopItems[EnumValue(ShopItem::count)] = {
     /* ShopItem::emptyJuiceCup */    {  0.00_GBP, 0.00_GBP,   0.00_GBP,  0.00_GBP,   0.00_GBP,      SPR_SHOP_ITEM_EMPTY_JUICE_CUP,     { STR_SHOP_ITEM_PRICE_LABEL_EMPTY_JUICE_CUP,        STR_SHOP_ITEM_SINGULAR_EMPTY_JUICE_CUP,     STR_SHOP_ITEM_PLURAL_EMPTY_JUICE_CUP,       STR_SHOP_ITEM_INDEFINITE_EMPTY_JUICE_CUP,       STR_SHOP_ITEM_DISPLAY_EMPTY_JUICE_CUP     }, SHOP_ITEM_FLAG_IS_CONTAINER,                                 Litter::Type::emptyJuiceCup,    0,                ShopItem::none,             PeepThoughtType::none,                  PeepThoughtType::none               },
     /* ShopItem::roastSausage */     {  0.50_GBP, 1.60_GBP,   1.60_GBP,  2.00_GBP,   1.50_GBP,      SPR_SHOP_ITEM_ROAST_SAUSAGE,       { STR_SHOP_ITEM_PRICE_LABEL_ROAST_SAUSAGE,          STR_SHOP_ITEM_SINGULAR_ROAST_SAUSAGE,       STR_SHOP_ITEM_PLURAL_ROAST_SAUSAGE,         STR_SHOP_ITEM_INDEFINITE_ROAST_SAUSAGE,         STR_SHOP_ITEM_DISPLAY_ROAST_SAUSAGE       }, SHOP_ITEM_FLAG_IS_FOOD,                                      Litter::Type::rubbish,          115,              ShopItem::none,             PeepThoughtType::roastSausageMuch,      PeepThoughtType::roastSausage       },
     /* ShopItem::emptyBowlBlue */    {  0.00_GBP, 0.00_GBP,   0.00_GBP,  0.00_GBP,   0.00_GBP,      SPR_SHOP_ITEM_EMPTY_BOWL_BLUE,     { STR_SHOP_ITEM_PRICE_LABEL_EMPTY_BOWL_BLUE,        STR_SHOP_ITEM_SINGULAR_EMPTY_BOWL_BLUE,     STR_SHOP_ITEM_PLURAL_EMPTY_BOWL_BLUE,       STR_SHOP_ITEM_INDEFINITE_EMPTY_BOWL_BLUE,       STR_SHOP_ITEM_DISPLAY_EMPTY_BOWL_BLUE     }, SHOP_ITEM_FLAG_IS_CONTAINER,                                 Litter::Type::emptyBowlBlue,    0,                ShopItem::none,             PeepThoughtType::none,                  PeepThoughtType::none               },
+    // FACTORY-TOUR: 54 and 55 are unused upstream; manufactured souvenirs start at 56. Icons borrow upstream sprites
+    // until the fork has its own sprite pack.
+    /* (unused 54) */                {},
+    /* (unused 55) */                {},
+    /* ShopItem::factoryModel */     {  1.50_GBP, 4.00_GBP,   4.00_GBP,  4.00_GBP,   3.50_GBP,      SPR_SHOP_ITEM_TOY,                 { STR_FT_SHOP_ITEM_PRICE_LABEL_FACTORY_MODEL,       STR_FT_SHOP_ITEM_SINGULAR_FACTORY_MODEL,    STR_FT_SHOP_ITEM_PLURAL_FACTORY_MODEL,      STR_FT_SHOP_ITEM_INDEFINITE_FACTORY_MODEL,      STR_FT_SHOP_ITEM_DISPLAY_FACTORY_MODEL    }, SHOP_ITEM_FLAG_IS_SOUVENIR,                                  Litter::Type::rubbish,          0,                ShopItem::none,             PeepThoughtType::none,                  PeepThoughtType::none               },
+    /* ShopItem::gearKeyring */      {  0.60_GBP, 2.00_GBP,   2.00_GBP,  2.00_GBP,   1.50_GBP,      SPR_SHOP_ITEM_MAP,                 { STR_FT_SHOP_ITEM_PRICE_LABEL_GEAR_KEYRING,        STR_FT_SHOP_ITEM_SINGULAR_GEAR_KEYRING,     STR_FT_SHOP_ITEM_PLURAL_GEAR_KEYRING,       STR_FT_SHOP_ITEM_INDEFINITE_GEAR_KEYRING,       STR_FT_SHOP_ITEM_DISPLAY_GEAR_KEYRING     }, SHOP_ITEM_FLAG_IS_SOUVENIR,                                  Litter::Type::rubbish,          0,                ShopItem::none,             PeepThoughtType::none,                  PeepThoughtType::none               },
 };
 // clang-format on
 

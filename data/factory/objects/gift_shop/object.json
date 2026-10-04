@@ -1,0 +1,76 @@
+{
+    "id": "factory-tour.ride.gift_shop",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "ride",
+    "properties": {
+        "type": "shop",
+        "category": "stall",
+        "clearance": 32,
+        "sells": [
+            "factory_model",
+            "gear_keyring"
+        ],
+        "carsPerFlatRide": 1,
+        "carColours": [
+            [
+                [
+                    "bright_red",
+                    "black",
+                    "black"
+                ]
+            ]
+        ]
+    },
+    "images": [
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/preview.png",
+            "x": 0,
+            "y": 0
+        },
+        {
+            "path": "images/shop_d0.png",
+            "x": -32,
+            "y": -30
+        },
+        {
+            "path": "images/shop_d1.png",
+            "x": -32,
+            "y": -30
+        },
+        {
+            "path": "images/shop_d2.png",
+            "x": -32,
+            "y": -30
+        },
+        {
+            "path": "images/shop_d3.png",
+            "x": -32,
+            "y": -30
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Factory gift shop"
+        },
+        "description": {
+            "en-GB": "Sells souvenirs made in the park's own factory"
+        },
+        "capacity": {
+            "en-GB": ""
+        }
+    }
+}

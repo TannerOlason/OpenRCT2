@@ -73,7 +73,10 @@ enum class ShopItem : uint8_t
     emptyJuiceCup,
     roastSausage,
     emptyBowlBlue,
-    count = 56,
+    // FACTORY-TOUR: manufactured souvenirs (56-63 reserved in CONTEXT.md)
+    factoryModel = 56,
+    gearKeyring = 57,
+    count = 58,
     none = 255
 };
 using ShopItems = FlagHolder<uint64_t, ShopItem>;

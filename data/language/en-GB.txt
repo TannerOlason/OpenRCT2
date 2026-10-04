@@ -3940,3 +3940,13 @@ STR_20543   :Nothing of that kind in the warehouse
 STR_20544   :The market does not buy that
 STR_20545   :Click a stack to sell it to the market
 STR_20546   :{WINDOW_COLOUR_2}Market sales so far: {BLACK}{CURRENCY2DP}
+STR_20547   :{WINDOW_COLOUR_2}Factory model price:
+STR_20548   :Factory model
+STR_20549   :Factory models
+STR_20550   :a Factory model
+STR_20551   :“{STRINGID}” Factory model
+STR_20552   :{WINDOW_COLOUR_2}Gear keyring price:
+STR_20553   :Gear keyring
+STR_20554   :Gear keyrings
+STR_20555   :a Gear keyring
+STR_20556   :“{STRINGID}” Gear keyring

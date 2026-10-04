@@ -195,8 +195,13 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
   (command `marketSell`) sells Warehouse stock, returning the income as a negative cost. Income is booked as Shop
   sales, not as new expenditure rows, because the expenditure table's save layout depends on `ExpenditureType::count`;
   `Market::goodsSold` keeps the fork-side total.
-- **Shops**: `ShopItem` 56–63 for manufactured souvenirs; `Ride::stockMode` side table checked in
-  `GuestDecideAndBuyItem`.
+- **Shops**: `ShopItem::factoryModel = 56` and `gearKeyring = 57` (54-55 stay unused; 56-63 are reserved for
+  manufactured souvenirs), with descriptor rows, strings, ride-object names (`factory_model`, `gear_keyring`) and
+  plugin names; their icons borrow upstream sprites until the fork's sprite pack exists. Item prototypes take
+  `"shopItem"` (parsed by `RideObject::ParseShopItem`, made public). In warehouse stock mode (`parkExt.shopStockMode
+  = 1`), `GuestDecideAndBuyItem` refuses a mapped item the Warehouse lacks (thought `soldOut`) and a sale takes one
+  from the Warehouse instead of paying the stock cost; unmapped items behave as upstream. A per-ride stock mode can
+  come later as a parkExt ride table.
 - **Rating and objectives**: `ParkFlag::factoryEnabled = 32, factoryAffectsRating = 33`; in
   `CalculateParkRating` pollution near paths up to −150 and uptime ±25. `ObjectiveType` appended:
   `produceItemsBy, launchRocket, guestsTouredFactory`.

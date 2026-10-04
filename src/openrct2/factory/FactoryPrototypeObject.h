@@ -82,6 +82,7 @@ namespace OpenRCT2::Factory
         bool fluid = false;            // fluids live in fluid networks and machine fluid boxes, never on belts
         money64 marketPrice = 0;       // what the Market pays for one, before saturation; 0 = not sellable
         uint16_t marketSaturation = 8; // how much each sale floods the Market (out of 1024)
+        uint8_t shopItem = 255;        // ShopItem shops sell this as, in warehouse stock mode (255 = none)
     };
 
     /**

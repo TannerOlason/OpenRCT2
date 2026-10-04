@@ -20,6 +20,7 @@
 #include "../drawing/ImageId.hpp"
 #include "../interface/ScreenCoords.hpp"
 #include "../object/ObjectManager.h"
+#include "../object/RideObject.h"
 
 #include <algorithm>
 
@@ -200,6 +201,7 @@ namespace OpenRCT2::Factory
                 _item.fluid = Json::GetBoolean(properties["fluid"], false);
                 _item.marketPrice = Json::GetNumber<money64>(properties["marketPrice"], 0);
                 _item.marketSaturation = Json::GetNumber<uint16_t>(properties["marketSaturation"], 8);
+                _item.shopItem = static_cast<uint8_t>(RideObject::ParseShopItem(Json::GetString(properties["shopItem"])));
                 break;
             case PrototypeKind::ore:
                 _ore.item.identifier = Json::GetString(properties["item"]);

@@ -67,10 +67,14 @@ namespace OpenRCT2::Scripting
             { "empty_drink_carton", ShopItem::emptyDrinkCarton },
             { "empty_juice_cup", ShopItem::emptyJuiceCup },
             { "rubbish", ShopItem::rubbish },
+            // FACTORY-TOUR
+            { "factory_model", ShopItem::factoryModel },
+            { "gear_keyring", ShopItem::gearKeyring },
         });
     // Since the ShopItem enum is missing values and includes ShopItem::admission (something a
     // guest cannot carry), 6 is subtracted from the value.
-    static_assert((EnumValue(ShopItem::count) - 6) == 50, "ShopItem::count changed, update scripting binding!");
+    // FACTORY-TOUR: 50 -> 52 with the two manufactured souvenirs
+    static_assert((EnumValue(ShopItem::count) - 6) == 52, "ShopItem::count changed, update scripting binding!");
 
     static const EnumMap<uint32_t> VoucherTypeMap(
         {

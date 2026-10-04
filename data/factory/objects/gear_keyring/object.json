@@ -1,0 +1,32 @@
+{
+    "id": "factory-tour.factory_prototype.gear_keyring",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "item",
+        "stackSize": 50,
+        "marketPrice": 30,
+        "shopItem": "gear_keyring"
+    },
+    "images": [
+        {
+            "path": "images/icon.png",
+            "x": -12,
+            "y": -12
+        },
+        {
+            "path": "images/belt.png",
+            "x": -5,
+            "y": -4
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Gear keyring"
+        }
+    }
+}

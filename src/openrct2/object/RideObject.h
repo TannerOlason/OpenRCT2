@@ -69,8 +69,11 @@ namespace OpenRCT2
 
         static bool isRideTypeShopOrFacility(ride_type_t rideType);
         static RideCategory ParseRideCategory(const std::string& s);
-        static ShopItem ParseShopItem(const std::string& s);
 
         uint8_t GetDefaultClearance() const;
+
+    public:
+        // FACTORY-TOUR: public so factory item prototypes can name the shop item they stock
+        static ShopItem ParseShopItem(const std::string& s);
     };
 } // namespace OpenRCT2

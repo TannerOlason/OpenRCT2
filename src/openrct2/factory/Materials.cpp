@@ -18,6 +18,7 @@
 #include "../localisation/Formatter.h"
 #include "../localisation/StringIds.h"
 #include "../management/Finance.h"
+#include "../object/ObjectList.h"
 #include "../object/ObjectManager.h"
 #include "FactoryPrototypeObject.h"
 #include "FactoryState.h"
@@ -107,6 +108,33 @@ namespace OpenRCT2::Factory
         if (item == kObjectEntryIndexNull)
             return {};
         return { MaterialLine{ item, static_cast<uint32_t>((cost + kMoneyPerBillItem - 1) / kMoneyPerBillItem) } };
+    }
+
+    ObjectEntryIndex shopStockItem(const GameState_t& gameState, uint8_t shopItem)
+    {
+        if (gameState.factory.parkExt.shopStockMode == 0 || gameState.factory.isEmpty())
+            return kObjectEntryIndexNull;
+        auto& objectManager = GetContext()->GetObjectManager();
+        const auto count = getObjectEntryGroupCount(ObjectType::factoryPrototype);
+        for (size_t i = 0; i < count; i++)
+        {
+            auto* proto = objectManager.GetLoadedObject<FactoryPrototypeObject>(i);
+            if (proto != nullptr && proto->getKind() == PrototypeKind::item && proto->getItem().shopItem == shopItem)
+                return static_cast<ObjectEntryIndex>(i);
+        }
+        return kObjectEntryIndexNull;
+    }
+
+    bool shopItemSoldOut(const GameState_t& gameState, uint8_t shopItem)
+    {
+        const auto item = shopStockItem(gameState, shopItem);
+        return item != kObjectEntryIndexNull && gameState.factory.warehouse.count(item) == 0;
+    }
+
+    bool takeShopStock(GameState_t& gameState, uint8_t shopItem)
+    {
+        const auto item = shopStockItem(gameState, shopItem);
+        return item != kObjectEntryIndexNull && gameState.factory.warehouse.take(item, 1) == 1;
     }
 
     // Whether this action's result is billed at all.

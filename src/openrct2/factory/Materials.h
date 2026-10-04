@@ -106,5 +106,16 @@ namespace OpenRCT2::Factory
      * equivalent materials back, and again zeroes the money in materials mode.
      */
     void onQuery(GameState_t& gameState, const GameActions::GameAction& action, GameActions::Result& result);
+
+    /**
+     * Shops in warehouse stock mode (parkExt.shopStockMode = 1): the factory item that stocks a shop item (the first
+     * loaded item prototype whose `shopItem` names it), or kObjectEntryIndexNull when the item is not stocked from the
+     * Warehouse (any other mode, or no factory item makes it) and shops buy it in as upstream does.
+     */
+    ObjectEntryIndex shopStockItem(const GameState_t& gameState, uint8_t shopItem);
+    // True when a Warehouse-stocked shop item has run out: guests think "sold out" instead of buying.
+    bool shopItemSoldOut(const GameState_t& gameState, uint8_t shopItem);
+    // On a sale: takes one from the Warehouse and returns true (no stock cost), or false for upstream stock costs.
+    bool takeShopStock(GameState_t& gameState, uint8_t shopItem);
     void onExecute(GameState_t& gameState, const GameActions::GameAction& action, GameActions::Result& result);
 } // namespace OpenRCT2::Factory

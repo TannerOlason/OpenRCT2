@@ -739,6 +739,73 @@ def write_tour_tram():
         fh.write("\n")
 
 
+def draw_gift_shop(d):
+    """A kiosk with a striped awning (primary remap ramp, so it takes the shop's colour) facing view direction d."""
+    h = 30
+    img = Image.new("RGBA", (64, 33 + h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = 32, 16 + h
+    wall, wall_light, outline = snap((200, 190, 170)) + (255,), snap((225, 215, 195)) + (255,), snap((80, 70, 60)) + (255,)
+    left = [(cx - 24, cy - 12 - 18), (cx, cy - 18), (cx, cy), (cx - 24, cy - 12)]
+    right = [(cx, cy - 18), (cx + 24, cy - 12 - 18), (cx + 24, cy - 12), (cx, cy)]
+    draw.polygon(left, fill=wall, outline=outline)
+    draw.polygon(right, fill=wall_light, outline=outline)
+    # Counter window on the face towards d (left face = view +x, right face = view +y).
+    if d in (1, 2):
+        face_x = -12 if d == 2 else 12
+        draw.polygon([(cx + face_x - 7, cy - 16), (cx + face_x + 7, cy - 16 + (7 if d == 2 else -7)),
+                      (cx + face_x + 7, cy - 8 + (7 if d == 2 else -7)), (cx + face_x - 7, cy - 8)],
+                     fill=snap((60, 50, 40)) + (255,))
+    # Striped awning roof.
+    roof = [(cx, cy - 18 - 22), (cx + 28, cy - 18 - 8), (cx, cy - 18 + 6), (cx - 28, cy - 18 - 8)]
+    draw.polygon(roof, fill=palette_rgb(250), outline=palette_rgb(246))
+    for k in range(-2, 3):
+        draw.line([(cx + k * 9 - 7, cy - 18 - 8 - (k * 9 - 7) * 0.5 + 0), (cx + k * 9 + 7, cy - 18 + 6 - (k * 9 + 7) * 0.5)],
+                  fill=snap((240, 240, 240)) + (255,), width=2)
+    return img, h
+
+
+def write_gift_shop():
+    folder = os.path.join(ROOT, "gift_shop")
+    os.makedirs(os.path.join(folder, "images"), exist_ok=True)
+    images = []
+    preview = Image.new("RGBA", (112, 112), (0, 0, 0, 0))
+    big, hh = draw_gift_shop(2)
+    preview.alpha_composite(big.resize((big.width * 3 // 2, big.height * 3 // 2), Image.NEAREST), (8, 20))
+    preview.save(os.path.join(folder, "images", "preview.png"))
+    for _ in range(3):
+        images.append({"path": "images/preview.png", "x": 0, "y": 0})
+    for d in range(4):
+        img, h = draw_gift_shop(d)
+        name = f"shop_d{d}.png"
+        img.save(os.path.join(folder, "images", name))  # exact palette (remap awning): not snapped again
+        images.append({"path": f"images/{name}", "x": -32, "y": -h})
+    obj = {
+        "id": "factory-tour.ride.gift_shop",
+        "authors": [AUTHOR],
+        "version": "1.0",
+        "sourceGame": "official",
+        "objectType": "ride",
+        "properties": {
+            "type": "shop",
+            "category": "stall",
+            "clearance": 32,
+            "sells": ["factory_model", "gear_keyring"],
+            "carsPerFlatRide": 1,
+            "carColours": [[["bright_red", "black", "black"]]],
+        },
+        "images": images,
+        "strings": {
+            "name": {"en-GB": "Factory gift shop"},
+            "description": {"en-GB": "Sells souvenirs made in the park's own factory"},
+            "capacity": {"en-GB": ""},
+        },
+    }
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
 def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0, market_price=0):
     icon, belt = draw_item_small(colour, dark)
     item_props = {"stackSize": 50}
@@ -806,6 +873,27 @@ def main():
 
     # The Factory Tour ride's vehicle.
     write_tour_tram()
+
+    # Manufactured souvenirs, their recipes and the shop that sells them (stocked from the Warehouse).
+    for name, display, colour, dark, shop_item in (("factory_model", "Factory model", (190, 120, 60), (110, 60, 30), "factory_model"),
+                                                   ("gear_keyring", "Gear keyring", (200, 200, 120), (120, 120, 60), "gear_keyring")):
+        icon, belt = draw_item_small(colour, dark)
+        folder = write_object(name, "item", {"stackSize": 50, "marketPrice": 30 if name == "gear_keyring" else 90,
+                                             "shopItem": shop_item},
+                              [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                              display)
+        save(icon, folder, "icon.png")
+        save(belt, folder, "belt.png")
+    write_object("factory_model_recipe", "recipe", {
+        "ingredients": [{"item": "factory-tour.factory_prototype.iron_gear", "count": 2},
+                        {"item": "factory-tour.factory_prototype.iron_plate", "count": 2}],
+        "results": [{"item": "factory-tour.factory_prototype.factory_model", "count": 1}],
+        "timeTicks": 80, "category": "crafting"}, [], "Factory model")
+    write_object("gear_keyring_recipe", "recipe", {
+        "ingredients": [{"item": "factory-tour.factory_prototype.iron_gear", "count": 1}],
+        "results": [{"item": "factory-tour.factory_prototype.gear_keyring", "count": 2}],
+        "timeTicks": 30, "category": "crafting"}, [], "Gear keyring")
+    write_gift_shop()
 
     # A 3x3 electric mining drill: per-tile slices so it sorts correctly at every rotation.
     write_multitile_machine("electric_drill", "Electric mining drill", {
