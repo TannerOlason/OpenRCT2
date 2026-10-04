@@ -1,0 +1,120 @@
+{
+    "id": "factory-tour.factory_prototype.steam_engine",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "machine",
+        "machineKind": "engine",
+        "energy": "fluid",
+        "fluidRate": 3,
+        "powerOutput": 450,
+        "inputFluid": "factory-tour.factory_prototype.steam",
+        "fluidBoxes": [
+            {
+                "role": "input",
+                "sides": [
+                    "front",
+                    "back"
+                ]
+            }
+        ],
+        "inputSlots": 0,
+        "outputSlots": 0,
+        "price": 150,
+        "removalPrice": -110,
+        "clearance": 6,
+        "frames": 4,
+        "rotations": 4
+    },
+    "images": [
+        {
+            "path": "images/m_d0_f0.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d0_f1.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d0_f2.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d0_f3.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d1_f0.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d1_f1.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d1_f2.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d1_f3.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d2_f0.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d2_f1.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d2_f2.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d2_f3.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d3_f0.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d3_f1.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d3_f2.png",
+            "x": -32,
+            "y": -18
+        },
+        {
+            "path": "images/m_d3_f3.png",
+            "x": -32,
+            "y": -18
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Steam engine"
+        }
+    }
+}

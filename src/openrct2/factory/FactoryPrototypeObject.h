@@ -62,6 +62,7 @@ namespace OpenRCT2::Factory
      *   pole:      [0] the pole
      *   underground: [direction] entrance, [4 + direction] exit
      *   splitter:  [side * 4 + direction], side 0 = origin tile (left of travel)
+     *   pipe:      [mask], 16 images; bit d of mask = connected towards view direction d
      */
     enum class BeltShape : uint8_t
     {
@@ -75,6 +76,7 @@ namespace OpenRCT2::Factory
     {
         uint16_t stackSize = 100;
         uint32_t fuelTicks = 0; // ticks of burner work one item provides; 0 = not a fuel
+        bool fluid = false;     // fluids live in fluid networks and machine fluid boxes, never on belts
     };
 
     /**
@@ -119,6 +121,34 @@ namespace OpenRCT2::Factory
         uint8_t supplyRadius = 2; // tiles around the pole that machines draw power from
     };
 
+    // Sides of a machine relative to its facing: bit k is the side facing (direction + k) & 3.
+    constexpr uint8_t kSideFront = 1 << 0;
+    constexpr uint8_t kSideRight = 1 << 1;
+    constexpr uint8_t kSideBack = 1 << 2;
+    constexpr uint8_t kSideLeft = 1 << 3;
+
+    enum class FluidBoxRole : uint8_t
+    {
+        input,
+        output,
+    };
+
+    /**
+     * A machine's connection to fluid networks. A box with several sides is a pass-through: everything connected
+     * on those sides joins one network. Each box adds `capacity` to the network it belongs to.
+     */
+    struct FluidBoxProperties
+    {
+        FluidBoxRole role = FluidBoxRole::input;
+        uint8_t sides = kSideBack;
+        uint32_t capacity = 1000;
+    };
+
+    struct PipeProperties
+    {
+        uint32_t capacity = 1000; // fluid units each pipe adds to its network
+    };
+
     struct MachineProperties
     {
         MachineKind kind = MachineKind::assembler;
@@ -133,6 +163,10 @@ namespace OpenRCT2::Factory
         uint16_t miningTimeTicks = 80; // drills: ticks per ore item at speed 1.0
         uint8_t frames = 1;            // working animation frames per direction
         uint8_t rotations = 4;         // 1 or 4
+        std::vector<FluidBoxProperties> fluidBoxes;
+        PrototypeRef inputFluid;  // boilers and steam engines: what the input box must hold
+        PrototypeRef outputFluid; // pumps and boilers: what the output box receives
+        uint32_t fluidRate = 0;   // fluid units per tick moved (pump), converted (boiler) or burnt (engine)
     };
 
     struct BeltProperties
@@ -167,6 +201,7 @@ namespace OpenRCT2::Factory
         RecipeProperties _recipe{};
         MachineProperties _machine{};
         PoleProperties _pole{};
+        PipeProperties _pipe{};
         money64 _price = 0;
         money64 _removalPrice = 0;
         uint8_t _clearance = 8; // height of the placed element in z units (kCoordsZStep multiples)
@@ -233,6 +268,14 @@ namespace OpenRCT2::Factory
         {
             return _pole;
         }
+        const PipeProperties& getPipe() const
+        {
+            return _pipe;
+        }
+        bool isFluid() const
+        {
+            return _kind == PrototypeKind::item && _item.fluid;
+        }
         bool isGenerator() const
         {
             return (_kind == PrototypeKind::machine || _kind == PrototypeKind::generator)
@@ -261,6 +304,7 @@ namespace OpenRCT2::Factory
         ImageIndex getPoleImage() const;
         ImageIndex getUndergroundImage(bool exit, uint8_t direction) const;
         ImageIndex getSplitterImage(uint8_t side, uint8_t direction) const;
+        ImageIndex getPipeImage(uint8_t viewMask) const;
 
     private:
         ImageIndex imageAt(uint32_t offset) const;

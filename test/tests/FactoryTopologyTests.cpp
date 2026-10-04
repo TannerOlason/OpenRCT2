@@ -23,6 +23,7 @@
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/Fluids.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/object/ObjectManager.h>
 #include <openrct2/scenario/Scenario.h>
@@ -64,6 +65,12 @@ protected:
         _gearRecipe = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_gear_recipe"));
         _underground = Index(objectManager.LoadObject("factory-tour.factory_prototype.underground_belt_basic"));
         _splitter = Index(objectManager.LoadObject("factory-tour.factory_prototype.splitter_basic"));
+        _water = Index(objectManager.LoadObject("factory-tour.factory_prototype.water"));
+        _steam = Index(objectManager.LoadObject("factory-tour.factory_prototype.steam"));
+        _pipe = Index(objectManager.LoadObject("factory-tour.factory_prototype.pipe_basic"));
+        _pump = Index(objectManager.LoadObject("factory-tour.factory_prototype.offshore_pump"));
+        _boiler = Index(objectManager.LoadObject("factory-tour.factory_prototype.boiler"));
+        _steamEngine = Index(objectManager.LoadObject("factory-tour.factory_prototype.steam_engine"));
         ASSERT_NE(_plate, kObjectEntryIndexNull);
         ASSERT_NE(_belt, kObjectEntryIndexNull);
         ASSERT_NE(_inserter, kObjectEntryIndexNull);
@@ -175,6 +182,12 @@ protected:
     static ObjectEntryIndex _gearRecipe;
     static ObjectEntryIndex _underground;
     static ObjectEntryIndex _splitter;
+    static ObjectEntryIndex _water;
+    static ObjectEntryIndex _steam;
+    static ObjectEntryIndex _pipe;
+    static ObjectEntryIndex _pump;
+    static ObjectEntryIndex _boiler;
+    static ObjectEntryIndex _steamEngine;
 };
 
 std::shared_ptr<IContext> FactoryTopologyTests::_context;
@@ -195,6 +208,12 @@ ObjectEntryIndex FactoryTopologyTests::_gear = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_gearRecipe = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_underground = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_splitter = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_water = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_steam = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_pipe = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_pump = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_boiler = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_steamEngine = kObjectEntryIndexNull;
 
 TEST_F(FactoryTopologyTests, PlacingBeltsInARowFormsOneSegment)
 {
@@ -410,6 +429,13 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
         for (int i = 0; i < 3; i++)
             laneInsertAt(logistics->lanes[0], segmentLength(*logistics), 20 + i * 80, _plate);
     }
+    // Fluid row two tiles north: a pipe run with a tee into a boiler facing south and a steam engine below it.
+    for (int32_t i = 0; i <= 4; i++)
+        PlaceAt(kRowX0 + i, kRowY - 2, east, _pipe);
+    PlaceAt(kRowX0 + 2, kRowY - 1, east, _pipe);
+    PlaceAt(kRowX0 + 5, kRowY - 2, 1, _boiler);
+    PlaceAt(kRowX0 + 5, kRowY - 1, 1, _steamEngine);
+
     if (drillElement != nullptr && furnaceElement != nullptr)
     {
         for (int i = 0; i < 5; i++)
@@ -432,7 +458,8 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     EXPECT_EQ(loaded.beltSegments.aliveCount(), beltsBefore);
     EXPECT_EQ(loaded.inserters.aliveCount(), insertersBefore);
     EXPECT_EQ(loaded.containers.aliveCount(), 2u);
-    EXPECT_EQ(loaded.machines.aliveCount(), 2u);
+    EXPECT_EQ(loaded.machines.aliveCount(), 4u);
+    EXPECT_EQ(loaded.pipes.aliveCount(), 6u);
     EXPECT_NE(findBeltElement(Tile(kRowX0 + 2)), nullptr);
     EXPECT_NE(findFactoryElement(Tile(kRowX0 + 1)), nullptr);
     EXPECT_EQ(computeSyncChecksum(getGameState()).toString(), checksumBefore);
@@ -728,4 +755,144 @@ TEST_F(FactoryTopologyTests, SplitterAlternatesBetweenOutputs)
     EXPECT_EQ(state.splitters.aliveCount(), 0u);
     EXPECT_EQ(
         findFactoryElement(CoordsXYZ{ (kRowX0 + 2) * kCoordsXYStep, (kRowY - 1) * kCoordsXYStep, GroundZ(kRowX0) }), nullptr);
+}
+
+TEST_F(FactoryTopologyTests, PipeNetworksConserveFluidWhenSplitAndJoined)
+{
+    ASSERT_NE(_pipe, kObjectEntryIndexNull);
+    ASSERT_NE(_water, kObjectEntryIndexNull);
+    auto& state = getGameState().factory;
+    for (int32_t i = 0; i < 5; i++)
+        ASSERT_NE(Place(kRowX0 + i, 0, _pipe), nullptr);
+    // Pipes connect regardless of their own direction; the middle one joins west (0) and east (2).
+    EXPECT_EQ(findFactoryElement(Tile(kRowX0 + 2))->getConnectionCache(), 0b0101);
+    EXPECT_EQ(findFactoryElement(Tile(kRowX0))->getConnectionCache(), 0b0100);
+    EXPECT_TRUE(state.fluidDirty);
+    Tick(1);
+    ASSERT_EQ(state.fluidNetworks.aliveCount(), 1u);
+    auto* network = state.fluidNetworks.get(state.pipes.get(findFactoryElement(Tile(kRowX0))->getRecordId())->network);
+    ASSERT_NE(network, nullptr);
+    EXPECT_EQ(network->pipeCount, 5);
+    EXPECT_EQ(network->capacity, 5000u);
+    network->fluid = _water;
+    network->amount = 4000;
+
+    // Removing the middle pipe shares the volume over the surviving pipes by capacity (never above it).
+    removeElement(getGameState(), *findFactoryElement(Tile(kRowX0 + 2)), Tile(kRowX0 + 2));
+    Tick(1);
+    ASSERT_EQ(state.fluidNetworks.aliveCount(), 2u);
+    auto networkAt = [&](int32_t i) {
+        return state.fluidNetworks.get(state.pipes.get(findFactoryElement(Tile(kRowX0 + i))->getRecordId())->network);
+    };
+    ASSERT_NE(networkAt(0), nullptr);
+    ASSERT_NE(networkAt(4), nullptr);
+    EXPECT_NE(networkAt(0), networkAt(4));
+    EXPECT_EQ(networkAt(0)->amount, 2000u);
+    EXPECT_EQ(networkAt(4)->amount, 2000u);
+    EXPECT_EQ(networkAt(0)->fluid, _water);
+
+    // Rejoining sums the halves back into one volume.
+    Place(kRowX0 + 2, 0, _pipe);
+    Tick(1);
+    ASSERT_EQ(state.fluidNetworks.aliveCount(), 1u);
+    EXPECT_EQ(networkAt(0)->amount, 4000u);
+    EXPECT_EQ(networkAt(0)->capacity, 5000u);
+
+    // Fluid volumes are part of the sync checksum.
+    const auto checksum = computeSyncChecksum(getGameState()).toString();
+    networkAt(0)->amount--;
+    EXPECT_NE(computeSyncChecksum(getGameState()).toString(), checksum);
+}
+
+TEST_F(FactoryTopologyTests, SteamChainPowersAnAssembler)
+{
+    ASSERT_NE(_pump, kObjectEntryIndexNull);
+    ASSERT_NE(_boiler, kObjectEntryIndexNull);
+    ASSERT_NE(_steamEngine, kObjectEntryIndexNull);
+    auto& state = getGameState().factory;
+    const Direction east = 2;
+    const Direction north = 3; // -y
+    const int32_t bx = kRowX0 + 2;
+
+    // Water on the tile west of the pump; without it the pump cannot be placed (or work).
+    auto* shore = MapGetSurfaceElementAt(TileCoordsXY{ kRowX0 - 1, kRowY });
+    ASSERT_NE(shore, nullptr);
+    EXPECT_FALSE(hasWaterBehind(Tile(kRowX0), east));
+    shore->setWaterHeight(shore->getBaseZ() + 2 * kCoordsZStep);
+    EXPECT_TRUE(hasWaterBehind(Tile(kRowX0), east));
+
+    // pump(0) faces east -> pipe(1) -> boiler(2) facing north takes water from its west and east sides and
+    // sends steam north into a steam engine whose front and back are a pass-through box.
+    auto* pumpElement = Place(kRowX0, east, _pump);
+    Place(kRowX0 + 1, east, _pipe);
+    auto* boilerElement = Place(bx, north, _boiler);
+    auto* engineElement = PlaceAt(bx, kRowY - 1, north, _steamEngine);
+    // A pole next to the engine powers an assembler two tiles further east.
+    PlaceAt(bx + 1, kRowY - 1, north, _pole);
+    auto* assemblerElement = PlaceAt(bx + 3, kRowY - 1, north, _assembler);
+    ASSERT_NE(pumpElement, nullptr);
+    ASSERT_NE(boilerElement, nullptr);
+    ASSERT_NE(engineElement, nullptr);
+    ASSERT_NE(assemblerElement, nullptr);
+    // The pipe joins the pump's front (west) and the boiler's west side, not north or south.
+    EXPECT_EQ(findFactoryElement(Tile(kRowX0 + 1))->getConnectionCache(), 0b0101);
+
+    Tick(1);
+    auto* pump = state.machines.get(pumpElement->getRecordId());
+    auto* boiler = state.machines.get(boilerElement->getRecordId());
+    auto* engine = state.machines.get(engineElement->getRecordId());
+    auto* assembler = state.machines.get(assemblerElement->getRecordId());
+    ASSERT_NE(pump, nullptr);
+    ASSERT_NE(boiler, nullptr);
+    ASSERT_NE(engine, nullptr);
+    ASSERT_NE(assembler, nullptr);
+    EXPECT_EQ(state.fluidNetworks.aliveCount(), 2u);
+    ASSERT_EQ(boiler->fluidNetworks.size(), 2u);
+    EXPECT_EQ(pump->fluidNetworks[0], boiler->fluidNetworks[0]);   // water: pump box, pipe, boiler input
+    EXPECT_EQ(engine->fluidNetworks[0], boiler->fluidNetworks[1]); // steam: boiler output, engine box
+    auto* water = state.fluidNetworks.get(boiler->fluidNetworks[0]);
+    auto* steam = state.fluidNetworks.get(boiler->fluidNetworks[1]);
+    ASSERT_NE(water, nullptr);
+    ASSERT_NE(steam, nullptr);
+    EXPECT_EQ(water->pipeCount, 1);
+    EXPECT_EQ(water->boxCount, 2);
+    EXPECT_EQ(engine->powerNetwork, assembler->powerNetwork);
+    ASSERT_NE(engine->powerNetwork, kNullRecord);
+
+    // Water fills its network; the unfuelled boiler makes no steam.
+    Tick(40);
+    EXPECT_EQ(pump->getStatus(), MachineStatus::outputFull);
+    EXPECT_EQ(water->amount, water->capacity);
+    EXPECT_EQ(water->fluid, _water);
+    EXPECT_EQ(boiler->getStatus(), MachineStatus::noFuel);
+    EXPECT_EQ(steam->amount, 0u);
+
+    for (int i = 0; i < 5; i++)
+        EXPECT_TRUE(machineInsertInput(state, *boiler, _coal));
+    Tick(100);
+    EXPECT_EQ(steam->fluid, _steam);
+    EXPECT_GT(steam->amount, 0u);
+    // Nothing draws power yet, so the engine idles and keeps its steam.
+    EXPECT_EQ(engine->getStatus(), MachineStatus::idle);
+
+    // An assembler with work draws power; the engine burns steam and the assembler makes gears.
+    assembler->recipe = _gearRecipe;
+    for (int i = 0; i < 4; i++)
+        EXPECT_TRUE(machineInsertInput(state, *assembler, _plate));
+    Tick(10);
+    EXPECT_EQ(engine->getStatus(), MachineStatus::working);
+    EXPECT_EQ(assembler->getStatus(), MachineStatus::working);
+    Tick(200);
+    int gears = 0;
+    for (auto& slot : assembler->outputs)
+        if (slot.item == _gear)
+            gears += slot.count;
+    EXPECT_EQ(gears, 2);
+    EXPECT_LE(steam->amount, steam->capacity);
+    EXPECT_LT(boiler->fuel.count, 5);
+
+    // Without water behind it the pump stops.
+    shore->setWaterHeight(0);
+    Tick(1);
+    EXPECT_EQ(pump->getStatus(), MachineStatus::noInput);
 }

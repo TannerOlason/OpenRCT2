@@ -3900,3 +3900,7 @@ STR_20503   :No power
 STR_20504   :No ore in range
 STR_20505   :No recipe set
 STR_20506   :Select the recipe this machine makes
+STR_20507   :The back of an offshore pump must face water
+STR_20508   :Fluid
+STR_20509   :{STRING}: {COMMA32} / {COMMA32}
+STR_20510   :Empty ({COMMA32} capacity)

@@ -7,7 +7,7 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
-// FACTORY-TOUR: fork-owned file. Info window for a machine or chest: status, recipe, slots and progress.
+// FACTORY-TOUR: fork-owned file. Info window for a machine, chest or pipe: status, recipe, slots, fluids and progress.
 
 #include <openrct2-ui/interface/Dropdown.h>
 #include <openrct2-ui/interface/Widget.h>
@@ -25,6 +25,7 @@
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryStringIds.h>
 #include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/Fluids.h>
 #include <openrct2/factory/actions/FactorySetRecipeAction.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/object/ObjectList.h>
@@ -186,6 +187,14 @@ namespace OpenRCT2::Ui::Windows
                 return;
             }
 
+            if (element->getSubtype() == FactoryElementSubtype::pipe)
+            {
+                auto* pipe = state.pipes.get(element->getRecordId());
+                if (pipe != nullptr)
+                    DrawFluidNetwork(rt, pos, state.fluidNetworks.get(pipe->network));
+                return;
+            }
+
             auto* machine = state.machines.get(element->getRecordId());
             if (machine == nullptr)
                 return;
@@ -215,6 +224,11 @@ namespace OpenRCT2::Ui::Windows
                 drawText(rt, pos, STR_FT_OUTPUTS);
                 DrawSlots(rt, pos + ScreenCoordsXY{ 54, -2 }, machine->outputs);
                 pos.y += kSlotSize + 2;
+            }
+            for (size_t box = 0; box < machine->fluidNetworks.size(); box++)
+            {
+                DrawFluidNetwork(rt, pos, machineFluidNetwork(state, *machine, box));
+                pos.y += 12;
             }
 
             // Progress bar.
@@ -289,6 +303,30 @@ namespace OpenRCT2::Ui::Windows
                     return STR_FT_STATUS_NO_RECIPE;
                 default:
                     return STR_FT_STATUS_IDLE;
+            }
+        }
+
+        // "Fluid  Water: 1,200 / 3,000", or the capacity when the network is empty.
+        void DrawFluidNetwork(Drawing::RenderTarget& rt, ScreenCoordsXY pos, const FluidNetworkRecord* network)
+        {
+            if (network == nullptr)
+                return;
+            drawText(rt, pos, STR_FT_FLUID);
+            auto* fluidProto = network->amount > 0 ? getPrototype(network->fluid) : nullptr;
+            auto ft = Formatter();
+            if (fluidProto != nullptr)
+            {
+                static std::string fluidName;
+                fluidName = fluidProto->GetName();
+                ft.Add<const char*>(fluidName.c_str());
+                ft.Add<uint32_t>(network->amount);
+                ft.Add<uint32_t>(network->capacity);
+                drawText(rt, pos + ScreenCoordsXY{ 54, 0 }, STR_FT_FLUID_AMOUNT, ft);
+            }
+            else
+            {
+                ft.Add<uint32_t>(network->capacity);
+                drawText(rt, pos + ScreenCoordsXY{ 54, 0 }, STR_FT_FLUID_EMPTY, ft);
             }
         }
 

@@ -269,6 +269,7 @@ namespace OpenRCT2::Factory
         none,
         burner,
         electric,
+        fluid, // steam engines: power from the fluid in an input fluid box
     };
 
     enum class MachineStatus : uint8_t
@@ -301,6 +302,7 @@ namespace OpenRCT2::Factory
         uint16_t miningCursor{}; // drills: next cell of the mining area to scan
         RecordId powerNetwork{ kNullRecord };
         uint32_t topologyVersionSeen{};
+        std::vector<RecordId> fluidNetworks; // one per fluid box of the prototype, kNullRecord until rebuilt
 
         MachineKind getKind() const
         {
@@ -331,6 +333,7 @@ namespace OpenRCT2::Factory
             v(miningCursor);
             v(powerNetwork);
             v(topologyVersionSeen);
+            v.vec(fluidNetworks, [](RecordId& id, auto& vv) { vv(id); });
         }
     };
 
@@ -355,6 +358,7 @@ namespace OpenRCT2::Factory
         uint32_t supply{};
         uint32_t demand{};
         uint32_t lastDemand{}; // demand of the previous tick, what generators react to
+        uint32_t lastSupply{}; // supply offered on the previous tick; lastDemand / lastSupply is the load
         uint32_t satisfactionQ16{ 65536 };
         uint16_t poleCount{};
         uint16_t generatorCount{};
@@ -366,6 +370,7 @@ namespace OpenRCT2::Factory
             v(supply);
             v(demand);
             v(lastDemand);
+            v(lastSupply);
             v(satisfactionQ16);
             v(poleCount);
             v(generatorCount);
@@ -374,6 +379,54 @@ namespace OpenRCT2::Factory
     };
 
     constexpr uint32_t kSatisfactionFull = 65536;
+
+    struct PipeRecord : RecordBase
+    {
+        RecordId network{ kNullRecord };
+
+        template<typename V>
+        void visit(V& v)
+        {
+            visitBase(v);
+            v(network);
+        }
+    };
+
+    /**
+     * One connected component of pipes and machine fluid boxes. The whole component holds a single fluid as one
+     * volume; there is no per-pipe flow. Consumers register what they want in `demand` and draw this tick's
+     * share, scaled by satisfaction (Q16) computed from last tick's demand, so scarce fluid is shared in
+     * proportion rather than by id order.
+     */
+    struct FluidNetworkRecord
+    {
+        ObjectEntryIndex fluid{ kObjectEntryIndexNull }; // kObjectEntryIndexNull while empty
+        uint32_t amount{};
+        uint32_t capacity{};
+        uint32_t demand{};
+        uint32_t lastDemand{};
+        uint32_t satisfactionQ16{ kSatisfactionFull };
+        uint16_t pipeCount{};
+        uint16_t boxCount{};
+
+        uint32_t space() const
+        {
+            return capacity > amount ? capacity - amount : 0;
+        }
+
+        template<typename V>
+        void visit(V& v)
+        {
+            v(fluid);
+            v(amount);
+            v(capacity);
+            v(demand);
+            v(lastDemand);
+            v(satisfactionQ16);
+            v(pipeCount);
+            v(boxCount);
+        }
+    };
 
     /**
      * One tile of the ore layer. 8 bytes; a map is at most 1001 x 1001 tiles.

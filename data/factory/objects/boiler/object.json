@@ -1,0 +1,126 @@
+{
+    "id": "factory-tour.factory_prototype.boiler",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "machine",
+        "machineKind": "boiler",
+        "energy": "burner",
+        "fluidRate": 6,
+        "inputFluid": "factory-tour.factory_prototype.water",
+        "outputFluid": "factory-tour.factory_prototype.steam",
+        "fluidBoxes": [
+            {
+                "role": "input",
+                "sides": [
+                    "left",
+                    "right"
+                ]
+            },
+            {
+                "role": "output",
+                "sides": [
+                    "front"
+                ]
+            }
+        ],
+        "inputSlots": 0,
+        "outputSlots": 0,
+        "price": 100,
+        "removalPrice": -75,
+        "clearance": 6,
+        "frames": 4,
+        "rotations": 4
+    },
+    "images": [
+        {
+            "path": "images/m_d0_f0.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d0_f1.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d0_f2.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d0_f3.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d1_f0.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d1_f1.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d1_f2.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d1_f3.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d2_f0.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d2_f1.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d2_f2.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d2_f3.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d3_f0.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d3_f1.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d3_f2.png",
+            "x": -32,
+            "y": -22
+        },
+        {
+            "path": "images/m_d3_f3.png",
+            "x": -32,
+            "y": -22
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Boiler"
+        }
+    }
+}

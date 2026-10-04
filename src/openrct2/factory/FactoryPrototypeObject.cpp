@@ -98,7 +98,31 @@ namespace OpenRCT2::Factory
             { "none", EnergySource::none },
             { "burner", EnergySource::burner },
             { "electric", EnergySource::electric },
+            { "fluid", EnergySource::fluid },
         });
+
+    static uint8_t readSides(json_t& array)
+    {
+        static const EnumMap<uint8_t> kSideMap(
+            {
+                { "front", kSideFront },
+                { "right", kSideRight },
+                { "back", kSideBack },
+                { "left", kSideLeft },
+            });
+        uint8_t sides = 0;
+        if (!array.is_array())
+            return sides;
+        for (auto& side : array)
+        {
+            if (!side.is_string())
+                continue;
+            auto it = kSideMap.find(side.get<std::string>());
+            if (it != kSideMap.end())
+                sides |= it->second;
+        }
+        return sides;
+    }
 
     ObjectEntryIndex PrototypeRef::resolve() const
     {
@@ -173,6 +197,7 @@ namespace OpenRCT2::Factory
             case PrototypeKind::item:
                 _item.stackSize = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["stackSize"], 100));
                 _item.fuelTicks = Json::GetNumber<uint32_t>(properties["fuelTicks"], 0);
+                _item.fluid = Json::GetBoolean(properties["fluid"], false);
                 break;
             case PrototypeKind::ore:
                 _ore.item.identifier = Json::GetString(properties["item"]);
@@ -200,6 +225,25 @@ namespace OpenRCT2::Factory
                 _machine.miningTimeTicks = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["miningTimeTicks"], 80));
                 _machine.frames = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["frames"], 1));
                 _machine.rotations = Json::GetNumber<uint8_t>(properties["rotations"], 4) == 1 ? 1 : 4;
+                _machine.inputFluid.identifier = Json::GetString(properties["inputFluid"]);
+                _machine.outputFluid.identifier = Json::GetString(properties["outputFluid"]);
+                _machine.fluidRate = Json::GetNumber<uint32_t>(properties["fluidRate"], 0);
+                auto boxes = properties["fluidBoxes"];
+                if (boxes.is_array())
+                {
+                    for (auto& box : boxes)
+                    {
+                        if (!box.is_object() || _machine.fluidBoxes.size() >= 4)
+                            continue;
+                        FluidBoxProperties props;
+                        props.role = Json::GetString(box["role"], "input") == "output" ? FluidBoxRole::output
+                                                                                       : FluidBoxRole::input;
+                        props.sides = readSides(box["sides"]);
+                        props.capacity = std::max<uint32_t>(1, Json::GetNumber<uint32_t>(box["capacity"], 1000));
+                        if (props.sides != 0)
+                            _machine.fluidBoxes.push_back(props);
+                    }
+                }
                 auto categories = properties["recipeCategories"];
                 if (categories.is_array())
                 {
@@ -230,6 +274,9 @@ namespace OpenRCT2::Factory
             case PrototypeKind::pole:
                 _pole.wireReach = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["wireReach"], 7), 1, 30);
                 _pole.supplyRadius = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["supplyRadius"], 2), 0, 15);
+                break;
+            case PrototypeKind::pipe:
+                _pipe.capacity = std::max<uint32_t>(1, Json::GetNumber<uint32_t>(properties["capacity"], 1000));
                 break;
             default:
                 // Remaining kinds are parsed when their simulation lands (M2/M5).
@@ -327,6 +374,11 @@ namespace OpenRCT2::Factory
         return imageAt((side & 1) * 4u + (direction & 3));
     }
 
+    ImageIndex FactoryPrototypeObject::getPipeImage(uint8_t viewMask) const
+    {
+        return imageAt(viewMask & 0xF);
+    }
+
     ImageIndex FactoryPrototypeObject::getOreIconImage() const
     {
         auto image = imageAt(1);
@@ -365,6 +417,9 @@ namespace OpenRCT2::Factory
                 break;
             case PrototypeKind::splitter:
                 image = getSplitterImage(0, 0);
+                break;
+            case PrototypeKind::pipe:
+                image = getPipeImage(0b0101);
                 break;
             default:
                 image = imageAt(0);

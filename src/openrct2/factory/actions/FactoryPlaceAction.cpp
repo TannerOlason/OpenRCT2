@@ -23,6 +23,7 @@
 #include "../FactoryPrototypeObject.h"
 #include "../FactoryStringIds.h"
 #include "../FactoryTopology.h"
+#include "../Fluids.h"
 
 namespace OpenRCT2::GameActions
 {
@@ -96,6 +97,10 @@ namespace OpenRCT2::GameActions
             return canBuild;
         }
         res.cost = proto->getPrice() + canBuild.cost;
+
+        if (proto->getSubtype() == FactoryElementSubtype::machine && proto->getMachine().kind == MachineKind::pump
+            && !hasWaterBehind(_loc, _direction))
+            return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_FT_PUMP_NEEDS_WATER);
 
         if (proto->getSubtype() == FactoryElementSubtype::splitter)
         {

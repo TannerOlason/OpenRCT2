@@ -48,5 +48,9 @@ namespace OpenRCT2
         STR_FT_STATUS_NO_ORE = 20504,
         STR_FT_STATUS_NO_RECIPE = 20505,
         STR_FT_SELECT_RECIPE_TIP = 20506,
+        STR_FT_PUMP_NEEDS_WATER = 20507,
+        STR_FT_FLUID = 20508,
+        STR_FT_FLUID_AMOUNT = 20509,
+        STR_FT_FLUID_EMPTY = 20510,
     };
 } // namespace OpenRCT2

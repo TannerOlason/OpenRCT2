@@ -20,6 +20,7 @@
 #include "Belts.h"
 #include "FactoryPrototypeObject.h"
 #include "FactoryTopology.h"
+#include "Fluids.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -36,8 +37,11 @@ namespace OpenRCT2::Factory
         splitters.clear();
         poles.clear();
         powerNetworks.clear();
+        pipes.clear();
+        fluidNetworks.clear();
         ore.clear();
         powerDirty = false;
+        fluidDirty = false;
         topologyVersion = 0;
     }
 
@@ -49,7 +53,7 @@ namespace OpenRCT2::Factory
     size_t State::recordCount() const
     {
         return containers.aliveCount() + inserters.aliveCount() + beltSegments.aliveCount() + machines.aliveCount()
-            + splitters.aliveCount() + poles.aliveCount();
+            + splitters.aliveCount() + poles.aliveCount() + pipes.aliveCount();
     }
 
     static void updateBelts(State& state)
@@ -546,13 +550,18 @@ namespace OpenRCT2::Factory
         state.inserters.forEach([&](RecordId, InserterRecord& inserter) { updateInserter(state, inserter); });
     }
 
-    static void setStatus(MachineRecord& machine, MachineStatus status)
+    void setMachineStatus(MachineRecord& machine, MachineStatus status)
     {
         machine.status = static_cast<uint8_t>(status);
     }
 
+    bool machineHasFuel(const MachineRecord& machine, const MachineProperties& props)
+    {
+        return props.energy != EnergySource::burner || machine.fuelEnergy > 0 || !machine.fuel.isEmpty();
+    }
+
     // Burner machines consume one tick of fuel per working tick; returns false (and sets noFuel) when empty.
-    static bool burnFuel(MachineRecord& machine, const MachineProperties& props)
+    bool machineBurnFuel(MachineRecord& machine, const MachineProperties& props)
     {
         if (props.energy != EnergySource::burner)
             return true;
@@ -560,7 +569,7 @@ namespace OpenRCT2::Factory
         {
             if (machine.fuel.isEmpty())
             {
-                setStatus(machine, MachineStatus::noFuel);
+                setMachineStatus(machine, MachineStatus::noFuel);
                 return false;
             }
             auto* fuelProto = getPrototype(machine.fuel.item);
@@ -570,7 +579,7 @@ namespace OpenRCT2::Factory
                 machine.fuel.item = kObjectEntryIndexNull;
             if (machine.fuelEnergy == 0)
             {
-                setStatus(machine, MachineStatus::noFuel);
+                setMachineStatus(machine, MachineStatus::noFuel);
                 return false;
             }
         }
@@ -654,7 +663,7 @@ namespace OpenRCT2::Factory
         }
         if (!found)
         {
-            setStatus(machine, MachineStatus::noOre);
+            setMachineStatus(machine, MachineStatus::noOre);
             machine.progress = 0;
             return;
         }
@@ -662,18 +671,18 @@ namespace OpenRCT2::Factory
         const ObjectEntryIndex product = oreProto != nullptr ? oreProto->getOre().item.resolve() : kObjectEntryIndexNull;
         if (product == kObjectEntryIndexNull)
         {
-            setStatus(machine, MachineStatus::noRecipe);
+            setMachineStatus(machine, MachineStatus::noRecipe);
             return;
         }
         if (!stackCanAdd(machine.outputs, product, 1, stackSizeOf(product)))
         {
-            setStatus(machine, MachineStatus::outputFull);
+            setMachineStatus(machine, MachineStatus::outputFull);
             return;
         }
-        if (!burnFuel(machine, props))
+        if (!machineBurnFuel(machine, props))
             return;
 
-        setStatus(machine, MachineStatus::working);
+        setMachineStatus(machine, MachineStatus::working);
         machine.craftCost = static_cast<uint32_t>(props.miningTimeTicks) * kWorkUnitsPerTick;
         machine.progress += props.speedQ8;
         if (machine.progress >= machine.craftCost)
@@ -701,7 +710,7 @@ namespace OpenRCT2::Factory
             const auto item = result.item.resolve();
             if (item == kObjectEntryIndexNull || !stackCanAdd(machine.outputs, item, result.count, stackSizeOf(item)))
             {
-                setStatus(machine, MachineStatus::outputFull);
+                setMachineStatus(machine, MachineStatus::outputFull);
                 return false;
             }
         }
@@ -741,14 +750,15 @@ namespace OpenRCT2::Factory
         auto* recipeProto = getPrototype(machine.recipe);
         if (recipeProto == nullptr || recipeProto->getKind() != PrototypeKind::recipe)
         {
-            setStatus(machine, machine.getKind() == MachineKind::furnace ? MachineStatus::noInput : MachineStatus::noRecipe);
+            setMachineStatus(
+                machine, machine.getKind() == MachineKind::furnace ? MachineStatus::noInput : MachineStatus::noRecipe);
             return;
         }
 
         if (machine.craftCost == 0 && !startCraft(machine, *recipeProto))
         {
             if (machine.getStatus() != MachineStatus::outputFull)
-                setStatus(machine, MachineStatus::noInput);
+                setMachineStatus(machine, MachineStatus::noInput);
             return;
         }
 
@@ -758,21 +768,21 @@ namespace OpenRCT2::Factory
             auto* network = machine.powerNetwork != kNullRecord ? state.powerNetworks.get(machine.powerNetwork) : nullptr;
             if (network == nullptr)
             {
-                setStatus(machine, MachineStatus::noPower);
+                setMachineStatus(machine, MachineStatus::noPower);
                 return;
             }
             network->demand += props.powerUsage;
             satisfactionQ16 = network->satisfactionQ16;
             if (satisfactionQ16 == 0)
             {
-                setStatus(machine, MachineStatus::noPower);
+                setMachineStatus(machine, MachineStatus::noPower);
                 return;
             }
         }
-        if (!burnFuel(machine, props))
+        if (!machineBurnFuel(machine, props))
             return;
 
-        setStatus(machine, MachineStatus::working);
+        setMachineStatus(machine, MachineStatus::working);
         machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
         if (machine.progress >= machine.craftCost)
         {
@@ -868,19 +878,19 @@ namespace OpenRCT2::Factory
         auto* network = machine.powerNetwork != kNullRecord ? state.powerNetworks.get(machine.powerNetwork) : nullptr;
         if (network == nullptr)
         {
-            setStatus(machine, MachineStatus::idle);
+            setMachineStatus(machine, MachineStatus::idle);
             return;
         }
         if (network->consumerCount == 0 || network->lastDemand == 0)
         {
             // Nothing is drawing: stay available without burning fuel.
-            setStatus(machine, MachineStatus::idle);
+            setMachineStatus(machine, MachineStatus::idle);
             network->supply += props.powerOutput;
             return;
         }
-        if (!burnFuel(machine, props))
+        if (!machineBurnFuel(machine, props))
             return;
-        setStatus(machine, MachineStatus::working);
+        setMachineStatus(machine, MachineStatus::working);
         network->supply += props.powerOutput;
     }
 
@@ -897,6 +907,7 @@ namespace OpenRCT2::Factory
                 network.satisfactionQ16 = static_cast<uint32_t>(
                     std::min<uint64_t>(kSatisfactionFull, (static_cast<uint64_t>(network.supply) << 16) / network.demand));
             network.lastDemand = network.demand;
+            network.lastSupply = network.supply;
             network.supply = 0;
             network.demand = 0;
         });
@@ -918,10 +929,19 @@ namespace OpenRCT2::Factory
                     updateCrafter(state, machine, *proto);
                     break;
                 case MachineKind::engine:
-                    updateGenerator(state, machine, *proto);
+                    if (proto->getMachine().energy == EnergySource::fluid)
+                        updateSteamEngine(state, machine, *proto);
+                    else
+                        updateGenerator(state, machine, *proto);
+                    break;
+                case MachineKind::pump:
+                    updatePump(state, machine, *proto);
+                    break;
+                case MachineKind::boiler:
+                    updateBoiler(state, machine, *proto);
                     break;
                 default:
-                    setStatus(machine, MachineStatus::idle);
+                    setMachineStatus(machine, MachineStatus::idle);
                     break;
             }
         });
@@ -942,6 +962,7 @@ namespace OpenRCT2::Factory
         updateSplitters(state);
         updateInserters(state);
         updatePower(state);
+        updateFluidNetworks(state);
         updateMachines(state);
     }
 } // namespace OpenRCT2::Factory

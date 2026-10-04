@@ -1,0 +1,103 @@
+{
+    "id": "factory-tour.factory_prototype.pipe_basic",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "pipe",
+        "capacity": 1000,
+        "price": 5,
+        "removalPrice": -3,
+        "clearance": 3
+    },
+    "images": [
+        {
+            "path": "images/pipe_00.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_01.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_02.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_03.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_04.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_05.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_06.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_07.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_08.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_09.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_10.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_11.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_12.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_13.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_14.png",
+            "x": -32,
+            "y": -8
+        },
+        {
+            "path": "images/pipe_15.png",
+            "x": -32,
+            "y": -8
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Pipe"
+        }
+    }
+}

@@ -150,6 +150,21 @@ TEST(FactoryStateTests, SerialisationRoundTripsEveryRecordKind)
     belt->lanes[1].items = { { 3, 100 } };
     belt->next = kNullRecord;
 
+    RecordId pipeId;
+    state.pipes.allocateRecord(pipeId).setLocation({ 14, 20, 14 });
+    RecordId fluidId;
+    auto& fluid = state.fluidNetworks.allocateRecord(fluidId);
+    fluid.fluid = 9;
+    fluid.amount = 1500;
+    fluid.capacity = 2000;
+    state.pipes.get(pipeId)->network = fluidId;
+    RecordId machineId;
+    auto& machine = state.machines.allocateRecord(machineId);
+    machine.fluidNetworks = { fluidId, kNullRecord };
+    RecordId powerId;
+    state.powerNetworks.allocateRecord(powerId).lastSupply = 450;
+    state.fluidDirty = true;
+
     auto bytes = SerialiseToBytes(state);
     ASSERT_FALSE(bytes.empty());
 
@@ -188,6 +203,17 @@ TEST(FactoryStateTests, SerialisationRoundTripsEveryRecordKind)
     EXPECT_EQ(loadedBelt->lanes[0].items[2].gap, 200);
     ASSERT_EQ(loadedBelt->lanes[1].items.size(), 1u);
     EXPECT_EQ(loadedBelt->next, kNullRecord);
+
+    ASSERT_NE(loaded.pipes.get(pipeId), nullptr);
+    EXPECT_EQ(loaded.pipes.get(pipeId)->network, fluidId);
+    ASSERT_NE(loaded.fluidNetworks.get(fluidId), nullptr);
+    EXPECT_EQ(loaded.fluidNetworks.get(fluidId)->fluid, 9);
+    EXPECT_EQ(loaded.fluidNetworks.get(fluidId)->amount, 1500u);
+    EXPECT_EQ(loaded.fluidNetworks.get(fluidId)->space(), 500u);
+    ASSERT_NE(loaded.machines.get(machineId), nullptr);
+    EXPECT_EQ(loaded.machines.get(machineId)->fluidNetworks, (std::vector<RecordId>{ fluidId, kNullRecord }));
+    EXPECT_EQ(loaded.powerNetworks.get(powerId)->lastSupply, 450u);
+    EXPECT_TRUE(loaded.fluidDirty);
 
     // The hole was reused as the lowest free id after loading.
     EXPECT_EQ(loaded.inserters.allocate(), holeId);

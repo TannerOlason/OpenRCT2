@@ -36,7 +36,7 @@ field can never be saved but not hashed. Records hold only integers, `std::vecto
 
 **FactoryState** lives in `GameState_t` after `cheats`, reset in `gameStateInitAll`, ticked between
 `Ride::updateAll()` and `Park::Update`. Pools (stable ids, lowest-free allocation, ascending iteration):
-`beltSegments, splitters, inserters, containers, machines, poles, powerNetworks, fluidNetworks`; plus
+`beltSegments, splitters, inserters, containers, machines, poles, powerNetworks, pipes, fluidNetworks`; plus
 `topologyVersion, powerDirty, fluidDirty`, the Ore Layer and the Warehouse.
 
 **Prototypes.** `ObjectType::factoryPrototype`, cap 8192, JSON `properties.kind`. A runtime registry
@@ -59,8 +59,24 @@ decrement the Ore Layer. Kinds: `drill, furnace, assembler, boiler, engine, pump
 in chunk 0x42, painted as a surface overlay.
 
 **Power.** Poles auto-wire in id order; BFS rebuild when dirty; per-tick 64-bit
-`satisfactionQ16 = supply / demand`; steam chain offshore pump → boiler → engine; accumulators and solar
-later. **Fluids.** One volume per connected component, proportional sharing, pumps bridge networks.
+`satisfactionQ16 = supply / demand`; generators react to last tick's load (`lastDemand / lastSupply`);
+accumulators and solar later.
+
+**Fluids** (ADR 0009). A fluid is an item prototype with `"fluid": true`; it never travels on belts or sits in
+chests. Machines declare `fluidBoxes` (`role` input or output, `sides` relative to their facing: front, right,
+back, left, and a `capacity`). A Fluid Network is a connected component of nodes, where a node is a pipe (facing
+all four sides) or one machine box (facing its sides); neighbouring nodes connect when each faces the other, so
+a box with two sides is a pass-through and two machines can share a network without a pipe. The component holds
+one fluid as one volume (`amount` of `capacity`, the sum of its nodes). Networks rebuild when `fluidDirty`:
+the old volumes are first shared over their surviving nodes by capacity, then summed per new component, so
+splitting and joining conserve fluid; a component that ends up with two fluids keeps the larger. Consumers
+register requests in `demand` and draw `request * satisfactionQ16`, where satisfaction comes from last tick's
+demand, so scarce fluid is shared in proportion rather than by id order. The steam chain: the offshore pump
+(`kind pump`, needs water on the tile behind it) fills its output network at `fluidRate`; the boiler (burner)
+converts up to `fluidRate` water from its input box (left and right) into steam in its output box (front); the
+steam engine (`kind engine`, `energy fluid`) offers `powerOutput` scaled by the steam on hand and burns steam in
+proportion to its power network's load. Pipe connection masks are cached in the element's connection byte
+(map directions) and rotated into the view by the painter (16 images).
 
 **Persistence.** Chunks `0x40 factoryHeader`, `0x41 factoryPools`, `0x42 factoryOre` registered in
 `park/ParkFile.cpp`, read after the tiles chunk. Each starts with `uint16 factoryVersion`. Pools saved dense

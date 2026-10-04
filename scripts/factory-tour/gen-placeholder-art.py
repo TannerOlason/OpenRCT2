@@ -365,6 +365,102 @@ def draw_splitter(d, side):
     return img, 14
 
 
+def draw_pipe(mask):
+    """A pipe hub at the tile centre with an arm towards each view direction in mask (bit d = SCREEN_DIR[d])."""
+    h = 8
+    img = Image.new("RGBA", (64, 32 + h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    centre = (32, 16 + h - 6)
+    body, rim = (120, 130, 140, 255), (50, 55, 60, 255)
+    # Arms first (back to front so the near ones overlap), then the hub.
+    for d in sorted(range(4), key=lambda dd: SCREEN_DIR[dd][1]):
+        if mask & (1 << d):
+            end = edge_midpoint(centre, d, +1)
+            draw.line([centre, end], fill=rim, width=9)
+            draw.line([centre, end], fill=body, width=6)
+            draw.line([(centre[0], centre[1] - 2), (end[0], end[1] - 2)], fill=(170, 180, 190, 255), width=1)
+    draw.ellipse([centre[0] - 6, centre[1] - 4, centre[0] + 6, centre[1] + 4], fill=body, outline=rim)
+    return img, h
+
+
+def write_pipe():
+    images = []
+    folder = write_object("pipe_basic", "pipe", {"capacity": 1000, "price": 5, "removalPrice": -3, "clearance": 3}, [],
+                          "Pipe")
+    for mask in range(16):
+        fname = f"pipe_{mask:02d}.png"
+        img, h = draw_pipe(mask)
+        save(img, folder, fname)
+        images.append({"path": f"images/{fname}", "x": -32, "y": -h})
+    with open(os.path.join(folder, "object.json")) as fh:
+        obj = json.load(fh)
+    obj["images"] = images
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
+def draw_pump(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        # A pump wheel that turns while working.
+        draw.ellipse([cx - 6, cy - 4, cx + 6, cy + 3], fill=(60, 90, 120, 255), outline=(20, 30, 40, 255))
+        ang = math.pi * frame / max(1, frames)
+        draw.line([(cx - math.cos(ang) * 6, cy - math.sin(ang) * 3), (cx + math.cos(ang) * 6, cy + math.sin(ang) * 3)],
+                  fill=(200, 220, 240, 255), width=2)
+
+    def side_detail(draw, cx, cy, h, dd):
+        # Outlet on the front, intake grille on the back (which faces the water).
+        sx, sy = SCREEN_DIR[dd]
+        ex, ey = cx + sx * 0.6, cy - h // 2 + sy * 0.6
+        draw.rectangle([ex - 3, ey - 3, ex + 3, ey + 3], fill=(120, 130, 140, 255), outline=(40, 40, 50, 255))
+
+    return draw_machine_box(d, (70, 110, 120, 255), (100, 140, 150, 255), (20, 40, 45, 255), 14, top_detail, side_detail)
+
+
+def draw_boiler(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        draw.rectangle([cx - 4, cy - 20, cx + 2, cy - 2], fill=(80, 70, 70, 255), outline=(30, 25, 25, 255))
+        if frame > 0:
+            for k in range(2):
+                r = 3 + k + frame % 2
+                draw.ellipse([cx - 1 - r, cy - 26 - 5 * k - r, cx - 1 + r, cy - 26 - 5 * k + r], fill=(200, 200, 205, 255))
+
+    def side_detail(draw, cx, cy, h, dd):
+        glow = (255, 150, 40, 255) if frame > 0 else (50, 40, 40, 255)
+        draw.rectangle([cx - 20, cy - 6, cx - 12, cy], fill=glow)
+        sx, sy = SCREEN_DIR[dd]
+        ex, ey = cx + sx * 0.6, cy - h // 2 + sy * 0.6
+        draw.rectangle([ex - 3, ey - 3, ex + 3, ey + 3], fill=(200, 200, 205, 255), outline=(40, 40, 50, 255))
+
+    return draw_machine_box(d, (140, 80, 60, 255), (170, 110, 90, 255), (50, 25, 20, 255), 22, top_detail, side_detail)
+
+
+def draw_steam_engine(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        # A piston rod sliding along the facing axis.
+        sx, sy = SCREEN_DIR[d]
+        t = (frame % max(1, frames)) / max(1, frames)
+        off = math.sin(2 * math.pi * t) * 0.15
+        a = (cx - sx * 0.3, cy - sy * 0.3)
+        b = (cx + sx * (0.1 + off), cy + sy * (0.1 + off))
+        draw.line([a, b], fill=(220, 200, 90, 255), width=3)
+        draw.ellipse([b[0] - 4, b[1] - 3, b[0] + 4, b[1] + 3], fill=(90, 90, 100, 255), outline=(30, 30, 40, 255))
+
+    def side_detail(draw, cx, cy, h, dd):
+        draw.rectangle([cx + 6, cy - 10, cx + 20, cy - 4], fill=(150, 150, 160, 255))
+
+    return draw_machine_box(d, (110, 110, 120, 255), (140, 140, 150, 255), (35, 35, 45, 255), 18, top_detail, side_detail)
+
+
+def write_fluid(name, display, colour, dark):
+    icon, belt = draw_item_small(colour, dark)
+    folder = write_object(name, "item", {"stackSize": 1, "fluid": True},
+                          [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                          display)
+    save(icon, folder, "icon.png")
+    save(belt, folder, "belt.png")
+
+
 def write_underground_and_splitter():
     images = []
     folder = write_object("underground_belt_basic", "underground_belt",
@@ -478,6 +574,26 @@ def main():
     write_machine("stone_furnace", "Stone furnace", {
         "machineKind": "furnace", "energy": "burner", "speedQ8": 256, "recipeCategories": ["smelting"],
         "inputSlots": 1, "outputSlots": 1, "price": 60, "removalPrice": -45, "clearance": 7}, draw_furnace, 4)
+
+    # Fluids and the steam chain: offshore pump -> boiler -> steam engine.
+    write_fluid("water", "Water", (60, 110, 200), (30, 60, 130))
+    write_fluid("steam", "Steam", (220, 220, 225), (150, 150, 160))
+    write_pipe()
+    write_machine("offshore_pump", "Offshore pump", {
+        "machineKind": "pump", "energy": "none", "fluidRate": 120,
+        "outputFluid": "factory-tour.factory_prototype.water",
+        "fluidBoxes": [{"role": "output", "sides": ["front"]}],
+        "inputSlots": 0, "outputSlots": 0, "price": 50, "removalPrice": -35, "clearance": 4}, draw_pump, 4)
+    write_machine("boiler", "Boiler", {
+        "machineKind": "boiler", "energy": "burner", "fluidRate": 6,
+        "inputFluid": "factory-tour.factory_prototype.water", "outputFluid": "factory-tour.factory_prototype.steam",
+        "fluidBoxes": [{"role": "input", "sides": ["left", "right"]}, {"role": "output", "sides": ["front"]}],
+        "inputSlots": 0, "outputSlots": 0, "price": 100, "removalPrice": -75, "clearance": 6}, draw_boiler, 4)
+    write_machine("steam_engine", "Steam engine", {
+        "machineKind": "engine", "energy": "fluid", "fluidRate": 3, "powerOutput": 450,
+        "inputFluid": "factory-tour.factory_prototype.steam",
+        "fluidBoxes": [{"role": "input", "sides": ["front", "back"]}],
+        "inputSlots": 0, "outputSlots": 0, "price": 150, "removalPrice": -110, "clearance": 6}, draw_steam_engine, 4)
 
     # Item: iron plate.
     folder = write_object(

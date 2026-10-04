@@ -80,8 +80,10 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   flood fill when poles or machines change, burner generators that burn fuel only under load, consumers
   scaling progress by last tick's satisfaction. Test: plates → assembler → gears only once a fuelled
   generator shares a network, and the assembler loses power when the linking pole is removed.
-- [ ] Steam chain (offshore pump, boiler, steam engine) once fluids exist.
-- [ ] Pipes and fluid networks.
+- [x] Steam chain: offshore pump (needs water behind it), burner boiler (water → steam), steam engine (steam →
+  power, burns in proportion to load). Test: pump → pipe → boiler → engine powers an assembler that makes gears.
+- [x] Pipes and fluid networks (`pipes` and `fluidNetworks` pools, `fluidDirty`, one volume per component,
+  proportional sharing, machine fluid boxes as pass-through nodes, ADR 0009). Info window shows network contents.
 - [~] Underground belts, splitters, lane filters, sideloading. (filters pending)
 - [~] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview. (window and drag tool done)
 - [ ] `factory-bench` CLI and the 8 ms per tick CI gate.

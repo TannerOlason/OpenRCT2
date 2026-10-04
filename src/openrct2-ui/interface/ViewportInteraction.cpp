@@ -259,14 +259,15 @@ namespace OpenRCT2::Ui
             case ViewportInteractionItem::parkEntrance:
                 ContextOpenWindow(WindowClass::parkInformation);
                 return true;
-            // FACTORY-TOUR: machines and chests open their info window
+            // FACTORY-TOUR: machines, chests and pipes open their info window
             case ViewportInteractionItem::factory:
             {
                 auto* factoryElement = info.Element != nullptr ? info.Element->asFactory() : nullptr;
                 if (factoryElement == nullptr)
                     return false;
                 const auto subtype = factoryElement->getSubtype();
-                if (subtype != FactoryElementSubtype::machine && subtype != FactoryElementSubtype::container)
+                if (subtype != FactoryElementSubtype::machine && subtype != FactoryElementSubtype::container
+                    && subtype != FactoryElementSubtype::pipe)
                     return false;
                 FactoryInfoOpen(CoordsXYZ{ info.Loc.x, info.Loc.y, factoryElement->getBaseZ() });
                 return true;

@@ -104,8 +104,15 @@ A connected component of poles with per-tick `satisfactionQ16 = supply / demand`
 _Avoid_: incremental wire graphs
 
 **Fluid Network**:
-A connected component of pipes sharing one volume with proportional distribution; pumps bridge networks.
+A connected component of pipes and machine Fluid Boxes sharing one volume of one fluid, drawn from in proportion
+to demand; pumps and boilers bridge networks.
 _Avoid_: per-pipe flow simulation
+
+**Fluid Box**:
+A machine's connection to fluid, declared in its prototype with a role (input or output), the sides it faces
+relative to the machine's direction and a capacity it adds to its network. A box facing two sides is a
+pass-through.
+_Avoid_: tank (a tank is a placeable storage machine)
 
 **Sync Checksum**:
 The composite checksum (`entities + Factory::serialiseForSync`) that replaces upstream's entity-only

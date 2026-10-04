@@ -246,6 +246,19 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
             }
             break;
         }
+        case FactoryElementSubtype::pipe:
+        {
+            // The cached mask is in map directions; rotate it into the view.
+            const uint8_t worldMask = factoryElement.getConnectionCache() & 0xF;
+            const uint8_t rotation = session.CurrentRotation & 3;
+            const uint8_t viewMask = static_cast<uint8_t>(((worldMask << rotation) | (worldMask >> (4 - rotation))) & 0xF);
+            auto image = proto->getPipeImage(viewMask);
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);
+            }
+            break;
+        }
         default:
         {
             auto image = proto->hasImages() ? proto->GetBaseImageId() : kImageIndexUndefined;

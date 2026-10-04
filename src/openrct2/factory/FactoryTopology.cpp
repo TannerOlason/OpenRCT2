@@ -19,6 +19,7 @@
 #include "../world/TileElementsView.h"
 #include "../world/tile_element/FactoryElement.h"
 #include "Belts.h"
+#include "Fluids.h"
 
 #include <vector>
 
@@ -722,6 +723,22 @@ namespace OpenRCT2::Factory
                     element->setRecordId(id);
                     if (props.energy == EnergySource::electric || proto->isGenerator())
                         state.powerDirty = true;
+                    if (!props.fluidBoxes.empty())
+                    {
+                        record.fluidNetworks.assign(props.fluidBoxes.size(), kNullRecord);
+                        state.fluidDirty = true;
+                    }
+                    break;
+                }
+                case FactoryElementSubtype::pipe:
+                {
+                    RecordId id;
+                    auto& record = state.pipes.allocateRecord(id);
+                    record.setLocation(TileCoordsXYZ(loc));
+                    record.direction = dir & 3;
+                    record.entry = entry;
+                    element->setRecordId(id);
+                    state.fluidDirty = true;
                     break;
                 }
                 case FactoryElementSubtype::pole:
@@ -746,6 +763,7 @@ namespace OpenRCT2::Factory
         }
 
         refreshBeltShapesAround(loc);
+        refreshPipeConnectionsAround(loc);
         MapInvalidateTileFull(loc);
         MapAnimations::MarkTileForInvalidation(TileCoordsXY(loc));
         return element;
@@ -788,8 +806,17 @@ namespace OpenRCT2::Factory
                     state.inserters.release(element.getRecordId());
                     break;
                 case FactoryElementSubtype::machine:
+                    if (auto* machine = state.machines.get(element.getRecordId()); machine != nullptr)
+                    {
+                        if (!machine->fluidNetworks.empty())
+                            state.fluidDirty = true;
+                    }
                     state.machines.release(element.getRecordId());
                     state.powerDirty = true;
+                    break;
+                case FactoryElementSubtype::pipe:
+                    state.pipes.release(element.getRecordId());
+                    state.fluidDirty = true;
                     break;
                 case FactoryElementSubtype::pole:
                     state.poles.release(element.getRecordId());
@@ -819,6 +846,7 @@ namespace OpenRCT2::Factory
                 relinkAround(state, partnerLoc);
         }
         refreshBeltShapesAround(loc);
+        refreshPipeConnectionsAround(loc);
         if (hasPartner)
             refreshBeltShapesAround(partnerLoc);
     }
@@ -907,9 +935,21 @@ namespace OpenRCT2::Factory
             state.poles.release(id);
             changed = true;
         }
+        dead.clear();
+        state.pipes.forEach([&](RecordId id, PipeRecord& record) {
+            auto* element = findFactoryElement(tileToCoords(record.location()));
+            if (element == nullptr || element->getSubtype() != FactoryElementSubtype::pipe || element->getRecordId() != id)
+                dead.push_back(id);
+        });
+        for (auto id : dead)
+        {
+            state.pipes.release(id);
+            changed = true;
+        }
         if (changed)
         {
             state.powerDirty = true;
+            state.fluidDirty = true;
             state.topologyVersion++;
         }
     }
