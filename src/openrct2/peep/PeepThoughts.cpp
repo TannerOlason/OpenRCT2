@@ -8,8 +8,8 @@
  *****************************************************************************/
 
 #include "PeepThoughts.h"
-#include "../factory/FactoryStringIds.h" // FACTORY-TOUR
 
+#include "../factory/FactoryStringIds.h" // FACTORY-TOUR
 #include "../localisation/StringIds.h"
 
 // clang-format off

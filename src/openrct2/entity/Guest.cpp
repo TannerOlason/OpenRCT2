@@ -25,6 +25,7 @@
 #include "../entity/EntityRegistry.h"
 #include "../entity/MoneyEffect.h"
 #include "../entity/Particle.h"
+#include "../factory/GuestFactory.h" // FACTORY-TOUR
 #include "../interface/WindowBase.h"
 #include "../localisation/Formatter.h"
 #include "../localisation/Formatting.h"
@@ -54,7 +55,6 @@
 #include "../ui/WindowManager.h"
 #include "../util/Util.h"
 #include "../windows/Intent.h"
-#include "../factory/GuestFactory.h" // FACTORY-TOUR
 #include "../world/Footpath.h"
 #include "../world/Location.hpp"
 #include "../world/Map.h"
