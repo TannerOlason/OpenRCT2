@@ -15,6 +15,7 @@
 #include "FactoryPlaceBeltLineAction.h"
 #include "FactoryRemoveAction.h"
 #include "FactoryRotateAction.h"
+#include "FactorySetFilterAction.h"
 #include "FactorySetOreAction.h"
 #include "FactorySetRecipeAction.h"
 
@@ -43,6 +44,7 @@ namespace OpenRCT2::GameActions::Factory
         Make<FactoryRotateAction>("FactoryRotateAction", "factoryrotate"),
         Make<FactorySetRecipeAction>("FactorySetRecipeAction", "factorysetrecipe"),
         Make<FactorySetOreAction>("FactorySetOreAction", "factorysetore"),
+        Make<FactorySetFilterAction>("FactorySetFilterAction", "factorysetfilter"),
     };
 
     static constexpr std::array<GameCommand, kEntries.size()> kCommands = [] {

@@ -7,7 +7,8 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
-// FACTORY-TOUR: fork-owned file. Info window for a machine, chest or pipe: status, recipe, slots, fluids and progress.
+// FACTORY-TOUR: fork-owned file. Info window for a machine, chest, pipe or splitter: status, recipe, slots, fluids,
+// progress, and a splitter's filter and priorities.
 
 #include <openrct2-ui/interface/Dropdown.h>
 #include <openrct2-ui/interface/Widget.h>
@@ -26,6 +27,7 @@
 #include <openrct2/factory/FactoryStringIds.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
+#include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetRecipeAction.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/object/ObjectList.h>
@@ -51,13 +53,25 @@ namespace OpenRCT2::Ui::Windows
         WIDX_CLOSE,
         WIDX_RECIPE_DROPDOWN,
         WIDX_RECIPE_DROPDOWN_BUTTON,
+        WIDX_FILTER_DROPDOWN,
+        WIDX_FILTER_DROPDOWN_BUTTON,
+        WIDX_INPUT_PRIORITY_DROPDOWN,
+        WIDX_INPUT_PRIORITY_DROPDOWN_BUTTON,
+        WIDX_OUTPUT_PRIORITY_DROPDOWN,
+        WIDX_OUTPUT_PRIORITY_DROPDOWN_BUTTON,
     };
 
     // clang-format off
     static constexpr auto kWindowFactoryInfoWidgets = makeWidgets(
         makeWindowShim(kWindowTitle, kWindowSize),
         makeWidget({ 60, 44}, {164, 12}, WidgetType::dropdownMenu, WindowColour::secondary                                     ),
-        makeWidget({212, 45}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_RECIPE_TIP)
+        makeWidget({212, 45}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_RECIPE_TIP),
+        makeWidget({ 96, 32}, {128, 12}, WidgetType::dropdownMenu, WindowColour::secondary                                     ),
+        makeWidget({212, 33}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_FILTER_TIP),
+        makeWidget({ 96, 48}, {128, 12}, WidgetType::dropdownMenu, WindowColour::secondary                                     ),
+        makeWidget({212, 49}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_PRIORITY_TIP),
+        makeWidget({ 96, 64}, {128, 12}, WidgetType::dropdownMenu, WindowColour::secondary                                     ),
+        makeWidget({212, 65}, { 11, 10}, WidgetType::button,       WindowColour::secondary, STR_DROPDOWN_GLYPH, STR_FT_SELECT_PRIORITY_TIP)
     );
     // clang-format on
 
@@ -66,6 +80,7 @@ namespace OpenRCT2::Ui::Windows
     private:
         CoordsXYZ _loc{};
         std::vector<ObjectEntryIndex> _recipeChoices;
+        std::vector<ObjectEntryIndex> _filterChoices;
 
     public:
         void initialise(const CoordsXYZ& loc)
@@ -99,6 +114,12 @@ namespace OpenRCT2::Ui::Windows
 
         void onMouseDown(WidgetIndex widgetIndex) override
         {
+            if (widgetIndex == WIDX_FILTER_DROPDOWN_BUTTON || widgetIndex == WIDX_INPUT_PRIORITY_DROPDOWN_BUTTON
+                || widgetIndex == WIDX_OUTPUT_PRIORITY_DROPDOWN_BUTTON)
+            {
+                ShowSplitterDropdown(widgetIndex);
+                return;
+            }
             if (widgetIndex != WIDX_RECIPE_DROPDOWN_BUTTON)
                 return;
             RefreshRecipes();
@@ -126,7 +147,28 @@ namespace OpenRCT2::Ui::Windows
 
         void onDropdown(WidgetIndex widgetIndex, int32_t dropdownIndex) override
         {
-            if (widgetIndex != WIDX_RECIPE_DROPDOWN_BUTTON || dropdownIndex < 0)
+            if (dropdownIndex < 0)
+                return;
+            if (auto* splitter = FindSplitter(); splitter != nullptr)
+            {
+                auto filter = splitter->filter;
+                auto inputPriority = splitter->inputPriority;
+                auto outputPriority = splitter->outputPriority;
+                if (widgetIndex == WIDX_FILTER_DROPDOWN_BUTTON)
+                    filter = dropdownIndex >= 1 && static_cast<size_t>(dropdownIndex - 1) < _filterChoices.size()
+                        ? _filterChoices[dropdownIndex - 1]
+                        : kObjectEntryIndexNull;
+                else if (widgetIndex == WIDX_INPUT_PRIORITY_DROPDOWN_BUTTON)
+                    inputPriority = static_cast<uint8_t>(std::min(dropdownIndex, 2));
+                else if (widgetIndex == WIDX_OUTPUT_PRIORITY_DROPDOWN_BUTTON)
+                    outputPriority = static_cast<uint8_t>(std::min(dropdownIndex, 2));
+                else
+                    return;
+                auto action = GameActions::FactorySetFilterAction(_loc, filter, inputPriority, outputPriority);
+                GameActions::Execute(&action, getGameState());
+                return;
+            }
+            if (widgetIndex != WIDX_RECIPE_DROPDOWN_BUTTON)
                 return;
             ObjectEntryIndex recipe = kObjectEntryIndexNull;
             if (dropdownIndex >= 1 && static_cast<size_t>(dropdownIndex - 1) < _recipeChoices.size())
@@ -151,6 +193,23 @@ namespace OpenRCT2::Ui::Windows
                 static std::string recipeName;
                 recipeName = recipeProto != nullptr ? recipeProto->GetName() : std::string();
                 widgets[WIDX_RECIPE_DROPDOWN].string = recipeName.c_str();
+            }
+
+            auto* splitter = FindSplitter();
+            for (auto widx :
+                 { WIDX_FILTER_DROPDOWN, WIDX_FILTER_DROPDOWN_BUTTON, WIDX_INPUT_PRIORITY_DROPDOWN,
+                   WIDX_INPUT_PRIORITY_DROPDOWN_BUTTON, WIDX_OUTPUT_PRIORITY_DROPDOWN, WIDX_OUTPUT_PRIORITY_DROPDOWN_BUTTON })
+                widgets[widx].setVisible(splitter != nullptr);
+            if (splitter != nullptr)
+            {
+                auto* filterProto = getPrototype(splitter->filter);
+                static std::string filterName;
+                filterName = filterProto != nullptr ? filterProto->GetName() : std::string();
+                widgets[WIDX_FILTER_DROPDOWN].text = filterProto != nullptr ? static_cast<StringId>(STR_STRING)
+                                                                            : static_cast<StringId>(STR_FT_NO_FILTER);
+                widgets[WIDX_FILTER_DROPDOWN].string = filterName.c_str();
+                widgets[WIDX_INPUT_PRIORITY_DROPDOWN].text = PriorityString(splitter->inputPriority);
+                widgets[WIDX_OUTPUT_PRIORITY_DROPDOWN].text = PriorityString(splitter->outputPriority);
             }
         }
 
@@ -184,6 +243,17 @@ namespace OpenRCT2::Ui::Windows
                 drawText(rt, pos, STR_FT_CONTENTS);
                 pos.y += 12;
                 DrawSlots(rt, pos, container->slots);
+                return;
+            }
+
+            if (element->getSubtype() == FactoryElementSubtype::splitter)
+            {
+                drawText(rt, windowPos + ScreenCoordsXY{ 6, widgets[WIDX_FILTER_DROPDOWN].top + 1 }, STR_FT_FILTER);
+                drawText(
+                    rt, windowPos + ScreenCoordsXY{ 6, widgets[WIDX_INPUT_PRIORITY_DROPDOWN].top + 1 }, STR_FT_INPUT_PRIORITY);
+                drawText(
+                    rt, windowPos + ScreenCoordsXY{ 6, widgets[WIDX_OUTPUT_PRIORITY_DROPDOWN].top + 1 },
+                    STR_FT_OUTPUT_PRIORITY);
                 return;
             }
 
@@ -261,6 +331,73 @@ namespace OpenRCT2::Ui::Windows
             if (element == nullptr || element->getSubtype() != FactoryElementSubtype::machine || !element->hasRecord())
                 return nullptr;
             return getGameState().factory.machines.get(element->getRecordId());
+        }
+
+        SplitterRecord* FindSplitter() const
+        {
+            auto* element = FindElement();
+            if (element == nullptr || element->getSubtype() != FactoryElementSubtype::splitter || !element->hasRecord())
+                return nullptr;
+            return getGameState().factory.splitters.get(element->getRecordId());
+        }
+
+        static StringId PriorityString(uint8_t priority)
+        {
+            switch (priority)
+            {
+                case kSplitterPriorityLeft:
+                    return STR_FT_PRIORITY_LEFT;
+                case kSplitterPriorityRight:
+                    return STR_FT_PRIORITY_RIGHT;
+                default:
+                    return STR_FT_PRIORITY_NONE;
+            }
+        }
+
+        void ShowSplitterDropdown(WidgetIndex buttonIndex)
+        {
+            auto* splitter = FindSplitter();
+            if (splitter == nullptr)
+                return;
+            Widget* widget = &widgets[buttonIndex - 1];
+            size_t count = 0;
+            size_t checked = 0;
+            if (buttonIndex == WIDX_FILTER_DROPDOWN_BUTTON)
+            {
+                // Every placeable-on-belt item: loaded item prototypes that are not fluids.
+                _filterChoices.clear();
+                auto& objectManager = GetContext()->GetObjectManager();
+                const auto total = getObjectEntryGroupCount(ObjectType::factoryPrototype);
+                for (size_t i = 0; i < total && _filterChoices.size() < static_cast<size_t>(Dropdown::kItemsMaxSize - 1); i++)
+                {
+                    auto* proto = objectManager.GetLoadedObject<FactoryPrototypeObject>(i);
+                    if (proto != nullptr && proto->getKind() == PrototypeKind::item && !proto->isFluid())
+                        _filterChoices.push_back(static_cast<ObjectEntryIndex>(i));
+                }
+                gDropdown.items[count++] = Dropdown::MenuLabel(STR_FT_NO_FILTER);
+                for (auto item : _filterChoices)
+                {
+                    if (item == splitter->filter)
+                        checked = count;
+                    auto* proto = getPrototype(item);
+                    gDropdown.items[count++] = Dropdown::MenuLabel(proto != nullptr ? proto->GetName() : std::string());
+                }
+            }
+            else
+            {
+                const uint8_t current = buttonIndex == WIDX_INPUT_PRIORITY_DROPDOWN_BUTTON ? splitter->inputPriority
+                                                                                           : splitter->outputPriority;
+                for (uint8_t priority = kSplitterPriorityNone; priority <= kSplitterPriorityRight; priority++)
+                {
+                    if (priority == current)
+                        checked = count;
+                    gDropdown.items[count++] = Dropdown::MenuLabel(PriorityString(priority));
+                }
+            }
+            WindowDropdownShowTextCustomWidth(
+                { widget->left + windowPos.x, widget->top + windowPos.y }, widget->height(), colours[1], 0, {}, count,
+                widget->width() - 1 + 3);
+            gDropdown.items[checked].setChecked(true);
         }
 
         void RefreshRecipes()

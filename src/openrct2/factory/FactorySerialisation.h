@@ -40,7 +40,8 @@ namespace OpenRCT2::Factory
     };
 
     constexpr uint16_t kFactoryHeaderVersion = 1;
-    constexpr uint16_t kFactoryPoolsVersion = 3; // 2: belt link kinds, undergrounds, splitters, poles, networks; 3: fluids
+    constexpr uint16_t kFactoryPoolsVersion = 4; // 2: belt link kinds, undergrounds, splitters, poles, networks; 3: fluids; 4:
+                                                 // splitter filters
     constexpr uint16_t kFactoryOreVersion = 1;
 
     /**

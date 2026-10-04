@@ -229,15 +229,26 @@ namespace OpenRCT2::Factory
         }
     };
 
+    // Splitter priorities: which side is preferred (side 0 = left of travel, the origin tile).
+    constexpr uint8_t kSplitterPriorityNone = 0;
+    constexpr uint8_t kSplitterPriorityLeft = 1;
+    constexpr uint8_t kSplitterPriorityRight = 2;
+
     /**
      * A 1x2 splitter: the origin tile is input/output side 0 (left of travel), the second tile side 1.
-     * Items arriving on either input side go alternately to the output segments ahead of each side.
+     * Items arriving on either input side go alternately to the output segments ahead of each side. With an
+     * output priority the preferred side is tried first; with a filter, the filter item goes only to the
+     * priority side (left when none is set) and every other item only to the other side. With an input
+     * priority the preferred input is served first each tick.
      */
     struct SplitterRecord : RecordBase
     {
         std::array<RecordId, 2> outputs{ kNullRecord, kNullRecord }; // segments starting ahead of each side
         uint8_t nextOutput{};
         uint32_t topologyVersionSeen{};
+        ObjectEntryIndex filter{ kObjectEntryIndexNull };
+        uint8_t inputPriority{ kSplitterPriorityNone };
+        uint8_t outputPriority{ kSplitterPriorityNone };
 
         template<typename V>
         void visit(V& v)
@@ -247,6 +258,9 @@ namespace OpenRCT2::Factory
             v(outputs[1]);
             v(nextOutput);
             v(topologyVersionSeen);
+            v(filter);
+            v(inputPriority);
+            v(outputPriority);
         }
     };
 

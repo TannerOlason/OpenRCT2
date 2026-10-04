@@ -19,12 +19,14 @@
 #include <openrct2/Game.h>
 #include <openrct2/GameState.h>
 #include <openrct2/OpenRCT2.h>
+#include <openrct2/actions/GameActionRunner.h>
 #include <openrct2/factory/Belts.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
 #include <openrct2/factory/SyncChecksum.h>
+#include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/object/ObjectManager.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/world/Map.h>
@@ -895,4 +897,55 @@ TEST_F(FactoryTopologyTests, SteamChainPowersAnAssembler)
     shore->setWaterHeight(0);
     Tick(1);
     EXPECT_EQ(pump->getStatus(), MachineStatus::noInput);
+}
+
+TEST_F(FactoryTopologyTests, SplitterFilterAndPrioritiesRouteItems)
+{
+    auto& state = getGameState().factory;
+    const Direction east = 2;
+    const CoordsXYZ north1{ (kRowX0 + 3) * kCoordsXYStep, (kRowY - 1) * kCoordsXYStep, GroundZ(kRowX0) };
+    Place(kRowX0 + 0, east, _belt);
+    Place(kRowX0 + 1, east, _belt);
+    auto* splitterElement = Place(kRowX0 + 2, east, _splitter);
+    ASSERT_NE(splitterElement, nullptr);
+    Place(kRowX0 + 3, east, _belt);
+    Place(kRowX0 + 4, east, _belt);
+    PlaceAt(kRowX0 + 3, kRowY - 1, east, _belt);
+    PlaceAt(kRowX0 + 4, kRowY - 1, east, _belt);
+    const RecordId splitterId = findFactoryElement(Tile(kRowX0 + 2))->getRecordId();
+
+    // Gears go to the right-hand output (side 1), everything else to the left. Fluids are refused as filters.
+    auto setFilter = [&](ObjectEntryIndex filter, uint8_t in, uint8_t out) {
+        auto action = GameActions::FactorySetFilterAction(Tile(kRowX0 + 2), filter, in, out);
+        return GameActions::ExecuteNested(&action, getGameState()).error;
+    };
+    EXPECT_EQ(setFilter(_water, 0, kSplitterPriorityRight), GameActions::Status::invalidParameters);
+    EXPECT_EQ(setFilter(_gear, 0, kSplitterPriorityRight), GameActions::Status::ok);
+    EXPECT_EQ(state.splitters.get(splitterId)->filter, _gear);
+
+    auto* input = state.beltSegments.get(findBeltElement(Tile(kRowX0))->getRecordId());
+    ASSERT_NE(input, nullptr);
+    const int32_t inputLength = segmentLength(*input);
+    for (int i = 0; i < 6; i++)
+        laneInsertAt(input->lanes[0], inputLength, 10 + i * 70, i % 2 == 0 ? _plate : _gear);
+    Tick(400);
+    EXPECT_TRUE(input->lanes[0].items.empty());
+    auto* out0 = state.beltSegments.get(findBeltElement(Tile(kRowX0 + 3))->getRecordId());
+    auto* out1 = state.beltSegments.get(findBeltElement(north1)->getRecordId());
+    ASSERT_NE(out0, nullptr);
+    ASSERT_NE(out1, nullptr);
+    ASSERT_EQ(out0->lanes[0].items.size(), 3u);
+    ASSERT_EQ(out1->lanes[0].items.size(), 3u);
+    for (auto& item : out0->lanes[0].items)
+        EXPECT_EQ(item.item, _plate);
+    for (auto& item : out1->lanes[0].items)
+        EXPECT_EQ(item.item, _gear);
+
+    // Without a filter, a left output priority sends everything left while it has room.
+    EXPECT_EQ(setFilter(kObjectEntryIndexNull, 0, kSplitterPriorityLeft), GameActions::Status::ok);
+    for (int i = 0; i < 4; i++)
+        laneInsertAt(input->lanes[0], inputLength, 10 + i * 70, _gear);
+    Tick(400);
+    EXPECT_EQ(out0->lanes[0].items.size(), 7u);
+    EXPECT_EQ(out1->lanes[0].items.size(), 3u);
 }

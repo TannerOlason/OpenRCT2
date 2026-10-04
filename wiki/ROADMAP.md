@@ -84,7 +84,8 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   power, burns in proportion to load). Test: pump → pipe → boiler → engine powers an assembler that makes gears.
 - [x] Pipes and fluid networks (`pipes` and `fluidNetworks` pools, `fluidDirty`, one volume per component,
   proportional sharing, machine fluid boxes as pass-through nodes, ADR 0009). Info window shows network contents.
-- [~] Underground belts, splitters, lane filters, sideloading. (filters pending)
+- [x] Underground belts, splitters, lane filters, sideloading. Splitters take an item filter and input/output
+  priorities through `FactorySetFilterAction` (command `setFilter`), set from the info window.
 - [~] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview. (window and drag tool done)
 - [ ] `factory-bench` CLI and the 8 ms per tick CI gate.
 

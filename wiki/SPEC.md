@@ -46,7 +46,9 @@ load. Identifier strings in JSON resolve to entry indices after load (scenery-gr
 **Belts.** Positions in 1/256 tile, item spacing 64, speeds 12/24/36 units per tick (15/30/45 items/s).
 Segments of ≤ 32 tiles break at splitters, undergrounds and tier changes. Two Lanes of gap-encoded
 `BeltItem {ObjectEntryIndex proto; uint16 gap}`; O(1) amortised per lane per tick. Sideload links into a
-mid-lane position. Splitters round-robin with filter and priority.
+mid-lane position. Splitters alternate outputs; an output priority tries one side first, a filter sends the
+filter item only to the priority side (left by default) and everything else only to the other, and an input
+priority serves that input first each tick (`FactorySetFilterAction`).
 
 **Inserters.** 48-byte records; swing ticks 24/10/10; pickup window on the tile behind, drop to the far lane
 of the tile ahead; source and target re-resolved when `topologyVersion` changes.

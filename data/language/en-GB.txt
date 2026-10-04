@@ -3904,3 +3904,12 @@ STR_20507   :The back of an offshore pump must face water
 STR_20508   :Fluid
 STR_20509   :{STRING}: {COMMA32} / {COMMA32}
 STR_20510   :Empty ({COMMA32} capacity)
+STR_20511   :Filter:
+STR_20512   :No filter
+STR_20513   :Input priority:
+STR_20514   :Output priority:
+STR_20515   :None
+STR_20516   :Left
+STR_20517   :Right
+STR_20518   :Items of this kind go to the priority side, everything else to the other
+STR_20519   :Which side the splitter prefers

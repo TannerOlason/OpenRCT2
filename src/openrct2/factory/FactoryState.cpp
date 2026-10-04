@@ -115,44 +115,80 @@ namespace OpenRCT2::Factory
         (void)splitterId;
     }
 
+    // The output sides an item may take, in the order to try them; returns how many (0-2).
+    static uint8_t splitterSidesFor(const SplitterRecord& splitter, ObjectEntryIndex item, uint8_t sides[2])
+    {
+        const uint8_t preferred = splitter.outputPriority == kSplitterPriorityRight ? 1 : 0;
+        if (splitter.filter != kObjectEntryIndexNull)
+        {
+            sides[0] = item == splitter.filter ? preferred : static_cast<uint8_t>(preferred ^ 1);
+            return 1;
+        }
+        if (splitter.outputPriority != kSplitterPriorityNone)
+        {
+            sides[0] = preferred;
+            sides[1] = static_cast<uint8_t>(preferred ^ 1);
+            return 2;
+        }
+        sides[0] = splitter.nextOutput & 1;
+        sides[1] = static_cast<uint8_t>(sides[0] ^ 1);
+        return 2;
+    }
+
+    static void splitterMoveFrom(State& state, SplitterRecord& splitter, BeltSegmentRecord& input)
+    {
+        for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
+        {
+            for (int guard = 0; guard < 4; guard++)
+            {
+                auto& inLane = input.lanes[lane];
+                if (inLane.items.empty() || inLane.items.front().gap != 0)
+                    break;
+                uint8_t sides[2];
+                const uint8_t sideCount = splitterSidesFor(splitter, inLane.items.front().item, sides);
+                bool moved = false;
+                for (uint8_t attempt = 0; attempt < sideCount && !moved; attempt++)
+                {
+                    const uint8_t side = sides[attempt];
+                    auto* out = splitter.outputs[side] != kNullRecord ? state.beltSegments.get(splitter.outputs[side])
+                                                                      : nullptr;
+                    if (out == nullptr)
+                        continue;
+                    const int32_t outLength = segmentLength(*out);
+                    if (laneRearPosition(out->lanes[lane], outLength) < kBeltItemSpacing)
+                        continue;
+                    auto item = laneTakeFrontAtEnd(inLane);
+                    if (!item.has_value())
+                        break;
+                    laneInsertAt(out->lanes[lane], outLength, 0, *item);
+                    splitter.nextOutput = (side + 1) & 1;
+                    moved = true;
+                }
+                if (!moved)
+                    break;
+            }
+        }
+    }
+
     static void updateSplitters(State& state)
     {
         state.splitters.forEach([&](RecordId splitterId, SplitterRecord& splitter) {
             resolveSplitterOutputs(state, splitterId, splitter);
-            // Inputs: segments linked to this splitter. Items parked at their ends go to the outputs in turn.
-            state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& input) {
-                if (input.getNextKind() != BeltLinkKind::splitter || input.next != splitterId)
-                    return;
-                for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
-                {
-                    for (int guard = 0; guard < 4; guard++)
-                    {
-                        auto& inLane = input.lanes[lane];
-                        if (inLane.items.empty() || inLane.items.front().gap != 0)
-                            break;
-                        bool moved = false;
-                        for (uint8_t attempt = 0; attempt < 2 && !moved; attempt++)
-                        {
-                            const uint8_t side = (splitter.nextOutput + attempt) & 1;
-                            auto* out = splitter.outputs[side] != kNullRecord ? state.beltSegments.get(splitter.outputs[side])
-                                                                              : nullptr;
-                            if (out == nullptr)
-                                continue;
-                            const int32_t outLength = segmentLength(*out);
-                            if (laneRearPosition(out->lanes[lane], outLength) - 0 < kBeltItemSpacing)
-                                continue;
-                            auto item = laneTakeFrontAtEnd(inLane);
-                            if (!item.has_value())
-                                break;
-                            laneInsertAt(out->lanes[lane], outLength, 0, *item);
-                            splitter.nextOutput = (side + 1) & 1;
-                            moved = true;
-                        }
-                        if (!moved)
-                            break;
-                    }
-                }
-            });
+            // Inputs: segments linked to this splitter (nextLane is the input side). Items parked at their ends go
+            // to the outputs; the priority input, if any, is served first.
+            const int32_t firstSide = splitter.inputPriority == kSplitterPriorityLeft ? 0
+                : splitter.inputPriority == kSplitterPriorityRight                    ? 1
+                                                                                      : -1;
+            for (int32_t pass = 0; pass < (firstSide < 0 ? 1 : 2); pass++)
+            {
+                state.beltSegments.forEach([&](RecordId, BeltSegmentRecord& input) {
+                    if (input.getNextKind() != BeltLinkKind::splitter || input.next != splitterId)
+                        return;
+                    if (firstSide >= 0 && (input.nextLane == firstSide) != (pass == 0))
+                        return;
+                    splitterMoveFrom(state, splitter, input);
+                });
+            }
         });
     }
 
