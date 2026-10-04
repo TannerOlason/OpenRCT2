@@ -31,7 +31,8 @@
 #include <openrct2/drawing/Palette.h>
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/Text.h>
-#include <openrct2/factory/FactoryStringIds.h> // FACTORY-TOUR
+#include <openrct2/factory/FactoryPrototypeObject.h> // FACTORY-TOUR
+#include <openrct2/factory/FactoryStringIds.h>       // FACTORY-TOUR
 #include <openrct2/interface/WidgetIndexGlobals.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/localisation/Formatting.h>
@@ -183,6 +184,16 @@ namespace OpenRCT2::Ui::Windows
         { STR_OBJECT_SELECTION_PEEP_NAMES,        ObjectType::peepNames,        FILTER_NONE, SPR_TAB_GUESTS_0,       1, 1 },
     };
 
+    // FACTORY-TOUR: filtered by Factory::isInSelectionGroup (the sub-tab index) in FilterChunks
+    static ObjectSubTab kFactoryObjectSubTabs[] = {
+        { STR_FT_SUBTAB_ALL,          ObjectType::factoryPrototype, FILTER_NONE, SPR_G2_INFINITY,             1, 1 },
+        { STR_FT_SUBTAB_ITEMS,        ObjectType::factoryPrototype, FILTER_NONE, SPR_TAB_RIDES_SHOP_0,        1, 1 },
+        { STR_FT_SUBTAB_RECIPES,      ObjectType::factoryPrototype, FILTER_NONE, SPR_TAB_FINANCES_SUMMARY_0,  1, 1 },
+        { STR_FT_SUBTAB_LOGISTICS,    ObjectType::factoryPrototype, FILTER_NONE, SPR_TAB_RIDES_TRANSPORT_0,   1, 1 },
+        { STR_FT_SUBTAB_MACHINES,     ObjectType::factoryPrototype, FILTER_NONE, SPR_TAB_GEARS_0,             1, 1 },
+        { STR_FT_SUBTAB_TECHNOLOGIES, ObjectType::factoryPrototype, FILTER_NONE, SPR_TAB_FINANCES_RESEARCH_0, 1, 1 },
+    };
+
     static constexpr ObjectPageDesc ObjectSelectionPages[] = {
         { STR_OBJECT_SELECTION_RIDE_VEHICLES_ATTRACTIONS, ObjectType::ride,            SPR_TAB_RIDE_16,            kRideObjectSubTabs },
         { STR_OBJECT_SELECTION_SCENERY_AND_THEMES,        ObjectType::sceneryGroup,    SPR_TAB_SCENERY_STATUES,    kSceneryObjectSubTabs },
@@ -192,7 +203,7 @@ namespace OpenRCT2::Ui::Windows
         { STR_OBJECT_SELECTION_MUSIC,                     ObjectType::music,           SPR_TAB_MUSIC_0,            {} },
         { STR_OBJECT_SELECTION_GUESTS_AND_STAFF,          ObjectType::peepNames,       SPR_TAB_GUESTS_0,           kPeepObjectSubTabs },
         // FACTORY-TOUR
-        { STR_FT_OBJECT_SELECTION_FACTORY_PROTOTYPES,     ObjectType::factoryPrototype, SPR_TAB_GEARS_0,           {} },
+        { STR_FT_OBJECT_SELECTION_FACTORY_PROTOTYPES,     ObjectType::factoryPrototype, SPR_TAB_GEARS_0,           kFactoryObjectSubTabs },
     };
     // clang-format on
 
@@ -1529,6 +1540,9 @@ namespace OpenRCT2::Ui::Windows
 
         bool FilterChunks(const ObjectRepositoryItem* item)
         {
+            // FACTORY-TOUR: factory sub-tabs show one group of prototype kinds
+            if (item->Type == ObjectType::factoryPrototype)
+                return Factory::isInSelectionGroup(item->FactoryPrototypeInfo.Kind, _selectedSubTab);
             if (item->Type == ObjectType::ride)
             {
                 ride_type_t rideType = 0;

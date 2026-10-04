@@ -3982,3 +3982,9 @@ STR_20585   :{WINDOW_COLOUR_2}Researching: {BLACK}{STRING}
 STR_20586   :{WINDOW_COLOUR_2}Units: {BLACK}{COMMA32} / {COMMA32}
 STR_20587   :{WINDOW_COLOUR_2}Each unit: {BLACK}{STRING}
 STR_20588   :Factory research
+STR_20589   :All factory prototypes
+STR_20590   :Items, fluids and ores
+STR_20591   :Recipes
+STR_20592   :Belts, inserters, containers, pipes and poles
+STR_20593   :Machines
+STR_20594   :Technologies

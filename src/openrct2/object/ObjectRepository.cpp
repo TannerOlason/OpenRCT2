@@ -70,7 +70,7 @@ namespace OpenRCT2
     {
     private:
         static constexpr uint32_t kMagicNumber = 0x5844494F; // OIDX
-        static constexpr uint16_t kVersion = 32;             // FACTORY-TOUR: 31 -> 32 (factory_prototype objects)
+        static constexpr uint16_t kVersion = 33;             // FACTORY-TOUR: 31 -> 33 (factory_prototype objects, kinds)
         static constexpr auto kPattern = "*.dat;*.pob;*.json;*.parkobj";
 
     public:
@@ -146,6 +146,10 @@ namespace OpenRCT2
                     break;
                 case ObjectType::peepAnimations:
                     ds << item.PeepAnimationsInfo.PeepType;
+                    break;
+                // FACTORY-TOUR
+                case ObjectType::factoryPrototype:
+                    ds << item.FactoryPrototypeInfo.Kind;
                     break;
                 default:
                     // Switch processes only ObjectType::ride and ObjectType::sceneryGroup

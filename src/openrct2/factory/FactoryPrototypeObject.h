@@ -46,6 +46,10 @@ namespace OpenRCT2::Factory
     };
 
     std::string_view prototypeKindName(PrototypeKind kind);
+
+    // Object selection sub-tabs on the factory page: 0 all, 1 items, fluids and ores, 2 recipes, 3 logistics,
+    // 4 machines, 5 technologies.
+    bool isInSelectionGroup(uint8_t kind, size_t group);
     PrototypeKind parsePrototypeKind(std::string_view name);
     FactoryElementSubtype subtypeForKind(PrototypeKind kind);
 
@@ -245,6 +249,7 @@ namespace OpenRCT2::Factory
         void Load() override;
         void Unload() override;
         void DrawPreview(Drawing::RenderTarget& rt, int32_t width, int32_t height) const override;
+        void SetRepositoryItem(ObjectRepositoryItem* item) const override;
 
         PrototypeKind getKind() const
         {

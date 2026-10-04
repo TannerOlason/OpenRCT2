@@ -164,7 +164,9 @@ object-selection tabs, combat stub (health, damage, Threat, turret), first conte
 - [x] Script bindings: the `factory` global (machines, recipes, warehouse, production, market income,
   technologies and the research target), hooks `factory.machine.status` and `factory.research.complete`, d.ts
   (plugin API 134). Combat hooks follow with the combat stub.
-- [ ] Object selection sub-tabs by prototype kind.
+- [x] Object selection sub-tabs on the factory page: all, items/fluids/ores, recipes, logistics, machines,
+  technologies. The kind is kept in the object index (`ObjectRepositoryItem::FactoryPrototypeInfo`, index
+  version 33) so the list filters without loading objects.
 - [ ] Combat stub: machine health, `FactoryDamageAction`, Threat entity, turret machines.
 - [ ] First content pack (turret, longer technology chain) and a modding guide.
 

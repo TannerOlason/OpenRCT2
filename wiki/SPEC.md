@@ -240,8 +240,9 @@ Every prototype is a `.parkobj` (`object.json` + PNGs) of `objectType: "factory_
 `{stackSize, fuelValue, shopItem?, marketPrice, saturation, category}`; recipe `{ingredients, results, time,
 category}`; machine `{kind, size, clearance, power: {consumption, drain}, recipeCategories, speed, pollution,
 noise, photogenic, hazard, health, materials, turret: {range, damage, ammoItem}?}`; technology as above.
-Fork content under `data/factory/objects/**` via an extra `ObjectRepository` root. Object-selection editor
-gets a page with sub-tabs by kind.
+Fork content under `data/factory/objects/**` via an extra `ObjectRepository` root. The object-selection page has
+sub-tabs by kind group (`Factory::isInSelectionGroup`), filtering on the kind stored in the object index
+(`FactoryPrototypeInfo.Kind`, set by `FactoryPrototypeObject::SetRepositoryItem`; index version 33).
 
 Script API (plugin API 134, `factory/scripting/ScFactory.cpp`, registered by three one-line touch points in
 `ScriptEngine.cpp`): the `factory` global with `machines` and `getMachine(x, y)` (tile coordinates, any footprint

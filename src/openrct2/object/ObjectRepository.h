@@ -57,6 +57,11 @@ namespace OpenRCT2
         {
             uint8_t PeepType{};
         } PeepAnimationsInfo;
+        // FACTORY-TOUR: Factory::PrototypeKind, for the object selection sub-tabs
+        struct
+        {
+            uint8_t Kind{};
+        } FactoryPrototypeInfo;
 
         [[nodiscard]] ObjectSourceGame GetFirstSourceGame() const
         {

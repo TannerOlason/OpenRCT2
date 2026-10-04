@@ -20,6 +20,7 @@
 #include "../drawing/ImageId.hpp"
 #include "../interface/ScreenCoords.hpp"
 #include "../object/ObjectManager.h"
+#include "../object/ObjectRepository.h"
 #include "../object/RideObject.h"
 #include "Technology.h"
 
@@ -318,6 +319,30 @@ namespace OpenRCT2::Factory
                 // Remaining kinds are parsed when their simulation lands (M2/M5).
                 break;
         }
+    }
+
+    bool isInSelectionGroup(uint8_t kind, size_t group)
+    {
+        switch (static_cast<PrototypeKind>(kind))
+        {
+            case PrototypeKind::item:
+            case PrototypeKind::ore:
+                return group == 0 || group == 1;
+            case PrototypeKind::recipe:
+                return group == 0 || group == 2;
+            case PrototypeKind::machine:
+            case PrototypeKind::generator:
+                return group == 0 || group == 4;
+            case PrototypeKind::technology:
+                return group == 0 || group == 5;
+            default:
+                return group == 0 || group == 3;
+        }
+    }
+
+    void FactoryPrototypeObject::SetRepositoryItem(ObjectRepositoryItem* item) const
+    {
+        item->FactoryPrototypeInfo.Kind = static_cast<uint8_t>(_kind);
     }
 
     void FactoryPrototypeObject::Load()
