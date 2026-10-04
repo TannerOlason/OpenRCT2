@@ -9,6 +9,28 @@ How Factory Tour changes are checked, from fastest to slowest. `CLAUDE.md` has t
 game actions; `FactoryStateTests` covers pools, serialisation and the sync checksum. `ctest --test-dir build` runs
 everything, including upstream's replay pack, which must keep passing in Vanilla Mode.
 
+## Fork replay pack
+
+`test/tests/testdata/factory-replays/*.parkrep` are recorded games (logistics with an underground and a filtered
+splitter, ore to plates with inserter-fed fuel, the steam chain powering an assembler) that use every fork action
+over a running factory. `FactoryReplayTests.ForkReplayPackPlaysBackInSync` plays each one and fails on the first
+tick whose sync checksum differs from the recording. After an intended simulation or save-format change (a pools
+chunk version bump, say), re-record them from `build/` with
+`FT_RECORD_REPLAYS=1 ./OpenRCT2Tests --gtest_filter='FactoryReplayTests.Record*'` and commit the new files.
+
+The recorder runs each scripted action right after the tick's checksum and inside the tick, exactly where playback
+runs it. A replay recorded in the game with `replay_startrecord` does not: actions from the UI are queued to the
+end of the tick, one tick later than playback runs them, which the factory part of the checksum notices at once.
+Such recordings must go through upstream's `replay_normalise` before they are played back.
+
+## Multiplayer desync soak
+
+`scripts/factory-tour/mp-soak.py <park> <scratch dir> --minutes 10` starts a headless host (`openrct2-cli host`,
+not advertised, joining players in a User group that includes the factory permission) and a GUI client on Xvfb
+with desync debugging on, then builds and removes belts, chests and inserters at random (fixed seed) until time
+runs out, checking the client log and `desyncs/` folder as it goes. The host's `serverlogs/` show every fork action
+the server ran. Use the slice park from the headless-render section; the action area assumes its 1280x720 view.
+
 ## Performance
 
 `build/openrct2-cli factory-bench [ticks=400] [cells=2000] [budget ms=8]` builds a synthetic factory on a fresh map

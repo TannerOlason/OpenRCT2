@@ -416,6 +416,14 @@ declare global {
         queryAction(action: "waterlower", args: WaterLowerArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "waterraise", args: WaterRaiseArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "watersetheight", args: WaterSetHeightArgs, callback?: (result: GameActionResult) => void): void;
+        // FACTORY-TOUR: fork actions
+        queryAction(action: "factoryplace", args: FactoryPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factoryplacebeltline", args: FactoryPlaceBeltLineArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factoryremove", args: FactoryRemoveArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factoryrotate", args: FactoryRotateArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorysetfilter", args: FactorySetFilterArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorysetore", args: FactorySetOreArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorysetrecipe", args: FactorySetRecipeArgs, callback?: (result: GameActionResult) => void): void;
 
         /**
          * Executes a game action. In a network game, this will send a request to the server and wait
@@ -507,6 +515,14 @@ declare global {
         executeAction(action: "waterlower", args: WaterLowerArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "waterraise", args: WaterRaiseArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "watersetheight", args: WaterSetHeightArgs, callback?: (result: GameActionResult) => void): void;
+        // FACTORY-TOUR: fork actions
+        executeAction(action: "factoryplace", args: FactoryPlaceArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factoryplacebeltline", args: FactoryPlaceBeltLineArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factoryremove", args: FactoryRemoveArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factoryrotate", args: FactoryRotateArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorysetfilter", args: FactorySetFilterArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorysetore", args: FactorySetOreArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorysetrecipe", args: FactorySetRecipeArgs, callback?: (result: GameActionResult) => void): void;
 
         /**
          * Subscribes to the given hook.
@@ -770,7 +786,15 @@ declare global {
         "wallsetcolour" |
         "waterlower" |
         "waterraise" |
-        "watersetheight";
+        "watersetheight" |
+        // FACTORY-TOUR: fork actions
+        "factoryplace" |
+        "factoryplacebeltline" |
+        "factoryremove" |
+        "factoryrotate" |
+        "factorysetfilter" |
+        "factorysetore" |
+        "factorysetrecipe";
 
 
     interface GameActionArgs {
@@ -1624,6 +1648,75 @@ declare global {
         x: number;
         y: number;
         height: number;
+    }
+
+    // FACTORY-TOUR: fork action arguments. Coordinates are in map units (32 per tile, z in 8-unit steps); object
+    // ids are loaded factory_prototype entry indices; directions follow CoordsDirectionDelta (0 = -x, 1 = +y,
+    // 2 = +x, 3 = -y).
+
+    interface FactoryPlaceArgs extends GameActionArgs {
+        x: number;
+        y: number;
+        z: number;
+        direction: number;
+        /** factory_prototype entry index; multi-tile machines take their minimum corner as x, y */
+        object: number;
+    }
+
+    interface FactoryPlaceBeltLineArgs extends GameActionArgs {
+        x: number;
+        y: number;
+        z: number;
+        endX: number;
+        endY: number;
+        endZ: number;
+        /** Used when start and end are the same tile */
+        direction: number;
+        /** A belt prototype */
+        object: number;
+    }
+
+    interface FactoryRemoveArgs extends GameActionArgs {
+        x: number;
+        y: number;
+        z: number;
+    }
+
+    interface FactoryRotateArgs extends GameActionArgs {
+        x: number;
+        y: number;
+        z: number;
+    }
+
+    interface FactorySetFilterArgs extends GameActionArgs {
+        x: number;
+        y: number;
+        z: number;
+        /** Item entry index, or 65535 for no filter */
+        filter: number;
+        /** 0 none, 1 left, 2 right */
+        inputPriority: number;
+        /** 0 none, 1 left, 2 right */
+        outputPriority: number;
+    }
+
+    interface FactorySetOreArgs extends GameActionArgs {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+        /** Ore prototype entry index, or 65535 to clear */
+        ore: number;
+        amount: number;
+        richness: number;
+    }
+
+    interface FactorySetRecipeArgs extends GameActionArgs {
+        x: number;
+        y: number;
+        z: number;
+        /** Recipe entry index, or 65535 to clear */
+        recipe: number;
     }
 
     interface GameActionEventArgs<T = object> {

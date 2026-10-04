@@ -42,7 +42,7 @@ recorded, a two-client desync soak, a changelog line and an ADR for any new deci
   payload layout, `asFactory()` accessors, `PaintFactory` stub, `factory` scripting type name, cases in every
   exhaustive switch, `.vcxproj` entries and `FactoryElementTests`.
 
-### M1 Hello conveyor `[~]`
+### M1 Hello conveyor `[x]`
 
 Chest → inserter → belt → inserter → chest, placeable from a toolbar window with ghost preview, rotatable,
 saved and loaded, multiplayer-synced, with determinism, save/load and throughput gtests.
@@ -58,11 +58,14 @@ saved and loaded, multiplayer-synced, with determinism, save/load and throughput
   prototype palette, rotate button (Z shortcut), ghost preview and click-to-place; toolbar button.
 - [x] Tests: element layout, pools and serialisation, prototypes, belt lanes, topology and the hello-conveyor
   run, determinism, actions, save/load round trip with identical checksum.
-- [ ] Two-client desync soak and a fork replay recorded from the GUI (needs a human at the keyboard or input
-  automation; xdotool is not installed).
-- [ ] Changelog line added; d.ts documents the three fork actions' argument shapes.
+- [x] Two-client desync soak: 10 minutes, headless host plus a GUI client on Xvfb building and removing at random
+  (`scripts/factory-tour/mp-soak.py`): 733 client actions, 326 fork actions run by the server, no desync. Fork
+  replay pack (`test/tests/testdata/factory-replays/`, three recordings covering every fork action) plays back in
+  sync; recording it found that an empty ore layer's size leaked into the sync checksum (a join desync), now fixed.
+- [x] Changelog line added; `openrct2.d.ts` declares every fork action (`factoryplace`, `factoryplacebeltline`,
+  `factoryremove`, `factoryrotate`, `factorysetfilter`, `factorysetore`, `factorysetrecipe`) with argument shapes.
 
-### M2 Production chain `[~]`
+### M2 Production chain `[x]`
 
 Ore Layer and overlay, mining drill, furnace, assembler with recipe window, power (poles, offshore pump,
 boiler, steam engine, power overview), pipes and Fluid Networks, undergrounds, splitters, filters, belt-line

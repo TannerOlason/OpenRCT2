@@ -151,9 +151,11 @@ namespace OpenRCT2::Factory
     {
         SerialiserVisitor visitor{ ds };
         state.visit(visitor);
-        // The ore layer contributes its dimensions and running hash rather than every cell.
-        int32_t width = state.ore.width();
-        int32_t height = state.ore.height();
+        // The ore layer contributes its dimensions and running hash rather than every cell. An empty layer is not
+        // saved, so a loaded park has no dimensions for it: count them only when there is ore, or a client that
+        // joins a park whose ore was all mined would desync on the layer's size alone.
+        int32_t width = state.ore.isEmpty() ? 0 : state.ore.width();
+        int32_t height = state.ore.isEmpty() ? 0 : state.ore.height();
         uint64_t hash = state.ore.hash();
         uint32_t nonEmpty = state.ore.nonEmptyCount();
         ds << width << height << hash << nonEmpty;
