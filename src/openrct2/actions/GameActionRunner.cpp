@@ -18,6 +18,7 @@
 #include "../core/MemoryStream.h"
 #include "../entity/MoneyEffect.h"
 #include "../factory/Materials.h" // FACTORY-TOUR
+#include "../factory/WorldManager.h" // FACTORY-TOUR
 #include "../localisation/Formatter.h"
 #include "../network/Network.h"
 #include "../platform/Platform.h"
@@ -203,7 +204,10 @@ namespace OpenRCT2::GameActions
 
     Result Query(const GameAction* action, GameState_t& gameState)
     {
-        return QueryInternal(action, gameState, true);
+        // FACTORY-TOUR: an action runs in its own world (ADR 0015)
+        Factory::Worlds::stampActionWorld(*action);
+        Factory::Worlds::Scope worldScope(Factory::Worlds::actionWorld(*action));
+        return QueryInternal(action, getGameState(), true);
     }
 
     Result QueryNested(const GameAction* action, GameState_t& gameState)
@@ -449,7 +453,10 @@ namespace OpenRCT2::GameActions
 
     Result Execute(const GameAction* action, GameState_t& gameState)
     {
-        return ExecuteInternal(action, gameState, true);
+        // FACTORY-TOUR: an action runs in its own world (ADR 0015)
+        Factory::Worlds::stampActionWorld(*action);
+        Factory::Worlds::Scope worldScope(Factory::Worlds::actionWorld(*action));
+        return ExecuteInternal(action, getGameState(), true);
     }
 
     Result ExecuteNested(const GameAction* action, GameState_t& gameState)

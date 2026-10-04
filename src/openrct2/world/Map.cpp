@@ -86,6 +86,21 @@ namespace OpenRCT2
     static size_t _tileElementsInUseStash;
     static TileCoordsXY _mapSizeStash;
 
+    // FACTORY-TOUR: Factory::Worlds swaps the per-world tile index in and out with the world's GameState_t
+    struct MapWorldCaches
+    {
+        TilePointerIndex<TileElement> tileIndex;
+        size_t tileElementsInUse{};
+    };
+    void MapSwapWorldCaches(std::any& stash)
+    {
+        if (!stash.has_value())
+            stash = MapWorldCaches{};
+        auto& caches = std::any_cast<MapWorldCaches&>(stash);
+        std::swap(_tileIndex, caches.tileIndex);
+        std::swap(_tileElementsInUse, caches.tileElementsInUse);
+    }
+
     void StashMap()
     {
         auto& gameState = getGameState();

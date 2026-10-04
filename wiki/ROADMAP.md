@@ -205,6 +205,13 @@ pollution overlay, machine audio and smoke.
 E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two worlds with item transfer
 (rocket silo), world selector, nested save, network map and tick changes.
 
+- [x] Worlds core (ADR 0015): `Factory::Worlds` swaps whole game states with stashed per-world caches, moves company
+  state (money, research, date, objectives, Market) with the active world, ticks every world in lockstep from one
+  hook in `gameStateUpdateLogic`, and routes actions by a world id in their command flags.
+- [ ] Saving and network maps with several worlds.
+- [ ] World selector and creating worlds in the UI.
+- [ ] Item transfer between worlds (launch and landing pads).
+
 ### M8 Multi-world II `[ ]`
 
 E8 stages 3–4: Portal Terminal rides, guest transfer, Planet Params, per-world climate, water and terrain,

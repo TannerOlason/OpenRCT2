@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <any> // FACTORY-TOUR
 #include <cstdint>
 
 struct CoordsXYZ;
@@ -28,5 +29,7 @@ namespace OpenRCT2::MapAnimations
     void MarkAllTiles();
     void InvalidateAndUpdateAll();
     void ClearAll();
+    // FACTORY-TOUR: per-world animation sets (an opaque stash) for Factory::Worlds
+    void SwapWorldCaches(std::any& stash);
     void ShiftAll(TileCoordsXY amount);
 } // namespace OpenRCT2::MapAnimations

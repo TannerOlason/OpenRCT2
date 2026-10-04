@@ -31,6 +31,7 @@
 #include "tile_element/TrackElement.h"
 #include "tile_element/WallElement.h"
 
+#include <any> // FACTORY-TOUR
 #include <set>
 
 using namespace OpenRCT2;
@@ -70,6 +71,27 @@ static std::vector<bool> _mapAnimationsInvalidate = std::vector<bool>(
 static std::set<TileCoordsXY, TileCoordsXYCmp> _mapAnimationsUpdate;
 
 static std::set<TemporaryMapAnimation> _temporaryMapAnimations;
+
+// FACTORY-TOUR: Factory::Worlds swaps the per-world animation sets on world switches
+namespace
+{
+    struct MapAnimationWorldCaches
+    {
+        std::vector<bool> invalidate = std::vector<bool>(kMaximumMapSizeTechnical * kMaximumMapSizeTechnical, false);
+        std::set<TileCoordsXY, TileCoordsXYCmp> update;
+        std::set<TemporaryMapAnimation> temporary;
+    };
+} // namespace
+
+void MapAnimations::SwapWorldCaches(std::any& stash)
+{
+    if (!stash.has_value())
+        stash = MapAnimationWorldCaches{};
+    auto& caches = std::any_cast<MapAnimationWorldCaches&>(stash);
+    std::swap(_mapAnimationsInvalidate, caches.invalidate);
+    std::swap(_mapAnimationsUpdate, caches.update);
+    std::swap(_temporaryMapAnimations, caches.temporary);
+}
 
 template<bool invalidateAllViewports>
 static void Invalidate(

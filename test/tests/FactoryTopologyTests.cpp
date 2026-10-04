@@ -50,8 +50,10 @@
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/factory/Technology.h>
+#include <openrct2/factory/WorldManager.h>
 #include <openrct2/factory/actions/FactoryDamageAction.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
+#include <openrct2/factory/actions/FactoryPlaceAction.h>
 #include <openrct2/factory/actions/FactoryPlaceBlueprintAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetParkOptionAction.h>
@@ -2180,4 +2182,77 @@ TEST_F(FactoryTopologyTests, FreightTrainsLoadAndUnloadAtStations)
     GameActions::ExecuteNested(&close, gameState);
     auto demolish = GameActions::RideDemolishAction(rideId, GameActions::RideModifyType::demolish);
     GameActions::ExecuteNested(&demolish, gameState);
+}
+
+TEST_F(FactoryTopologyTests, SecondWorldTicksInLockstepWithItsOwnMapAndSharedCompany)
+{
+    namespace W = Factory::Worlds;
+    auto& world0 = getGameState();
+    ASSERT_EQ(W::count(), 1u);
+    const auto mapSize0 = world0.mapSize;
+
+    const auto id = W::create({ 48, 48 });
+    ASSERT_EQ(id, 1);
+    ASSERT_EQ(W::count(), 2u);
+    EXPECT_EQ(W::active(), W::kPrimaryWorld);
+    EXPECT_EQ(W::state(1).mapSize, (TileCoordsXY{ 48, 48 }));
+    EXPECT_EQ(getGameState().mapSize, mapSize0); // still world 0
+
+    // Build in world 1: its own tiles, its own records; world 0 does not see them.
+    const CoordsXYZ spot{ 20 * kCoordsXYStep, 20 * kCoordsXYStep, 0 };
+    {
+        W::Scope inWorld1(1);
+        auto& gameState = getGameState();
+        EXPECT_EQ(gameState.mapSize, (TileCoordsXY{ 48, 48 }));
+        const CoordsXYZ at{ spot, MapGetSurfaceElementAt(spot)->getBaseZ() };
+        auto place = GameActions::FactoryPlaceAction(at, 2, _chest);
+        auto result = GameActions::ExecuteNested(&place, gameState);
+        ASSERT_EQ(result.error, GameActions::Status::ok); // land in new worlds is owned
+        EXPECT_NE(findFactoryElement(at), nullptr);
+        EXPECT_EQ(gameState.factory.containers.aliveCount(), 1u);
+        gameState.park.cash -= 1000; // company money is shared
+    }
+    EXPECT_EQ(W::active(), W::kPrimaryWorld);
+    const auto containers0 = world0.factory.containers.aliveCount();
+    EXPECT_EQ(W::state(1).factory.containers.aliveCount(), 1u);
+    const auto cashAfter = getGameState().park.cash;
+
+    // A top-level action carries its world: issued while world 1 is active, it runs there from anywhere.
+    {
+        W::Scope inWorld1(1);
+        const CoordsXYZ at{ spot.x + kCoordsXYStep, spot.y, MapGetSurfaceElementAt(spot)->getBaseZ() };
+        auto place = GameActions::FactoryPlaceAction(at, 2, _chest);
+        W::stampActionWorld(place);
+        EXPECT_EQ(W::actionWorld(place), 1);
+        W::activate(0);
+        EXPECT_EQ(GameActions::Execute(&place, getGameState()).error, GameActions::Status::ok);
+        EXPECT_EQ(W::active(), 0);                 // restored after the action
+        GameActions::ProcessQueue(getGameState()); // queued for the tick, executed in world 1
+        EXPECT_EQ(W::active(), 0);
+    }
+    EXPECT_EQ(W::state(1).factory.containers.aliveCount(), 2u);
+    EXPECT_EQ(getGameState().factory.containers.aliveCount(), containers0);
+
+    // Ticking: every world advances one tick per update; the date advances once.
+    const auto ticks0 = getGameState().currentTicks;
+    const auto ticks1 = W::state(1).currentTicks;
+    const auto day = getGameState().date.GetMonthTicks();
+    for (int i = 0; i < 10; i++)
+        gameStateUpdateLogic();
+    EXPECT_EQ(W::active(), W::kPrimaryWorld);
+    EXPECT_EQ(getGameState().currentTicks, ticks0 + 10);
+    EXPECT_EQ(W::state(1).currentTicks, ticks1 + 10);
+    EXPECT_NE(getGameState().date.GetMonthTicks(), day);
+    EXPECT_LE(getGameState().park.cash, cashAfter);
+
+    // Each world's checksum is stable when nothing differs (determinism across runs is in the replay pack).
+    const auto checksum1 = [&] {
+        W::Scope inWorld1(1);
+        return computeSyncChecksum(getGameState()).toString();
+    }();
+    EXPECT_FALSE(checksum1.empty());
+
+    W::activate(W::kPrimaryWorld);
+    W::adoptActiveAsPrimary();
+    EXPECT_EQ(W::count(), 1u);
 }

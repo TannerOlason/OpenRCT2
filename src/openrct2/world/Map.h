@@ -14,6 +14,7 @@
 #include "MapOwnership.h"
 #include "tile_element/TileElement.h"
 
+#include <any> // FACTORY-TOUR
 #include <array>
 #include <optional>
 #include <vector>
@@ -57,6 +58,8 @@ namespace OpenRCT2
     void ReorganiseTileElements();
     const std::vector<TileElement>& GetTileElements();
     void SetTileElements(GameState_t& gameState, std::vector<TileElement>&& tileElements);
+    // FACTORY-TOUR: Factory::Worlds swaps the per-world tile index (an opaque stash) on world switches
+    void MapSwapWorldCaches(std::any& stash);
     void StashMap();
     void UnstashMap();
     std::vector<TileElement> GetReorganisedTileElementsWithoutGhosts();

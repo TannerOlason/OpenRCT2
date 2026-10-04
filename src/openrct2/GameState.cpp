@@ -21,6 +21,7 @@
 #include "entity/PatrolArea.h"
 #include "factory/FactoryAudio.h" // FACTORY-TOUR
 #include "factory/FactoryState.h" // FACTORY-TOUR
+#include "factory/WorldManager.h" // FACTORY-TOUR
 #include "interface/Screenshot.h"
 #include "platform/Platform.h"
 #include "profiling/Profiling.h"
@@ -59,6 +60,9 @@ namespace OpenRCT2
     void gameStateInitAll(GameState_t& gameState, const TileCoordsXY& mapSize)
     {
         PROFILED_FUNCTION();
+
+        // FACTORY-TOUR: a new or loaded park starts with one world
+        Factory::Worlds::adoptActiveAsPrimary();
 
         gInMapInitCode = true;
         gameState.currentTicks = 0;
@@ -255,19 +259,30 @@ namespace OpenRCT2
     {
         PROFILED_FUNCTION();
 
+        // FACTORY-TOUR: with several worlds each ticks in turn (ADR 0015); once-per-tick work runs in world 0's pass
+        if (Factory::Worlds::tickAll())
+            return;
+        const bool primaryPass = Factory::Worlds::isPrimaryPass();
+        const bool viewedWorld = Factory::Worlds::isViewedActive();
+
         gInUpdateCode = true;
 
         gScreenAge++;
         if (gScreenAge == 0)
             gScreenAge--;
 
-        GetContext()->GetReplayManager()->Update();
+        // FACTORY-TOUR: once per tick
+        if (primaryPass)
+            GetContext()->GetReplayManager()->Update();
 
-        Network::Tick();
+        // FACTORY-TOUR: once per tick
+        if (primaryPass)
+            Network::Tick();
 
         auto& gameState = getGameState();
 
-        if (Network::GetMode() == Network::Mode::server)
+        // FACTORY-TOUR: once per tick
+        if (primaryPass && Network::GetMode() == Network::Mode::server)
         {
             if (Network::GamestateSnapshotsEnabled())
             {
@@ -277,7 +292,8 @@ namespace OpenRCT2
             // Send current tick out.
             Network::SendTick();
         }
-        else if (Network::GetMode() == Network::Mode::client)
+        // FACTORY-TOUR: once per tick
+        else if (primaryPass && Network::GetMode() == Network::Mode::client)
         {
             // Don't run past the server, this condition can happen during map changes.
             if (Network::GetServerTick() == gameState.currentTicks)
@@ -308,20 +324,27 @@ namespace OpenRCT2
         auto day = gameState.date.GetDay();
 #endif
 
-        DateUpdate(gameState);
-
-        ScenarioUpdate(gameState);
+        // FACTORY-TOUR: the date and scenario are company state, advanced in world 0's pass
+        if (primaryPass)
+        {
+            DateUpdate(gameState);
+            ScenarioUpdate(gameState);
+        }
         Weather::update();
         MapUpdateTiles();
 
         // Temporarily remove provisional paths to prevent peep from interacting with them
         auto removeProvisionalIntent = Intent(INTENT_ACTION_REMOVE_PROVISIONAL_ELEMENTS);
-        ContextBroadcastIntent(&removeProvisionalIntent);
+        // FACTORY-TOUR: ghosts exist in the world on screen only
+        if (viewedWorld)
+            ContextBroadcastIntent(&removeProvisionalIntent);
 
         MapUpdatePathWideFlags();
         PeepUpdateAll();
         auto restoreProvisionalIntent = Intent(INTENT_ACTION_RESTORE_PROVISIONAL_ELEMENTS);
-        ContextBroadcastIntent(&restoreProvisionalIntent);
+        // FACTORY-TOUR: ghosts exist in the world on screen only
+        if (viewedWorld)
+            ContextBroadcastIntent(&restoreProvisionalIntent);
         VehicleUpdateAll();
         gameState.entities.updateAllMiscEntities();
         Ride::updateAll();
@@ -333,18 +356,26 @@ namespace OpenRCT2
             Park::Update(park, gameState);
         }
 
-        ResearchUpdate();
+        // FACTORY-TOUR: research is company state
+        if (primaryPass)
+            ResearchUpdate();
         RideRating::UpdateAll();
         RideMeasurementsUpdate();
         News::UpdateCurrentItem();
 
         MapAnimations::InvalidateAndUpdateAll();
-        VehicleSoundsUpdate();
-        Factory::updateMachineSounds(gameState); // FACTORY-TOUR: audio only
-        PeepUpdateCrowdNoise();
-        Weather::updateSound();
+        // FACTORY-TOUR: audio follows the world on screen
+        if (viewedWorld)
+        {
+            VehicleSoundsUpdate();
+            Factory::updateMachineSounds(gameState); // FACTORY-TOUR: audio only
+            PeepUpdateCrowdNoise();
+            Weather::updateSound();
+        }
 
-        EditorScene::OpenWindowsForCurrentStep();
+        // FACTORY-TOUR: once per tick
+        if (primaryPass)
+            EditorScene::OpenWindowsForCurrentStep();
 
         // Update windows
         // WindowDispatchUpdateAll();
@@ -357,14 +388,23 @@ namespace OpenRCT2
             gLastAutoSaveUpdate = Platform::GetTicks();
         }
 
-        GameActions::ProcessQueue(gameState);
-
-        Network::PostTick();
-        Network::Flush();
+        // FACTORY-TOUR: once per tick; queued actions switch to their own world
+        if (primaryPass)
+        {
+            GameActions::ProcessQueue(gameState);
+            Network::PostTick();
+            Network::Flush();
+        }
 
         gameState.currentTicks++;
 
 #ifdef ENABLE_SCRIPTING
+        // FACTORY-TOUR: scripts see one tick, not one per world
+        if (!primaryPass)
+        {
+            gInUpdateCode = false;
+            return;
+        }
         auto& hookEngine = GetContext()->GetScriptEngine().GetHookEngine();
         hookEngine.Call(HookType::intervalTick, true);
 
