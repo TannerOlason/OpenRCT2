@@ -478,4 +478,7 @@ TEST(FactoryReplayTests, ForkReplayPackPlaysBackInSync)
         // The replay really built a factory.
         EXPECT_GT(getGameState().factory.recordCount(), 5u);
     }
+    // The worlds replay leaves a second world registered; later tests expect a single world.
+    Factory::Worlds::activate(Factory::Worlds::kPrimaryWorld);
+    Factory::Worlds::adoptActiveAsPrimary();
 }

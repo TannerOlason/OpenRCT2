@@ -148,6 +148,16 @@ protected:
         gameState.factory.reset();
     }
 
+    void TearDown() override
+    {
+        // Multi-world tests that stop early must not leave their worlds to the next test.
+        if (Factory::Worlds::count() > 1 || Factory::Worlds::active() != Factory::Worlds::kPrimaryWorld)
+        {
+            Factory::Worlds::activate(Factory::Worlds::kPrimaryWorld);
+            Factory::Worlds::adoptActiveAsPrimary();
+        }
+    }
+
     static ObjectEntryIndex Index(Object* object)
     {
         if (object == nullptr)
@@ -1058,7 +1068,8 @@ TEST_F(FactoryTopologyTests, SteamChainPowersAnAssembler)
     EXPECT_LE(steam->amount, steam->capacity);
     EXPECT_LT(boiler->fuel.count, 5);
 
-    // Without water behind it the pump stops.
+    // Without water behind it the pump stops. (Placing elements may have moved the tile elements: look it up again.)
+    shore = MapGetSurfaceElementAt(TileCoordsXY{ kRowX0 - 1, kRowY });
     shore->setWaterHeight(0);
     Tick(1);
     EXPECT_EQ(pump->getStatus(), MachineStatus::noInput);
@@ -1753,6 +1764,7 @@ TEST_F(FactoryTopologyTests, LabsResearchTechnologiesThatUnlockPrototypesAndRide
     // Rides a technology unlocks leave upstream's research lists and are invented when it completes.
     ResearchInsertRideEntry(giftShop, false);
     EXPECT_TRUE(withholdGatedResearch(gameState));
+    ResearchFix(); // rebuilds the invented tables, as object loading does (the slot may be stale from earlier tests)
     for (const auto& item : gameState.researchItemsUninvented)
         EXPECT_FALSE(item.type == Research::EntryType::ride && item.entryIndex == giftShop);
     EXPECT_FALSE(RideEntryIsInvented(giftShop));
@@ -2408,6 +2420,13 @@ TEST_F(FactoryTopologyTests, PortalTerminalsSendRidersToTheNextWorld)
         EXPECT_EQ(TileCoordsXY(arrived->getLocation()), (TileCoordsXY{ 11, 8 }));
     }
 
+    // World 0's terminal and path sit where later tests build rides.
+    auto demolish = GameActions::RideDemolishAction(terminal0, GameActions::RideModifyType::demolish);
+    EXPECT_EQ(GameActions::ExecuteNested(&demolish, getGameState()).error, GameActions::Status::ok);
+    const auto pathZ = MapGetSurfaceElementAt(TileCoordsXY{ kRowX0 + 3, kRowY + 1 })->getBaseZ();
+    auto removePath = GameActions::FootpathRemoveAction(
+        CoordsXYZ{ (kRowX0 + 3) * kCoordsXYStep, (kRowY + 1) * kCoordsXYStep, pathZ });
+    EXPECT_EQ(GameActions::ExecuteNested(&removePath, getGameState()).error, GameActions::Status::ok);
     W::activate(W::kPrimaryWorld);
     W::adoptActiveAsPrimary();
 }
@@ -2506,4 +2525,6 @@ TEST_F(FactoryTopologyTests, ParkGoodsPayForConstructionAndRocketPartsForLaunche
 
     W::activate(W::kPrimaryWorld);
     W::adoptActiveAsPrimary();
+    // Later launch-pad tests expect launches to be free.
+    objectManager.UnloadObjects({ ObjectEntryDescriptor("factory-tour.factory_prototype.rocket_part") });
 }
