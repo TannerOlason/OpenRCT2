@@ -12,9 +12,11 @@
 #include "GuestFactory.h"
 
 #include "../GameState.h"
+#include "../entity/EntityList.h"
 #include "../entity/Guest.h"
 #include "../ride/Ride.h"
 #include "../world/Map.h"
+#include "../world/ParkData.h"
 #include "../world/TileElementsView.h"
 #include "../world/tile_element/FactoryElement.h"
 #include "FactoryState.h"
@@ -98,5 +100,35 @@ namespace OpenRCT2::Factory
     bool isFactoryTourRide(const Ride& ride)
     {
         return ride.type == RIDE_TYPE_FACTORY_TOUR;
+    }
+
+    int32_t parkRatingAdjustment(const Park::ParkData& park, const GameState_t& gameState)
+    {
+        if (!park.flags.has(ParkFlag::factoryAffectsRating))
+            return 0;
+        const auto& state = gameState.factory;
+        int32_t result = 0;
+
+        uint64_t pollution = 0;
+        uint32_t guests = 0;
+        for (auto* guest : EntityList<Guest>())
+        {
+            if (guest->outsideOfPark)
+                continue;
+            guests++;
+            pollution += std::min(state.pollution.at(TileCoordsXY{ guest->getLocation() }), kRatingPollutionFull);
+        }
+        if (guests > 0)
+            result -= static_cast<int32_t>(pollution * 150 / (uint64_t{ guests } * kRatingPollutionFull));
+
+        uint32_t machines = 0;
+        uint32_t working = 0;
+        state.machines.forEach([&](RecordId, const MachineRecord& machine) {
+            machines++;
+            working += machine.isWorking() ? 1 : 0;
+        });
+        if (machines > 0)
+            result += static_cast<int32_t>(working * 50 / machines) - 25;
+        return result;
     }
 } // namespace OpenRCT2::Factory

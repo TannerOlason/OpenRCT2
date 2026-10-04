@@ -53,6 +53,7 @@
 #include <openrct2/ride/ted/TrackElemType.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/world/Map.h>
+#include <openrct2/world/Park.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
 #include <openrct2/world/tile_element/SurfaceElement.h>
 
@@ -1496,4 +1497,28 @@ TEST_F(FactoryTopologyTests, WarehouseStocksShopsAndTheGiftShopSellsSouvenirs)
     EXPECT_FALSE(shopItemSoldOut(gameState, EnumValue(ShopItem::burger)));
     EXPECT_FALSE(takeShopStock(gameState, EnumValue(ShopItem::burger)));
     state.parkExt.shopStockMode = 0;
+}
+
+TEST_F(FactoryTopologyTests, ParkRatingTermFollowsMachineUptimeOnlyWhenEnabled)
+{
+    auto& gameState = getGameState();
+    auto& park = gameState.park;
+    auto& state = gameState.factory;
+    auto* a = Place(kRowX0, 2, _furnace);
+    auto* b = Place(kRowX0 + 2, 2, _furnace);
+    ASSERT_NE(a, nullptr);
+    ASSERT_NE(b, nullptr);
+    const auto ratingWithoutTerm = Park::CalculateParkRating(park, gameState);
+    // Off (the default): exactly upstream's rating.
+    EXPECT_EQ(parkRatingAdjustment(park, gameState), 0);
+
+    park.flags.set(ParkFlag::factoryAffectsRating);
+    EXPECT_EQ(parkRatingAdjustment(park, gameState), -25); // both idle
+    state.machines.get(a->getRecordId())->status = static_cast<uint8_t>(MachineStatus::working);
+    EXPECT_EQ(parkRatingAdjustment(park, gameState), 0);
+    state.machines.get(b->getRecordId())->status = static_cast<uint8_t>(MachineStatus::working);
+    EXPECT_EQ(parkRatingAdjustment(park, gameState), 25);
+    EXPECT_EQ(Park::CalculateParkRating(park, gameState), std::clamp(ratingWithoutTerm + 25, 0, 999));
+    park.flags.unset(ParkFlag::factoryAffectsRating);
+    EXPECT_EQ(Park::CalculateParkRating(park, gameState), ratingWithoutTerm);
 }

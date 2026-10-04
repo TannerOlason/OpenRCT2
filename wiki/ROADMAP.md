@@ -140,7 +140,8 @@ Exhibit Paths.
   their own strings and plugin names, made by assembler recipes and sold by the Factory gift shop stall. In warehouse
   stock mode a shop item that a factory item maps to (item `shopItem`) is taken from the Warehouse instead of paying
   the stock cost, and guests think "It's sold out!" when it runs out.
-- [ ] Park rating terms (pollution near paths, uptime) and park flags.
+- [x] Park rating term behind `ParkFlag::factoryAffectsRating` (bit 33, off by default so ratings stay upstream's):
+  up to -150 for the average pollution where guests stand and -25 to +25 for the share of machines working.
 - [ ] Objectives and scenario editor options.
 - [ ] Exhibit Paths.
 

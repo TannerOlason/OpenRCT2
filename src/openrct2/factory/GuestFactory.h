@@ -15,6 +15,11 @@
 
 #include <cstdint>
 
+namespace OpenRCT2::Park
+{
+    struct ParkData;
+}
+
 namespace OpenRCT2
 {
     struct GameState_t;
@@ -54,4 +59,12 @@ namespace OpenRCT2::Factory
     // Records that a guest toured the factory (watched machines, or rode a Factory Tour).
     void markGuestToured(GameState_t& gameState, uint16_t guestId);
     bool isFactoryTourRide(const Ride& ride);
+
+    // Pollution averaged over guests' cells at which the rating penalty is full.
+    constexpr uint32_t kRatingPollutionFull = 8000;
+    /**
+     * The park rating term for the factory (0 unless ParkFlag::factoryAffectsRating): up to -150 for the average
+     * pollution where guests in the park stand, and -25 to +25 for the share of machines working.
+     */
+    int32_t parkRatingAdjustment(const Park::ParkData& park, const GameState_t& gameState);
 } // namespace OpenRCT2::Factory

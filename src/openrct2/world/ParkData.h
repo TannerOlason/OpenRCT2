@@ -58,6 +58,9 @@ enum class ParkFlag : uint32_t
 
     rct1Interest = 30,    // OpenRCT2 only
     unlockAllPrices = 31, // OpenRCT2 only
+
+    // FACTORY-TOUR: fork flags (32-33 reserved in CONTEXT.md; 32 is kept for factoryEnabled)
+    factoryAffectsRating = 33, // pollution where guests are and machine uptime count towards the park rating
 };
 using ParkFlags = FlagHolder<uint64_t, ParkFlag>;
 

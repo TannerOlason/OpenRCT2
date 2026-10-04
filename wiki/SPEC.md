@@ -202,8 +202,10 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
   = 1`), `GuestDecideAndBuyItem` refuses a mapped item the Warehouse lacks (thought `soldOut`) and a sale takes one
   from the Warehouse instead of paying the stock cost; unmapped items behave as upstream. A per-ride stock mode can
   come later as a parkExt ride table.
-- **Rating and objectives**: `ParkFlag::factoryEnabled = 32, factoryAffectsRating = 33`; in
-  `CalculateParkRating` pollution near paths up to −150 and uptime ±25. `ObjectiveType` appended:
+- **Rating**: `ParkFlag::factoryAffectsRating = 33` (32 stays reserved for `factoryEnabled`). With it set,
+  `CalculateParkRating` adds `Factory::parkRatingAdjustment` after the litter term: minus up to 150 for the average
+  pollution (capped at 8000) in the cells of guests inside the park, and `working * 50 / machines - 25` for uptime.
+- **Objectives**: `ObjectiveType` appended:
   `produceItemsBy, launchRocket, guestsTouredFactory`.
 - **Persistence rule**: guest, ride, scenario and objective fork fields are Side Tables in chunk `0x45 parkExt`.
 

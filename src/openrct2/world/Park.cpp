@@ -19,6 +19,7 @@
 #include "../entity/EntityList.h"
 #include "../entity/Litter.h"
 #include "../entity/Peep.h"
+#include "../factory/GuestFactory.h" // FACTORY-TOUR
 #include "../management/Award.h"
 #include "../management/Finance.h"
 #include "../management/Marketing.h"
@@ -483,6 +484,9 @@ namespace OpenRCT2::Park
 
             result -= 600 - (4 * (150 - std::min<int32_t>(150, litterCount)));
         }
+
+        // FACTORY-TOUR: pollution and machine uptime, only with ParkFlag::factoryAffectsRating
+        result += Factory::parkRatingAdjustment(park, gameState);
 
         result -= park.ratingCasualtyPenalty;
         result = std::clamp(result, 0, 999);
