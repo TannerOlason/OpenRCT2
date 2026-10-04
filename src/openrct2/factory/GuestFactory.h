@@ -25,7 +25,7 @@ namespace OpenRCT2
     struct GameState_t;
     struct FactoryElement;
     struct PathElement;
-    class Guest;
+    struct Guest;
     struct Ride;
     enum class PeepThoughtType : uint8_t;
 } // namespace OpenRCT2
