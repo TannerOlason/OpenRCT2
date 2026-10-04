@@ -28,6 +28,8 @@
 #include "RideManager.hpp"
 #include "Station.h"
 #include "TrackIteration.h"
+// FACTORY-TOUR
+#include "../factory/RideRatingsFactory.h"
 
 #include <iterator>
 
@@ -347,6 +349,9 @@ namespace OpenRCT2
         state.AmountOfReversers = 0;
         state.State = RIDE_RATINGS_STATE_2;
         state.StationFlags = 0;
+        // FACTORY-TOUR: restart this ride's factory proximity totals
+        if (auto* factoryRide = GetRide(state.CurrentRide); factoryRide != nullptr)
+            Factory::rideRatingsBegin(getGameState(), *factoryRide);
         ride_ratings_begin_proximity_loop(state);
     }
 
@@ -402,6 +407,7 @@ namespace OpenRCT2
                 }
 
                 ride_ratings_score_close_proximity(state, tileElement);
+                Factory::rideRatingsScorePiece(getGameState(), *ride, loc); // FACTORY-TOUR
 
                 CoordsXYE trackElement = { state.Proximity, tileElement };
                 CoordsXYE nextTrackElement;
@@ -496,6 +502,7 @@ namespace OpenRCT2
             if (trackType == TrackElemType::none || trackType == tileElement->asTrack()->getTrackType())
             {
                 ride_ratings_score_close_proximity(state, tileElement);
+                Factory::rideRatingsScorePiece(getGameState(), *ride, loc); // FACTORY-TOUR
 
                 TrackBeginEnd trackBeginEnd;
                 if (!trackBlockGetPrevious({ state.Proximity, tileElement }, &trackBeginEnd))
@@ -940,6 +947,13 @@ namespace OpenRCT2
                 case RatingsModifierType::bonusProximity:
                     RideRatingsApplyBonusProximity(ratings, ride, state, modifier);
                     break;
+                // FACTORY-TOUR
+                case RatingsModifierType::bonusFactoryProximity:
+                {
+                    const auto bonus = Factory::rideRatingsTakeBonus(getGameState(), ride, modifier);
+                    RideRatingsAdd(ratings, bonus.excitement, bonus.intensity, bonus.nausea);
+                    break;
+                }
                 case RatingsModifierType::bonusScenery:
                     RideRatingsApplyBonusScenery(ratings, ride, modifier);
                     break;

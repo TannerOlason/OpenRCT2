@@ -3923,3 +3923,5 @@ STR_20526   :{WINDOW_COLOUR_2}Satisfaction: {BLACK}{COMMA16}%
 STR_20527   :Previous network
 STR_20528   :Next network
 STR_20529   :Show power networks
+STR_20530   :Factory Tour
+STR_20531   :Visitors ride a slow tram past working machinery; the busier and more varied the factory along the track, the more exciting the tour

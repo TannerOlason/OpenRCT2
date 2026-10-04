@@ -40,6 +40,7 @@ namespace OpenRCT2::Factory
         powerNetworks.clear();
         pipes.clear();
         fluidNetworks.clear();
+        rideProximity.clear();
         ore.clear();
         powerDirty = false;
         fluidDirty = false;

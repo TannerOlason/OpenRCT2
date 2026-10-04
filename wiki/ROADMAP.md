@@ -105,6 +105,13 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
 Factory Tour ride type, ratings modifier and tour vehicle object; guest thoughts and watching; pollution and
 noise effects; `parkExt` Side Table chunk. The first moment the two games touch.
 
+- [x] Factory Tour ride type (RIDE_TYPE_1D slot, flat track, ADR 0010), `bonusFactoryProximity` ratings modifier fed
+  by a 5x5 factory scan along the track walk, tour tram vehicle object with generated art. Tests: pure score,
+  per-piece counting, and a built circuit whose excitement rises beside a working furnace; trams render running.
+- [ ] Guest thoughts and watching (thought ids 174-181, happiness and nausea effects, watching photogenic machines).
+- [ ] Pollution and noise from machines, with their effect on nearby guests.
+- [ ] `parkExt` Side Table chunk (0x45) for park-side fork fields.
+
 ### M4 Park intertwine II `[ ]`
 
 Material economy (construction modes, Material Bills, Warehouse, refunds, cost text), Warehouse-stocked shops

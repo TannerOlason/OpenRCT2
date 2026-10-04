@@ -20,14 +20,26 @@
 #include <openrct2/GameState.h>
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/actions/GameActionRunner.h>
+#include <openrct2/actions/ride/RideCreateAction.h>
+#include <openrct2/actions/ride/RideDemolishAction.h>
+#include <openrct2/actions/ride/RideEntranceExitPlaceAction.h>
+#include <openrct2/actions/ride/RideSetStatusAction.h>
+#include <openrct2/actions/track/TrackPlaceAction.h>
 #include <openrct2/factory/Belts.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
+#include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
+#include <openrct2/management/Research.h>
 #include <openrct2/object/ObjectManager.h>
+#include <openrct2/ride/Ride.h>
+#include <openrct2/ride/RideConstruction.h>
+#include <openrct2/ride/RideData.h>
+#include <openrct2/ride/RideRatings.h>
+#include <openrct2/ride/ted/TrackElemType.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/world/Map.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
@@ -165,6 +177,79 @@ protected:
     {
         for (int32_t i = 0; i < ticks; i++)
             update(getGameState());
+    }
+
+    // A Factory Tour ride on a 4x2 flat circuit: a two-tile station at (x0, y0) and (x0 + 1, y0) heading east, four
+    // one-tile left turns and two straights, with its entrance and exit north of the station. Returns RideId::GetNull()
+    // on failure.
+    static RideId BuildFactoryTourLoop(int32_t x0, int32_t y0)
+    {
+        auto& gameState = getGameState();
+        gameState.cheats.sandboxMode = true;
+        auto& objectManager = GetContext()->GetObjectManager();
+        auto* tram = objectManager.LoadObject("factory-tour.ride.tour_tram");
+        if (tram == nullptr)
+            return RideId::GetNull();
+        const auto entry = objectManager.GetLoadedObjectEntryIndex(tram);
+        RideTypeSetInvented(RIDE_TYPE_FACTORY_TOUR);
+        RideEntrySetInvented(entry);
+        auto create = GameActions::RideCreateAction(RIDE_TYPE_FACTORY_TOUR, entry, 0, 0, 0, RideInspection::every10Minutes);
+        auto created = GameActions::ExecuteNested(&create, gameState);
+        if (created.error != GameActions::Status::ok)
+            return RideId::GetNull();
+        const RideId rideId = created.getData<RideId>();
+        const int32_t z = GroundZ(kRowX0);
+        for (int32_t ty = y0 - 1; ty <= y0 + 1; ty++)
+            for (int32_t tx = x0 - 1; tx <= x0 + 2; tx++)
+            {
+                auto* surface = MapGetSurfaceElementAt(TileCoordsXY{ tx, ty });
+                surface->setSlope(0);
+                surface->setBaseZ(z);
+                surface->setClearanceZ(z);
+            }
+        struct Piece
+        {
+            TrackElemType type;
+            int32_t tx, ty;
+            Direction dir;
+        };
+        const Piece pieces[] = {
+            { TrackElemType::endStation, x0, y0, 2 },
+            { TrackElemType::endStation, x0 + 1, y0, 2 },
+            { TrackElemType::leftQuarterTurn1Tile, x0 + 2, y0, 2 },
+            { TrackElemType::leftQuarterTurn1Tile, x0 + 2, y0 + 1, 1 },
+            { TrackElemType::flat, x0 + 1, y0 + 1, 0 },
+            { TrackElemType::flat, x0, y0 + 1, 0 },
+            { TrackElemType::leftQuarterTurn1Tile, x0 - 1, y0 + 1, 0 },
+            { TrackElemType::leftQuarterTurn1Tile, x0 - 1, y0, 3 },
+        };
+        for (const auto& piece : pieces)
+        {
+            auto place = GameActions::TrackPlaceAction(
+                rideId, piece.type, RIDE_TYPE_FACTORY_TOUR,
+                CoordsXYZD{ piece.tx * kCoordsXYStep, piece.ty * kCoordsXYStep, z, piece.dir }, 0, 0, 0, {}, false);
+            if (GameActions::ExecuteNested(&place, gameState).error != GameActions::Status::ok)
+                return RideId::GetNull();
+        }
+        // Entrance and exit on the station's north side (-y), facing it.
+        for (auto [tx, isExit] : { std::pair{ x0, false }, std::pair{ x0 + 1, true } })
+        {
+            bool placed = false;
+            for (Direction dir : { Direction{ 1 }, Direction{ 3 } })
+            {
+                auto entrance = GameActions::RideEntranceExitPlaceAction(
+                    CoordsXY{ tx * kCoordsXYStep, (y0 - 1) * kCoordsXYStep }, dir, rideId, StationIndex::FromUnderlying(0),
+                    isExit);
+                if (GameActions::ExecuteNested(&entrance, gameState).error == GameActions::Status::ok)
+                {
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed)
+                return RideId::GetNull();
+        }
+        return rideId;
     }
 
     static std::shared_ptr<IContext> _context;
@@ -439,6 +524,15 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
         gameState, CoordsXYZ{ (kRowX0 + 9) * kCoordsXYStep, (kRowY + 3) * kCoordsXYStep, GroundZ(kRowX0) }, east,
         _electricDrill, false);
     PlaceAt(kRowX0 + 12, kRowY + 4, east, _belt);
+
+    // A Factory Tour circuit just south of the logistics row, testing so its trams run past the belts.
+    const RideId tourId = BuildFactoryTourLoop(kRowX0 + 5, kRowY + 7);
+    EXPECT_FALSE(tourId.IsNull());
+    if (!tourId.IsNull())
+    {
+        auto testing = GameActions::RideSetStatusAction(tourId, RideStatus::testing);
+        EXPECT_EQ(GameActions::ExecuteNested(&testing, gameState).error, GameActions::Status::ok);
+    }
 
     // Fluid row two tiles north: a pipe run with a tee into a boiler facing south and a steam engine below it.
     for (int32_t i = 0; i <= 4; i++)
@@ -1043,4 +1137,101 @@ TEST_F(FactoryTopologyTests, ElectricDrillMinesAroundItsCentreAndDropsAheadOfIts
     removeElement(gameState, *findFactoryElement(at(kRowX0 + 3, kRowY + 2)), at(kRowX0 + 3, kRowY + 2));
     EXPECT_EQ(state.machines.get(drillId), nullptr);
     EXPECT_EQ(findFactoryElement(at(kRowX0 + 1, kRowY)), nullptr);
+}
+
+TEST(FactoryRideRatingTests, ProximityScoreGrowsWithDensityVarietyAndActivity)
+{
+    const RatingsModifier modifier{ RatingsModifierType::bonusFactoryProximity, 0, 300, 60, 30 };
+    EXPECT_EQ(factoryProximityScore(RideProximityStats{}, modifier).excitement, 0);
+    // One belt beside each of ten pieces: a sixth of the density bonus plus one kind of variety.
+    RideProximityStats sparse{ 10, 10, 0, 0, 1u << 0 };
+    auto low = factoryProximityScore(sparse, modifier);
+    // Density is Q16 fixed point: 10 / 60 = 10922 / 65536, so 300 of it rounds down to 49.
+    EXPECT_EQ(low.excitement, 49 + 300 / 64);
+    EXPECT_EQ(low.intensity, 9);
+    // Dense, varied and all working saturates density and adds variety and activity.
+    RideProximityStats busy{ 10, 120, 40, 40, 0xFFu | (0xFu << 16) };
+    auto high = factoryProximityScore(busy, modifier);
+    EXPECT_EQ(high.excitement, 300 + 300 * 8 / 64 + 300 / 8);
+    EXPECT_EQ(high.intensity, 60);
+    EXPECT_EQ(high.nausea, 30);
+    // Idle machines are worth less than working ones.
+    RideProximityStats idle = busy;
+    idle.working = 0;
+    EXPECT_LT(factoryProximityScore(idle, modifier).excitement, high.excitement);
+}
+
+TEST_F(FactoryTopologyTests, FactoryTourRideCountsMachineryNearItsTrack)
+{
+    auto& gameState = getGameState();
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto* tram = objectManager.LoadObject("factory-tour.ride.tour_tram");
+    ASSERT_NE(tram, nullptr);
+    auto action = GameActions::RideCreateAction(
+        RIDE_TYPE_FACTORY_TOUR, objectManager.GetLoadedObjectEntryIndex(tram), 0, 0, 0, RideInspection::every10Minutes);
+    auto result = GameActions::ExecuteNested(&action, gameState);
+    ASSERT_EQ(result.error, GameActions::Status::ok);
+    auto* ride = GetRide(result.getData<RideId>());
+    ASSERT_NE(ride, nullptr);
+    EXPECT_TRUE(rideHasFactoryProximity(*ride));
+    EXPECT_STREQ(ride->getRideTypeDescriptor().Name.data(), "factory_tour");
+
+    // A furnace and two belts within two tiles of a "track piece" at the start of the row; a chest further away.
+    Place(kRowX0 + 1, 2, _furnace);
+    Place(kRowX0 + 2, 2, _belt);
+    Place(kRowX0 + 3, 2, _belt);
+    Place(kRowX0 + 6, 2, _chest);
+    rideRatingsBegin(gameState, *ride);
+    rideRatingsScorePiece(gameState, *ride, Tile(kRowX0 + 1));
+    const auto* stats = rideProximityStats(gameState, ride->id.ToUnderlying());
+    ASSERT_NE(stats, nullptr);
+    EXPECT_EQ(stats->pieces, 1);
+    EXPECT_EQ(stats->factoryTiles, 3);
+    EXPECT_EQ(stats->machines, 1);
+    EXPECT_EQ(stats->working, 0);
+    const RatingsModifier modifier{ RatingsModifierType::bonusFactoryProximity, 0, 300, 60, 30 };
+    EXPECT_GT(rideRatingsTakeBonus(gameState, *ride, modifier).excitement, 0);
+    EXPECT_EQ(rideProximityStats(gameState, ride->id.ToUnderlying()), nullptr); // taken once
+    ride->remove();
+}
+
+TEST_F(FactoryTopologyTests, FactoryTourExcitementRisesBesideWorkingMachinery)
+{
+    auto& gameState = getGameState();
+    gameState.cheats.sandboxMode = true;
+    const int32_t x0 = kRowX0 + 5;
+    const int32_t y0 = kRowY + 3;
+    const RideId rideId = BuildFactoryTourLoop(x0, y0);
+    ASSERT_FALSE(rideId.IsNull());
+    auto* ride = GetRide(rideId);
+    ASSERT_NE(ride, nullptr);
+    // Rated without opening or running test laps: the comparison only needs the track walk.
+    ride->status = RideStatus::testing;
+    ride->flags.set(RideFlag::tested);
+
+    RideRating::UpdateRide(*ride);
+    const auto bareExcitement = ride->ratings.excitement;
+
+    // Working machinery two tiles south of the circuit: fuelled furnaces fed by an inserter from a chest of ore.
+    auto* oreChest = PlaceAt(x0 - 1, y0 + 3, 2, _chest);
+    PlaceAt(x0, y0 + 3, 2, _inserter);
+    auto* furnace = PlaceAt(x0 + 1, y0 + 3, 2, _furnace);
+    ASSERT_NE(oreChest, nullptr);
+    ASSERT_NE(furnace, nullptr);
+    {
+        auto& state = gameState.factory;
+        state.containers.get(oreChest->getRecordId())->slots[0] = { _ironOre, 50 };
+        for (int i = 0; i < 5; i++)
+            machineInsertInput(state, *state.machines.get(furnace->getRecordId()), _coal);
+    }
+    Tick(80); // the inserter delivers ore and the furnace starts working
+    ASSERT_EQ(gameState.factory.machines.get(furnace->getRecordId())->getStatus(), MachineStatus::working);
+    RideRating::UpdateRide(*ride);
+    const auto factoryExcitement = ride->ratings.excitement;
+    EXPECT_GT(factoryExcitement, bareExcitement);
+    // The totals were consumed by the calculation.
+    EXPECT_EQ(rideProximityStats(gameState, rideId.ToUnderlying()), nullptr);
+
+    auto demolish = GameActions::RideDemolishAction(rideId, GameActions::RideModifyType::demolish);
+    EXPECT_EQ(GameActions::ExecuteNested(&demolish, gameState).error, GameActions::Status::ok);
 }

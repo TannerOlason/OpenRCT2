@@ -145,11 +145,17 @@ Read interface: `FactoryState::infoAt(FactoryElement)` → `{kindClass, working,
 hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / deposit(MaterialBill)`),
 `takeSciencePoints(tech)`, `stats()`.
 
-- **Factory Tour ride**: `RIDE_TYPE_1D` → `RIDE_TYPE_FACTORY_TOUR`; `ride/rtd/gentle/FactoryTour.h` cloned
-  from `CarRide.h` with `interestingToLookAt`, `.Name = "factory_tour"`. `RatingsModifierType::bonusFactoryProximity`
-  applied in `ride/RideRatings.cpp`; track-walking loop gains a radius-2 Factory Element scan; pure
-  `FactoryProximityScore(stats, modifier)` in `ride/RideRatingsFactory.h`; counters in `RideRating::UpdateState`;
-  `factoryMachines/Working` exposed in the `ride.ratings.calculate` hook.
+- **Factory Tour ride** (ADR 0010): `RIDE_TYPE_1D` → `RIDE_TYPE_FACTORY_TOUR`, RTD in `factory/FactoryTourRTD.h`
+  cloned from the car ride: flat track only (straight, station, small and very small curves), `interestingToLookAt`,
+  `.Name = "factory_tour"`, base ratings 1.50 / 0.40 / 0.10 and `RatingsModifierType::bonusFactoryProximity`
+  (appended to the enum) worth up to 3.00 excitement, 0.60 intensity and 0.30 nausea. While the rating state machine
+  walks the track, each piece counts factory elements in the 5x5 tiles around it (within 24 height steps): elements,
+  machines, working machines and a kinds bitmask. The totals are game state (`FactoryState::rideProximity`, sorted by
+  ride id, pools chunk version 5) because rating spans ticks, saves and joins; only ride types with the modifier are
+  tracked. At calculation `factoryProximityScore` (pure, `factory/RideRatingsFactory.h`) turns them into the bonus:
+  density saturating at six elements per piece, plus variety (popcount of kinds, up to eight) and activity
+  (working / machines). Vehicle: `factory-tour.ride.tour_tram`, generated art with 32 flat rotations, body and
+  riders in the primary remap ramp (palette 245-254). The `ride.ratings.calculate` hook exposure is still to do.
 - **Exhibit Paths**: `FOOTPATH_ENTRY_FLAG_IS_EXHIBIT = 1<<5`, JSON `"isExhibit": true`; ~60% bias in
   `CalculateNextDestination`, no dead-end culling; guests marked `touredFactory`.
 - **Guest appreciation**: `GuestAssessSurroundings` counts machines, working, pollution and noise via

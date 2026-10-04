@@ -130,6 +130,7 @@ namespace OpenRCT2::Ui::Windows
         RIDE_TYPE_MINI_GOLF,
         RIDE_TYPE_OBSERVATION_TOWER,
         RIDE_TYPE_CAR_RIDE,
+        RIDE_TYPE_FACTORY_TOUR, // FACTORY-TOUR
         RIDE_TYPE_MONSTER_TRUCKS,
         RIDE_TYPE_MINI_HELICOPTERS,
         RIDE_TYPE_SPIRAL_SLIDE,
@@ -164,7 +165,6 @@ namespace OpenRCT2::Ui::Windows
 
         // Shops / stalls
         RIDE_TYPE_FOOD_STALL,
-        RIDE_TYPE_1D,
         RIDE_TYPE_DRINK_STALL,
         RIDE_TYPE_1F,
         RIDE_TYPE_SHOP,

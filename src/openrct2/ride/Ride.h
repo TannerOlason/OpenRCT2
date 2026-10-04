@@ -608,7 +608,8 @@ namespace OpenRCT2
         RIDE_TYPE_SWINGING_SHIP,
         RIDE_TYPE_SWINGING_INVERTER_SHIP,
         RIDE_TYPE_FOOD_STALL,
-        RIDE_TYPE_1D,
+        // FACTORY-TOUR: the free 1D slot is the Factory Tour ride
+        RIDE_TYPE_FACTORY_TOUR,
         RIDE_TYPE_DRINK_STALL = 30,
         RIDE_TYPE_1F,
         RIDE_TYPE_SHOP,

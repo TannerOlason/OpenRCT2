@@ -599,6 +599,132 @@ def drill_head(draw, cx, cy, frame, frames):
     draw.line([(cx - dx, cy - dy), (cx + dx, cy + dy)], fill=(230, 200, 60, 255), width=3)
 
 
+def palette_rgb(index):
+    """Exact RGB of a StandardPalette index (for remap ramps, which snap() never picks)."""
+    import re
+    text = open(PALETTE_HEADER).read()
+    start = text.index("StandardPalette")
+    entries = re.findall(r"\{\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*\}", text[start:])
+    b, g, r, a = entries[index]
+    return (int(r), int(g), int(b), 255)
+
+
+def project(x, y, z, ox, oy):
+    """Map units (32 per tile) to image pixels around the anchor (ox, oy): screen = (y - x, (x + y) / 2 - z)."""
+    return (ox + (y - x), oy + (x + y) / 2 - z)
+
+
+def draw_tram_frame(i, riders):
+    """Frame i of 32: the car heads along (-cos a, sin a) with a = i * 11.25 degrees (0 = -x, 8 = +y, 16 = +x).
+    The car body uses the primary remap ramp (palette 245-254) so it takes the ride's main colour; riders are drawn on
+    their own transparent image in the same frame, torsos in the same remap ramp (the guests' shirt colours)."""
+    w, h, ox, oy = 48, 40, 24, 26
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    a = 2 * math.pi * i / 32
+    fx, fy = -math.cos(a), math.sin(a)
+    rx, ry = fy, -fx
+    half_l, half_w = 11, 6
+
+    def corner(sl, sw, z):
+        return project(fx * sl * half_l + rx * sw * half_w, fy * sl * half_l + ry * sw * half_w, z, ox, oy)
+
+    if not riders:
+        dark, side, light, top = palette_rgb(246), palette_rgb(248), palette_rgb(250), palette_rgb(252)
+        black = snap((30, 30, 30)) + (255,)
+        # Wheels at the four corners, then the visible sides (outward normal towards +x+y faces the viewer), then
+        # the open top with a darker floor.
+        for sl in (-0.75, 0.75):
+            for sw in (-1, 1):
+                cx, cy = corner(sl, sw, 1)
+                draw.ellipse([cx - 2, cy - 1.5, cx + 2, cy + 1.5], fill=black)
+        faces = [((1, -1), (1, 1), (fx, fy)), ((-1, 1), (-1, -1), (-fx, -fy)),
+                 ((1, 1), (-1, 1), (rx, ry)), ((-1, -1), (1, -1), (-rx, -ry))]
+        for (a0, a1), normal in [((f[0], f[1]), f[2]) for f in faces]:
+            if normal[0] + normal[1] <= 0:
+                continue
+            pts = [corner(a0[0], a0[1], 3), corner(a1[0], a1[1], 3), corner(a1[0], a1[1], 10), corner(a0[0], a0[1], 10)]
+            draw.polygon(pts, fill=side if abs(normal[0]) > abs(normal[1]) else light, outline=dark)
+        rim = [corner(1, 1, 10), corner(1, -1, 10), corner(-1, -1, 10), corner(-1, 1, 10)]
+        draw.polygon(rim, fill=top, outline=dark)
+        floor = [corner(0.8, 0.7, 10), corner(0.8, -0.7, 10), corner(-0.8, -0.7, 10), corner(-0.8, 0.7, 10)]
+        draw.polygon(floor, fill=dark)
+        # A headlamp marks the front.
+        hx, hy = corner(1.05, 0, 7)
+        draw.ellipse([hx - 1.5, hy - 1.5, hx + 1.5, hy + 1.5], fill=snap((255, 235, 120)) + (255,))
+    else:
+        skin = snap((224, 172, 132)) + (255,)
+        shirt = palette_rgb(250)
+        for sw in (-0.45, 0.45):
+            cx, cy = corner(-0.1, sw, 13)
+            draw.ellipse([cx - 2.5, cy - 2, cx + 2.5, cy + 3], fill=shirt)
+            hx, hy = corner(-0.1, sw, 18)
+            draw.ellipse([hx - 2, hy - 2, hx + 2, hy + 2], fill=skin)
+    return img, ox, oy
+
+
+def write_tour_tram():
+    folder = os.path.join(ROOT, "tour_tram")
+    os.makedirs(os.path.join(folder, "images"), exist_ok=True)
+    images = []
+    # Three ride-type preview slots (only the first is shown), then 32 car frames, then 32 rider frames.
+    preview = Image.new("RGBA", (112, 64), (0, 0, 0, 0))
+    for k, x in enumerate((20, 52, 84)):
+        frame, ox, oy = draw_tram_frame(12, False)
+        preview.alpha_composite(frame, (x - ox, 34 - oy + k * 4))
+        rider, _, _ = draw_tram_frame(12, True)
+        preview.alpha_composite(rider, (x - ox, 34 - oy + k * 4))
+    save(preview, folder, "preview.png")
+    for _ in range(3):
+        images.append({"path": "images/preview.png", "x": 0, "y": 0})
+    for riders in (False, True):
+        for i in range(32):
+            img, ox, oy = draw_tram_frame(i, riders)
+            name = f"{'rider' if riders else 'car'}_{i:02d}.png"
+            img.save(os.path.join(folder, "images", name))  # exact palette colours already: snapping would drop remaps
+            images.append({"path": f"images/{name}", "x": -ox, "y": -oy})
+    obj = {
+        "id": "factory-tour.ride.tour_tram",
+        "authors": [AUTHOR],
+        "version": "1.0",
+        "sourceGame": "official",
+        "objectType": "ride",
+        "properties": {
+            "type": "factory_tour",
+            "category": "gentle",
+            "noCollisionCrashes": True,
+            "minCarsPerTrain": 2,
+            "maxCarsPerTrain": 4,
+            "numEmptyCars": 0,
+            "tabCar": 0,
+            "carColours": [[["dark_green", "grey", "black"]], [["bright_yellow", "dark_brown", "black"]]],
+            "buildMenuPriority": 1,
+            "cars": [{
+                "rotationFrameMask": 31,
+                "spacing": 120000,
+                "mass": 300,
+                "numSeats": 2,
+                "numSeatRows": 1,
+                "poweredAcceleration": 60,
+                "poweredMaxSpeed": 5,
+                "drawOrder": 9,
+                "spriteGroups": {"slopeFlat": 32},
+                "isPowered": True,
+                "loadingPositions": [3, -3],
+            }],
+        },
+        "images": images,
+        "strings": {
+            "name": {"en-GB": "Factory tour tram"},
+            "description": {"en-GB": "Open tram cars that carry visitors slowly past the factory floor"},
+            "capacity": {"en-GB": "2 passengers per car"},
+        },
+    }
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
 def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0):
     icon, belt = draw_item_small(colour, dark)
     item_props = {"stackSize": 50}
@@ -660,6 +786,9 @@ def main():
     write_machine("stone_furnace", "Stone furnace", {
         "machineKind": "furnace", "energy": "burner", "speedQ8": 256, "recipeCategories": ["smelting"],
         "inputSlots": 1, "outputSlots": 1, "price": 60, "removalPrice": -45, "clearance": 7}, draw_furnace, 4)
+
+    # The Factory Tour ride's vehicle.
+    write_tour_tram()
 
     # A 3x3 electric mining drill: per-tile slices so it sorts correctly at every rotation.
     write_multitile_machine("electric_drill", "Electric mining drill", {

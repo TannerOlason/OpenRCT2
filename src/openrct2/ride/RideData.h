@@ -163,6 +163,8 @@ namespace OpenRCT2
         // Water section requirement for Water Coaster
         requirementSplashdown,
         penaltyLateralGs,
+        // FACTORY-TOUR: factory machinery near the track (Factory Tour ride)
+        bonusFactoryProximity,
     };
 
     struct RideNameConvention

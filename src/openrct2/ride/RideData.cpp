@@ -117,6 +117,8 @@
 #include "rtd/water/RiverRapids.h"
 #include "rtd/water/SplashBoats.h"
 #include "rtd/water/SubmarineRide.h"
+// FACTORY-TOUR
+#include "../factory/FactoryTourRTD.h"
 
 #include <iterator>
 
@@ -283,7 +285,7 @@ namespace OpenRCT2
         /* RIDE_TYPE_SWINGING_SHIP                      */ kSwingingShipRTD,
         /* RIDE_TYPE_SWINGING_INVERTER_SHIP             */ kSwingingInverterShipRTD,
         /* RIDE_TYPE_FOOD_STALL                         */ kFoodStallRTD,
-        /* RIDE_TYPE_1D                                 */ kDummyRTD,
+        /* RIDE_TYPE_FACTORY_TOUR (FACTORY-TOUR)        */ kFactoryTourRTD,
         /* RIDE_TYPE_DRINK_STALL                        */ kDrinkStallRTD,
         /* RIDE_TYPE_1F                                 */ kDummyRTD,
         /* RIDE_TYPE_SHOP                               */ kShopRTD,
