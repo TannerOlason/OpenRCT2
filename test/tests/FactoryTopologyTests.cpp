@@ -21,6 +21,8 @@
 #include <openrct2/GameState.h>
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/actions/GameActionRunner.h>
+#include <openrct2/actions/footpath/FootpathPlaceAction.h>
+#include <openrct2/actions/footpath/FootpathRemoveAction.h>
 #include <openrct2/actions/ride/RideCreateAction.h>
 #include <openrct2/actions/ride/RideDemolishAction.h>
 #include <openrct2/actions/ride/RideEntranceExitPlaceAction.h>
@@ -28,6 +30,7 @@
 #include <openrct2/actions/track/TrackPlaceAction.h>
 #include <openrct2/core/DataSerialiser.h>
 #include <openrct2/core/MemoryStream.h>
+#include <openrct2/entity/EntityRegistry.h>
 #include <openrct2/entity/Guest.h>
 #include <openrct2/factory/Belts.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
@@ -46,6 +49,8 @@
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetParkOptionAction.h>
 #include <openrct2/management/Research.h>
+#include <openrct2/object/FootpathEntry.h>
+#include <openrct2/object/FootpathSurfaceObject.h>
 #include <openrct2/object/ObjectManager.h>
 #include <openrct2/object/RideObject.h>
 #include <openrct2/ride/Ride.h>
@@ -56,9 +61,11 @@
 #include <openrct2/ride/ted/TrackElemType.h>
 #include <openrct2/scenario/Scenario.h>
 #include <openrct2/scenario/ScenarioObjective.h>
+#include <openrct2/world/Footpath.h>
 #include <openrct2/world/Map.h>
 #include <openrct2/world/Park.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
+#include <openrct2/world/tile_element/PathElement.h>
 #include <openrct2/world/tile_element/SurfaceElement.h>
 
 using namespace OpenRCT2;
@@ -1589,4 +1596,61 @@ TEST_F(FactoryTopologyTests, ParkOptionActionSetsRatingFlagAndObjectiveItem)
     EXPECT_EQ(run(GameActions::FactoryParkOption::objectiveItem, _furnace), GameActions::Status::invalidParameters);
     EXPECT_EQ(run(GameActions::FactoryParkOption::objectiveItem, _water), GameActions::Status::invalidParameters);
     gameState.scenarioOptions.objective.NumGuests = 0;
+}
+
+TEST_F(FactoryTopologyTests, ExhibitPathsDrawGuestsAndMarkTheirTour)
+{
+    auto& gameState = getGameState();
+    gameState.cheats.sandboxMode = true;
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto index = [&](const char* id) {
+        auto* object = objectManager.LoadObject(id);
+        return object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
+    };
+    const auto exhibit = index("factory-tour.footpath_surface.exhibit");
+    const auto tarmac = index("rct2.footpath_surface.tarmac");
+    const auto railings = index("rct2.footpath_railings.wood");
+    ASSERT_NE(exhibit, kObjectEntryIndexNull);
+    ASSERT_NE(tarmac, kObjectEntryIndexNull);
+    ASSERT_NE(railings, kObjectEntryIndexNull);
+    auto* exhibitObject = static_cast<FootpathSurfaceObject*>(
+        objectManager.GetLoadedObject(ObjectType::footpathSurface, exhibit));
+    ASSERT_NE(exhibitObject, nullptr);
+    EXPECT_TRUE(exhibitObject->GetDescriptor().flags & FOOTPATH_ENTRY_FLAG_IS_EXHIBIT);
+
+    // A plain path, then an exhibit walkway east of it, with a furnace beside the walkway.
+    auto placePath = [&](int32_t tx, ObjectEntryIndex surface) {
+        auto action = GameActions::FootpathPlaceAction(Tile(tx), {}, surface, railings);
+        return GameActions::ExecuteNested(&action, gameState).error;
+    };
+    ASSERT_EQ(placePath(kRowX0 + 1, tarmac), GameActions::Status::ok);
+    ASSERT_EQ(placePath(kRowX0 + 2, exhibit), GameActions::Status::ok);
+    ASSERT_EQ(placePath(kRowX0 + 4, tarmac), GameActions::Status::ok);
+    PlaceAt(kRowX0 + 2, kRowY + 1, 2, _furnace);
+
+    const TileCoordsXYZ plain{ Tile(kRowX0 + 1) };
+    EXPECT_EQ(exhibitEdges(plain, 0b1111), 1 << 2); // +x leads onto the walkway
+    // Without exhibit neighbours the bias neither changes the edges nor draws a random number.
+    const TileCoordsXYZ lonely{ Tile(kRowX0 + 4) };
+    const auto randBefore = ScenarioRandState();
+    EXPECT_EQ(biasTowardsExhibits(lonely, 0b0101), 0b0101);
+    EXPECT_EQ(ScenarioRandState().s0, randBefore.s0);
+    // With one, the result is either all edges or only the exhibit one.
+    const auto biased = biasTowardsExhibits(plain, 0b0101);
+    EXPECT_TRUE(biased == 0b0101 || biased == 0b0100);
+
+    // A guest stepping onto the walkway beside the furnace has toured the factory.
+    auto* guest = Guest::generate(Tile(kRowX0 + 2));
+    ASSERT_NE(guest, nullptr);
+    auto* walkway = MapGetPathElementAt(TileCoordsXYZ{ Tile(kRowX0 + 2) });
+    ASSERT_NE(walkway, nullptr);
+    EXPECT_TRUE(isExhibitPath(*walkway));
+    onGuestPathStep(gameState, *guest, TileCoordsXYZ{ Tile(kRowX0 + 2) }, *walkway);
+    EXPECT_EQ(gameState.factory.parkExt.guestFlags(guest->id.ToUnderlying()), kGuestTouredFactory);
+    guest->remove();
+    for (int32_t tx : { kRowX0 + 1, kRowX0 + 2, kRowX0 + 4 })
+    {
+        auto remove = GameActions::FootpathRemoveAction(Tile(tx));
+        GameActions::ExecuteNested(&remove, gameState);
+    }
 }

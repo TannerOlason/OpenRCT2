@@ -14,11 +14,15 @@
 #include "../GameState.h"
 #include "../entity/EntityList.h"
 #include "../entity/Guest.h"
+#include "../object/FootpathEntry.h"
 #include "../ride/Ride.h"
+#include "../scenario/Scenario.h"
+#include "../world/Footpath.h"
 #include "../world/Map.h"
 #include "../world/ParkData.h"
 #include "../world/TileElementsView.h"
 #include "../world/tile_element/FactoryElement.h"
+#include "../world/tile_element/PathElement.h"
 #include "FactoryState.h"
 #include "FactoryTopology.h"
 
@@ -103,6 +107,71 @@ namespace OpenRCT2::Factory
     bool isFactoryTourRide(const Ride& ride)
     {
         return ride.type == RIDE_TYPE_FACTORY_TOUR;
+    }
+
+    bool isExhibitPath(const PathElement& path)
+    {
+        const auto* descriptor = path.getSurfaceDescriptor();
+        return descriptor != nullptr && (descriptor->flags & FOOTPATH_ENTRY_FLAG_IS_EXHIBIT) != 0;
+    }
+
+    uint8_t exhibitEdges(const TileCoordsXYZ& loc, uint8_t edges)
+    {
+        uint8_t result = 0;
+        for (Direction d = 0; d < 4; d++)
+        {
+            if (!(edges & (1 << d)))
+                continue;
+            const auto delta = CoordsDirectionDelta[d];
+            for (int32_t dz : { 0, 2, -2 })
+            {
+                const TileCoordsXYZ next{ loc.x + delta.x / kCoordsXYStep, loc.y + delta.y / kCoordsXYStep, loc.z + dz };
+                if (!MapIsLocationValid(next.toCoordsXY()))
+                    break;
+                if (auto* path = MapGetPathElementAt(next); path != nullptr && isExhibitPath(*path))
+                {
+                    result |= static_cast<uint8_t>(1 << d);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    uint8_t biasTowardsExhibits(const TileCoordsXYZ& loc, uint8_t edges)
+    {
+        const uint8_t exhibits = exhibitEdges(loc, edges);
+        if (exhibits == 0 || exhibits == edges)
+            return edges;
+        return (ScenarioRand() & 0xFFFF) < 39322 ? exhibits : edges;
+    }
+
+    void onGuestPathStep(GameState_t& gameState, const Guest& guest, const TileCoordsXYZ& loc, const PathElement& path)
+    {
+        if (!isExhibitPath(path) || gameState.factory.isEmpty())
+            return;
+        const auto guestId = guest.id.ToUnderlying();
+        if (gameState.factory.parkExt.guestFlags(guestId) & kGuestTouredFactory)
+            return;
+        const auto centre = loc.toCoordsXYZ();
+        for (int32_t dy = -1; dy <= 1; dy++)
+        {
+            for (int32_t dx = -1; dx <= 1; dx++)
+            {
+                const CoordsXY tile{ centre.x + dx * kCoordsXYStep, centre.y + dy * kCoordsXYStep };
+                if (!MapIsLocationValid(tile))
+                    continue;
+                for (const auto* element : TileElementsView<FactoryElement>(tile))
+                {
+                    if (!element->isGhost() && element->getSubtype() == FactoryElementSubtype::machine
+                        && std::abs(element->getBaseZ() - centre.z) <= 32)
+                    {
+                        markGuestToured(gameState, guestId);
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     int32_t parkRatingAdjustment(const Park::ParkData& park, const GameState_t& gameState)

@@ -171,8 +171,11 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
 - **parkExt** (ADR 0008): `Factory::ParkExt` holds side tables keyed by upstream ids, saved in fork chunk 0x45 with
   its own version and included in the sync checksum. Now: guest flags (`kGuestTouredFactory`), sorted by entity id,
   pruned of ids that are no longer guests every 256 ticks.
-- **Exhibit Paths**: `FOOTPATH_ENTRY_FLAG_IS_EXHIBIT = 1<<5`, JSON `"isExhibit": true`; ~60% bias in
-  `CalculateNextDestination`, no dead-end culling; guests marked `touredFactory`.
+- **Exhibit Paths**: `FOOTPATH_ENTRY_FLAG_IS_EXHIBIT = 1 << 5`, JSON `"isExhibit": true`. In
+  `CalculateNextDestination`: `Factory::onGuestPathStep` marks a guest `touredFactory` on an exhibit tile within one
+  tile of a machine; the dead-end cull skips edges onto exhibit paths; aimless guests' edges go through
+  `biasTowardsExhibits`, which keeps only exhibit edges when `ScenarioRand() & 0xFFFF < 39322` and draws the random
+  number only when some exist (vanilla parks keep their sequence).
 - **Guest appreciation**: `GuestAssessSurroundings` counts machines, working, pollution and noise via
   `infoAt`; thoughts 174–181 (`factoryImpressive, factorySmell, factoryNoise, factoryWatching,
   factoryMadeHere, soldOut, factoryDanger`) in `PeepThoughtType`, `kPeepThoughtIds`, `ThoughtTypeMap`, d.ts.

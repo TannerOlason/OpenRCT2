@@ -118,7 +118,7 @@ noise effects; `parkExt` Side Table chunk. The first moment the two games touch.
 - [x] `parkExt` Side Table chunk (0x45, own version): sorted guest flags, pruned of departed guests every 256 ticks,
   part of the sync checksum; saves round-trip it.
 
-### M4 Park intertwine II `[~]`
+### M4 Park intertwine II `[x]`
 
 Material economy (construction modes, Material Bills, Warehouse, refunds, cost text), Warehouse-stocked shops
 and souvenir items, Market, new expenditure rows, park-rating terms, objectives, scenario editor options,
@@ -146,7 +146,10 @@ Exhibit Paths.
   production statistics and an all-time tour count; listed in the scenario editor's objective dropdown with
   quantity/guest and year spinners. A Factory options window (from the build window) sets construction mode, shop
   stock, the rating flag and the produce objective's item, all through `FactorySetParkOptionAction`.
-- [ ] Exhibit Paths.
+- [x] Exhibit Paths: footpath surfaces with `"isExhibit": true` (`FOOTPATH_ENTRY_FLAG_IS_EXHIBIT`, 1 << 5); aimless
+  guests take exhibit edges about 60% of the time, exhibit dead ends are not culled, and stepping onto one within a
+  tile of a machine marks the guest toured. Content: the Factory exhibit walkway (path sprites from the player's
+  RCT2 data, like upstream's official objects). Parks without exhibit paths keep upstream's random sequence.
 
 ### M5 Progression and modding `[ ]`
 

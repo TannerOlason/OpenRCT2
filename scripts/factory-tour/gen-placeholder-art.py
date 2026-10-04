@@ -806,6 +806,33 @@ def write_gift_shop():
         fh.write("\n")
 
 
+def write_exhibit_path():
+    """An Exhibit Path: a footpath surface guests are drawn to. Its path sprites come from the player's own RCT2 data at
+    runtime (like upstream's official objects); only the palette preview is drawn here."""
+    folder = os.path.join(ROOT, "exhibit_path")
+    os.makedirs(os.path.join(folder, "images"), exist_ok=True)
+    img = Image.new("RGBA", (64, 34), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.polygon(tile_polygon(32, 17, 0.9), fill=(110, 115, 125, 255), outline=(40, 40, 45, 255))
+    for k in range(-3, 4):
+        x = 32 + k * 8
+        draw.line([(x - 4, 17 - 12 + abs(k) * 2), (x + 4, 17 - 12 + abs(k) * 2 + 4)], fill=(230, 200, 40, 255), width=2)
+    save(img, folder, "preview.png")
+    obj = {
+        "id": "factory-tour.footpath_surface.exhibit",
+        "authors": [AUTHOR],
+        "version": "1.0",
+        "sourceGame": "official",
+        "objectType": "footpath_surface",
+        "properties": {"isExhibit": True},
+        "images": [{"path": "images/preview.png", "x": -32, "y": -17}, "$RCT2:OBJDATA/PATHSPCE.DAT[0..50]"],
+        "strings": {"name": {"en-GB": "Factory exhibit walkway"}},
+    }
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
 def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0, market_price=0):
     icon, belt = draw_item_small(colour, dark)
     item_props = {"stackSize": 50}
@@ -871,8 +898,9 @@ def main():
         "pollution": 20, "noise": 10,
         "inputSlots": 1, "outputSlots": 1, "price": 60, "removalPrice": -45, "clearance": 7}, draw_furnace, 4)
 
-    # The Factory Tour ride's vehicle.
+    # The Factory Tour ride's vehicle and the walkway that draws visitors past the machines.
     write_tour_tram()
+    write_exhibit_path()
 
     # Manufactured souvenirs, their recipes and the shop that sells them (stocked from the Warehouse).
     for name, display, colour, dark, shop_item in (("factory_model", "Factory model", (190, 120, 60), (110, 60, 30), "factory_model"),

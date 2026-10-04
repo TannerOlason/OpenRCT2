@@ -18,6 +18,7 @@ namespace OpenRCT2
         FOOTPATH_ENTRY_FLAG_SHOW_ONLY_IN_SCENARIO_EDITOR = (1 << 2),
         FOOTPATH_ENTRY_FLAG_IS_QUEUE = (1 << 3),
         FOOTPATH_ENTRY_FLAG_NO_SLOPE_RAILINGS = (1 << 4),
+        FOOTPATH_ENTRY_FLAG_IS_EXHIBIT = (1 << 5), // FACTORY-TOUR: guests are drawn to it (Exhibit Path)
     };
 
     enum class RailingEntrySupportType : uint8_t;

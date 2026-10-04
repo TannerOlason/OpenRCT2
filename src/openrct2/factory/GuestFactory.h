@@ -24,6 +24,8 @@ namespace OpenRCT2
 {
     struct GameState_t;
     struct FactoryElement;
+    struct PathElement;
+    class Guest;
     struct Ride;
     enum class PeepThoughtType : uint8_t;
 } // namespace OpenRCT2
@@ -67,4 +69,16 @@ namespace OpenRCT2::Factory
      * pollution where guests in the park stand, and -25 to +25 for the share of machines working.
      */
     int32_t parkRatingAdjustment(const Park::ParkData& park, const GameState_t& gameState);
+
+    // Exhibit Paths: footpath surfaces with "isExhibit" (FOOTPATH_ENTRY_FLAG_IS_EXHIBIT).
+    bool isExhibitPath(const PathElement& path);
+    // Of `edges`, those leading from the path at loc onto an exhibit path tile (level or one slope step).
+    uint8_t exhibitEdges(const TileCoordsXYZ& loc, uint8_t edges);
+    /**
+     * An aimless guest's choice of edges: when some lead onto exhibit paths, about 60% of the time only those. Draws
+     * ScenarioRand only when exhibit edges exist, so parks without Exhibit Paths keep upstream's random sequence.
+     */
+    uint8_t biasTowardsExhibits(const TileCoordsXYZ& loc, uint8_t edges);
+    // A guest stepping onto a path: on an exhibit path within a tile of a machine they have toured the factory.
+    void onGuestPathStep(GameState_t& gameState, const Guest& guest, const TileCoordsXYZ& loc, const PathElement& path);
 } // namespace OpenRCT2::Factory

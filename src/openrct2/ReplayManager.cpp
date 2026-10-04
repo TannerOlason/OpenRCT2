@@ -107,7 +107,7 @@ namespace OpenRCT2
 
     class ReplayManager final : public IReplayManager
     {
-        static constexpr uint16_t kReplayVersion = 24; // FACTORY-TOUR: 11 -> 24 (fork actions and state)
+        static constexpr uint16_t kReplayVersion = 25; // FACTORY-TOUR: 11 -> 25 (fork actions and state)
         static constexpr uint16_t kReplayMinCompatVersion = 10;
         static constexpr uint32_t kReplayMagic = 0x5243524F; // ORCR.
         static constexpr int kReplayCompressionLevel = 18;

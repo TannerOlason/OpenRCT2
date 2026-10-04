@@ -14,6 +14,7 @@
 #include "../core/Guard.hpp"
 #include "../entity/Guest.h"
 #include "../entity/Staff.h"
+#include "../factory/GuestFactory.h" // FACTORY-TOUR
 #include "../profiling/Profiling.h"
 #include "../ride/RideData.h"
 #include "../scenario/Scenario.h"
@@ -1892,6 +1893,8 @@ namespace OpenRCT2::PathFinding
         // Because this function is called for guests only, never ignore banners.
         uint32_t edges = PathGetPermittedEdges(false, pathElement);
 
+        Factory::onGuestPathStep(getGameState(), peep, loc, *pathElement); // FACTORY-TOUR: Exhibit Paths
+
         if (edges == 0)
         {
             return GuestSurfacePathFinding(peep);
@@ -1980,6 +1983,9 @@ namespace OpenRCT2::PathFinding
 
                 RideId rideIndex = RideId::GetNull();
                 auto pathSearchResult = FootpathElementDestinationInDirection(loc, pathElement, chosenDirection, &rideIndex);
+                // FACTORY-TOUR: exhibit dead ends are worth walking into
+                if (pathSearchResult == PathSearchResult::deadEnd && Factory::exhibitEdges(loc, 1 << chosenDirection) != 0)
+                    continue;
                 switch (pathSearchResult)
                 {
                     case PathSearchResult::deadEnd:
@@ -2026,7 +2032,8 @@ namespace OpenRCT2::PathFinding
         {
             LogPathfinding(&peep, "Completed CalculateNextDestination - peep is aimless.");
 
-            return GuestPathfindAimless(peep, edges);
+            // FACTORY-TOUR: aimless guests drift towards Exhibit Paths
+            return GuestPathfindAimless(peep, Factory::biasTowardsExhibits(loc, static_cast<uint8_t>(edges)));
         }
 
         // Peep is heading for a ride.

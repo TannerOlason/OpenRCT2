@@ -67,6 +67,7 @@ namespace OpenRCT2
                     { "editorOnly", FOOTPATH_ENTRY_FLAG_SHOW_ONLY_IN_SCENARIO_EDITOR },
                     { "isQueue", FOOTPATH_ENTRY_FLAG_IS_QUEUE },
                     { "noSlopeRailings", FOOTPATH_ENTRY_FLAG_NO_SLOPE_RAILINGS },
+                    { "isExhibit", FOOTPATH_ENTRY_FLAG_IS_EXHIBIT }, // FACTORY-TOUR
                 });
         }
 

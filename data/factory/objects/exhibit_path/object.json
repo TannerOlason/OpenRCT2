@@ -1,0 +1,25 @@
+{
+    "id": "factory-tour.footpath_surface.exhibit",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "footpath_surface",
+    "properties": {
+        "isExhibit": true
+    },
+    "images": [
+        {
+            "path": "images/preview.png",
+            "x": -32,
+            "y": -17
+        },
+        "$RCT2:OBJDATA/PATHSPCE.DAT[0..50]"
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Factory exhibit walkway"
+        }
+    }
+}
