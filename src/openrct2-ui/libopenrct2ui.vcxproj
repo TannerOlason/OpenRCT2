@@ -192,6 +192,7 @@
     <ClCompile Include="windows\factory\FactoryBuild.cpp" />
     <ClCompile Include="windows\factory\FactoryInfo.cpp" />
     <ClCompile Include="windows\factory\FactoryOptions.cpp" />
+    <ClCompile Include="windows\factory\FactoryProduction.cpp" />
     <ClCompile Include="windows\factory\FactoryResearch.cpp" />
     <ClCompile Include="windows\factory\FactoryPower.cpp" />
     <ClCompile Include="windows\GameStatusBar.cpp" />

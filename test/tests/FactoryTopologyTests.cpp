@@ -32,6 +32,7 @@
 #include <openrct2/core/MemoryStream.h>
 #include <openrct2/entity/EntityRegistry.h>
 #include <openrct2/entity/Guest.h>
+#include <openrct2/factory/Alerts.h>
 #include <openrct2/factory/Belts.h>
 #include <openrct2/factory/Combat.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
@@ -1947,4 +1948,53 @@ TEST_F(FactoryTopologyTests, ThreatsAttackMachinesAndTurretsShootThem)
         ASSERT_EQ(ScenarioSave(getGameState(), out, {}), 1);
     }
     state.threats.clear();
+}
+
+TEST_F(FactoryTopologyTests, AlertsAnnounceNewProblemsOnce)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    auto countNews = [&](const char* text) {
+        int32_t n = 0;
+        gameState.newsItems.foreachRecentNews([&](auto& item) { n += item.text.find(text) != std::string::npos ? 1 : 0; });
+        return n;
+    };
+    const auto before = countNews("without power");
+
+    // Two unpowered assemblers: one alert naming both, linked to the first.
+    PlaceAt(kRowX0, kRowY, 0, _assembler);
+    PlaceAt(kRowX0 + 2, kRowY, 0, _assembler);
+    state.machines.forEach([&](RecordId, MachineRecord& machine) {
+        machine.recipe = _gearRecipe;
+        machine.inputs[0] = { _plate, 10 };
+    });
+    Tick(2);
+    gameState.currentTicks = 100000;
+    updateAlerts(gameState);
+    EXPECT_EQ(countNews("2 machine(s) without power"), 1);
+    EXPECT_EQ(countNews("without power"), before + 1);
+
+    // The same problem again stays quiet; a third machine within the quiet time too.
+    updateAlerts(gameState);
+    PlaceAt(kRowX0 + 4, kRowY, 0, _assembler);
+    state.machines.forEach([&](RecordId, MachineRecord& machine) {
+        machine.recipe = _gearRecipe;
+        machine.inputs[0] = { _plate, 10 };
+    });
+    Tick(2);
+    gameState.currentTicks = 100000 + kAlertCheckTicks;
+    updateAlerts(gameState);
+    EXPECT_EQ(countNews("without power"), before + 1);
+    EXPECT_EQ(state.alerts.lastCount[static_cast<size_t>(AlertKind::noPower)], 3);
+
+    // Once the quiet time has passed, a growing count alerts again.
+    PlaceAt(kRowX0 + 6, kRowY, 0, _assembler);
+    state.machines.forEach([&](RecordId, MachineRecord& machine) {
+        machine.recipe = _gearRecipe;
+        machine.inputs[0] = { _plate, 10 };
+    });
+    Tick(2);
+    gameState.currentTicks = 100000 + kAlertQuietTicks;
+    updateAlerts(gameState);
+    EXPECT_EQ(countNews("4 machine(s) without power"), 1);
 }

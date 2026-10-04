@@ -266,7 +266,7 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
                 PaintSurface(session, direction, baseZ, *(tile_element->asSurface()));
                 // FACTORY-TOUR: ore layer overlay on the ground
                 if (session.ViewFlags.has(ViewportFlag::factoryOre))
-                    PaintFactoryOreOverlay(session, mapPosition, baseZ);
+                    PaintFactoryOverlay(session, *(tile_element->asSurface()), mapPosition, baseZ, session.CurrentRotation);
                 break;
             case TileElementType::path:
                 PaintPath(session, baseZ, *(tile_element->asPath()));

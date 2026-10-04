@@ -12,16 +12,21 @@
 #include "Paint.Factory.h"
 
 #include "../../GameState.h"
+#include "../../SpriteIds.h"
 #include "../../drawing/ImageId.hpp"
 #include "../../factory/Belts.h"
 #include "../../factory/FactoryPrototypeObject.h"
 #include "../../factory/FactoryState.h"
 #include "../../factory/FactoryTopology.h"
+#include "../../factory/GuestFactory.h"
 #include "../../interface/Viewport.h"
 #include "../../profiling/Profiling.h"
 #include "../../world/Map.h"
 #include "../../world/tile_element/FactoryElement.h"
+#include "../../world/tile_element/Slope.h"
+#include "../../world/tile_element/SurfaceElement.h"
 #include "../Paint.h"
+#include "Paint.Surface.h"
 #include "Paint.TileElement.h"
 
 using namespace OpenRCT2;
@@ -280,8 +285,47 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
     PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
 }
 
-void PaintFactoryOreOverlay(PaintSession& session, const CoordsXY& tile, int32_t height)
+Factory::Overlay Factory::gOverlay = Factory::Overlay::ore;
+
+namespace
 {
+    // Surface slope (relative to the view) to selection-sprite offset, as in Paint.Surface.cpp.
+    constexpr uint8_t kSlopeSpriteOffset[] = {
+        0, 2, 1, 3, 8, 10, 9, 11, 4, 6, 5, 7, 12, 14, 13, 15, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 16, 0, 18, 15, 0,
+    };
+
+    uint8_t relativeSlope(const SurfaceElement& surface, uint8_t rotation)
+    {
+        const uint8_t slope = surface.getSlope();
+        uint16_t corners = (slope & kTileSlopeRaisedCornersMask) << rotation;
+        corners = ((corners >> 4) | corners) & 0x0F;
+        return static_cast<uint8_t>((slope & kTileSlopeDiagonalFlag) | corners);
+    }
+
+    void paintPollutionOverlay(
+        PaintSession& session, const SurfaceElement& surface, const CoordsXY& tile, int32_t height, uint8_t rotation)
+    {
+        const uint32_t pollution = getGameState().factory.pollution.at(TileCoordsXY(tile));
+        if (pollution < 500)
+            return;
+        const auto colour = pollution < kSmellPollution / 2 ? Colour::yellow
+            : pollution < kSmellPollution                   ? Colour::lightOrange
+                                                            : Colour::brightRed;
+        const auto image = ImageId(
+            SPR_TERRAIN_SELECTION_PATROL_AREA + kSlopeSpriteOffset[relativeSlope(surface, rotation)], colour);
+        // A child of the surface, like the ore overlay, so anything standing on the tile draws over it.
+        PaintAddImageAsChild(session, image, { 0, 0, height + 1 }, { { 0, 0, height + 1 }, { 32, 32, 1 } });
+    }
+} // namespace
+
+void PaintFactoryOverlay(
+    PaintSession& session, const SurfaceElement& surface, const CoordsXY& tile, int32_t height, uint8_t rotation)
+{
+    if (Factory::gOverlay == Factory::Overlay::pollution)
+    {
+        paintPollutionOverlay(session, surface, tile, height, rotation);
+        return;
+    }
     const auto& ore = getGameState().factory.ore;
     const auto& cell = ore.get(TileCoordsXY(tile));
     if (cell.isEmpty())

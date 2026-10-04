@@ -253,3 +253,29 @@ TEST(FactorySyncChecksumTests, EmptyFactoryMatchesUpstreamEntityChecksum)
     EXPECT_EQ(withFactory.raw, upstream.raw);
 #endif
 }
+
+TEST(FactoryStateTests, ProductionHistorySamplesAndForgetsIdleItems)
+{
+    ProductionStats stats;
+    stats.add(5, 3);
+    stats.consume(5, 1);
+    stats.consume(9, 4);
+    EXPECT_EQ(stats.count(5), 3u);
+    EXPECT_EQ(stats.consumedCount(9), 4u);
+    ASSERT_NE(stats.historyOf(5), nullptr);
+    EXPECT_EQ(stats.historyOf(5)->produced[stats.head], 3u);
+
+    // Closing the period keeps it as the last sample and opens an empty one.
+    const auto first = stats.head;
+    stats.advanceSample();
+    EXPECT_NE(stats.head, first);
+    EXPECT_EQ(stats.historyOf(5)->produced[first], 3u);
+    EXPECT_EQ(stats.historyOf(5)->produced[stats.head], 0u);
+
+    // After a full window without activity an item drops out of the history but keeps its totals.
+    for (size_t i = 0; i < kProductionSamples; i++)
+        stats.advanceSample();
+    EXPECT_EQ(stats.historyOf(5), nullptr);
+    EXPECT_EQ(stats.count(5), 3u);
+    EXPECT_TRUE(stats.history.empty());
+}

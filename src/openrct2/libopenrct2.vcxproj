@@ -736,6 +736,7 @@
     <ClInclude Include="world\map_generator\TreePlacement.h" />
     <ClInclude Include="world\tile_element\BannerElement.h" />
     <ClInclude Include="world\tile_element\FactoryElement.h" />
+    <ClInclude Include="factory\Alerts.h" />
     <ClInclude Include="factory\Belts.h" />
     <ClInclude Include="factory\Combat.h" />
     <ClInclude Include="factory\FactoryBench.h" />
@@ -1351,6 +1352,7 @@
     <ClCompile Include="world\map_generator\TreePlacement.cpp" />
     <ClCompile Include="world\tile_element\BannerElement.cpp" />
     <ClCompile Include="world\tile_element\FactoryElement.cpp" />
+    <ClCompile Include="factory\Alerts.cpp" />
     <ClCompile Include="factory\Belts.cpp" />
     <ClCompile Include="factory\Combat.cpp" />
     <ClCompile Include="factory\FactoryBench.cpp" />

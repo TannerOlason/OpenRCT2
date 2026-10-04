@@ -7,6 +7,7 @@
 - Feature: [fork#1] First factory slice: belts, inserters and chests can be built from a new toolbar window; items move along belts and inserters carry them between belts and chests.
 - Feature: [fork#1] Underground belts tunnel under other buildings, splitters alternate items between two output belts, and a belt ending at the side of another belt sideloads onto its near lane.
 - Feature: [fork#1] Dragging with a belt selected in the factory window builds a straight run of belts.
+- Feature: [fork#1] Factory alerts, a pollution overlay and production graphs.
 - Feature: [fork#1] Steel, engineering kits, fast inserters and factory defence technologies; a modding guide with an example turret mod.
 - Feature: [fork#1] Combat stub: machines have health, threats attack them and turrets fight back; plugins can spawn threats and deal damage.
 - Feature: [fork#1] The object selection’s factory page has tabs for items, recipes, logistics, machines and technologies.

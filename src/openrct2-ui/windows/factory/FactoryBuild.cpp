@@ -64,6 +64,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_POWER,
         WIDX_OPTIONS,
         WIDX_RESEARCH,
+        WIDX_PRODUCTION,
     };
     VALIDATE_GLOBAL_WIDX(WC_FACTORY_BUILD, WIDX_ROTATE);
 
@@ -74,7 +75,8 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({276,  17}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_ROTATE_ARROW), STR_FT_ROTATE_TIP     ),
         makeWidget({276,  43}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_GRAPH),        STR_FT_POWER_TIP      ),
         makeWidget({276,  69}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_GEARS_0),  STR_FT_OPTIONS_TIP    ),
-        makeWidget({276,  95}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_FINANCES_RESEARCH_0), STR_FT_RESEARCH_TIP)
+        makeWidget({276,  95}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_FINANCES_RESEARCH_0), STR_FT_RESEARCH_TIP),
+        makeWidget({276, 121}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_GRAPH_0),             STR_FT_PRODUCTION_TIP)
     );
     // clang-format on
 
@@ -163,6 +165,9 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_RESEARCH:
                     FactoryResearchOpen();
+                    break;
+                case WIDX_PRODUCTION:
+                    FactoryProductionOpen();
                     break;
             }
         }

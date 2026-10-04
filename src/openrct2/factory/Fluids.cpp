@@ -414,7 +414,7 @@ namespace OpenRCT2::Factory
             setMachineStatus(machine, MachineStatus::noInput);
             return;
         }
-        machineBurnFuel(machine, props);
+        machineBurnFuel(state, machine, props);
         out->fluid = outFluid;
         out->amount += take;
         setMachineStatus(machine, MachineStatus::working);

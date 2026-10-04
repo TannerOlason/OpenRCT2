@@ -3992,3 +3992,17 @@ STR_20595   :No such target
 STR_20596   :{RED}Destroyed
 STR_20597   :{RED}No ammunition
 STR_20598   :{WINDOW_COLOUR_2}Health: {BLACK}{COMMA32} / {COMMA32}
+STR_20599   :Show factory pollution
+STR_20600   :Factory alert: {COMMA32} machine(s) without power
+STR_20601   :Factory alert: {COMMA32} machine(s) out of fuel
+STR_20602   :Factory alert: {COMMA32} drill(s) out of ore
+STR_20603   :Factory alert: {COMMA32} turret(s) out of ammunition
+STR_20604   :Factory alert: {COMMA32} machine(s) with full output
+STR_20605   :Factory alert: {STRING} destroyed
+STR_20606   :Factory production (items per minute)
+STR_20607   :Click an item to see its graph
+STR_20608   :{BLACK}+{COMMA32}  -{COMMA32}
+STR_20609   :{WINDOW_COLOUR_2}Choose an item on the left
+STR_20610   :{BLACK}{STRING}{WINDOW_COLOUR_2}: made {BLACK}{COMMA32}{WINDOW_COLOUR_2}, used {BLACK}{COMMA32}
+STR_20611   :{WINDOW_COLOUR_2}Peak {COMMA32} per min
+STR_20612   :Production statistics

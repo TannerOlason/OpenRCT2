@@ -15,6 +15,7 @@
 #include "../ride/Ride.h"
 #include "../ride/RideManager.hpp"
 #include "../world/Map.h"
+#include "Alerts.h"
 #include "FactoryPrototypeObject.h"
 #include "FactoryState.h"
 #include "FactoryTopology.h"
@@ -86,6 +87,7 @@ namespace OpenRCT2::Factory
                 machine->craftCost = 0;
                 machine->progress = 0;
                 setMachineStatus(*machine, MachineStatus::destroyed);
+                alertMachineDestroyed(*machine);
                 if (machine->powerNetwork != kNullRecord)
                     gameState.factory.powerDirty = true;
                 result.destroyed = true;
@@ -311,6 +313,7 @@ namespace OpenRCT2::Factory
             {
                 if (ammo != kObjectEntryIndexNull && slot.item == ammo && slot.count > 0)
                 {
+                    state.production.consume(slot.item, 1);
                     if (--slot.count == 0)
                         slot.item = kObjectEntryIndexNull;
                     machine.fuelEnergy = props.shotsPerAmmo;

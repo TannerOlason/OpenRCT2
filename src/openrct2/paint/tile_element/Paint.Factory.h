@@ -18,14 +18,27 @@ struct PaintSession;
 namespace OpenRCT2
 {
     struct FactoryElement;
-}
+    struct SurfaceElement;
+
+    namespace Factory
+    {
+        // What ViewportFlag::factoryOre shows on the ground (a client view setting, never simulation state).
+        enum class Overlay : uint8_t
+        {
+            ore,
+            pollution,
+        };
+        extern Overlay gOverlay;
+    } // namespace Factory
+} // namespace OpenRCT2
 
 struct CoordsXY;
 
 void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, const OpenRCT2::FactoryElement& factoryElement);
 
-// Draws the ore layer cell under a surface tile (ViewportFlag::factoryOre).
-void PaintFactoryOreOverlay(PaintSession& session, const CoordsXY& tile, int32_t height);
+// Draws the factory overlay (ore cells or pollution, Factory::gOverlay) on a surface tile (ViewportFlag::factoryOre).
+void PaintFactoryOverlay(
+    PaintSession& session, const OpenRCT2::SurfaceElement& surface, const CoordsXY& tile, int32_t height, uint8_t rotation);
 
 // Threats standing on `tile` (called from the entity paint pass, like sprites).
 void PaintFactoryThreats(PaintSession& session, const CoordsXY& tile);

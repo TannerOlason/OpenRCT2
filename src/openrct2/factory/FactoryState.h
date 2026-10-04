@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "Alerts.h"
 #include "FactoryPool.hpp"
 #include "FactoryRecords.h"
 #include "Market.h"
@@ -50,6 +51,7 @@ namespace OpenRCT2::Factory
         Pool<PipeRecord> pipes;
         Pool<FluidNetworkRecord> fluidNetworks;
         Pool<ThreatRecord> threats;
+        AlertState alerts;
         // Factory proximity totals of rides part-way through a rating calculation, sorted by ride id.
         std::vector<RideProximityEntry> rideProximity;
         PollutionLayer pollution;
@@ -104,6 +106,7 @@ namespace OpenRCT2::Factory
             production.visit(v);
             research.visit(v);
             threats.visit(v);
+            alerts.visit(v);
         }
     };
 
@@ -117,7 +120,7 @@ namespace OpenRCT2::Factory
 
     // Machine helpers shared with the fluid simulation.
     void setMachineStatus(MachineRecord& machine, MachineStatus status);
-    bool machineBurnFuel(MachineRecord& machine, const MachineProperties& props);
+    bool machineBurnFuel(State& state, MachineRecord& machine, const MachineProperties& props);
     bool machineHasFuel(const MachineRecord& machine, const MachineProperties& props);
 
     // Wall-clock nanoseconds spent in each phase of update(), accumulated (factory-bench only).

@@ -43,11 +43,12 @@ namespace OpenRCT2::Factory
         pipes.clear();
         fluidNetworks.clear();
         threats.clear();
+        alerts = AlertState{};
         rideProximity.clear();
         pollution.clear();
         warehouse.stock.clear();
         market = Market{};
-        production.produced.clear();
+        production.clear();
         research.reset();
         ore.clear();
         parkExt.reset();
@@ -646,7 +647,7 @@ namespace OpenRCT2::Factory
     }
 
     // Burner machines consume one tick of fuel per working tick; returns false (and sets noFuel) when empty.
-    bool machineBurnFuel(MachineRecord& machine, const MachineProperties& props)
+    bool machineBurnFuel(State& state, MachineRecord& machine, const MachineProperties& props)
     {
         if (props.energy != EnergySource::burner)
             return true;
@@ -659,6 +660,7 @@ namespace OpenRCT2::Factory
             }
             auto* fuelProto = getPrototype(machine.fuel.item);
             machine.fuelEnergy = fuelProto != nullptr ? fuelProto->getItem().fuelTicks : 0;
+            state.production.consume(machine.fuel.item, 1);
             machine.fuel.count--;
             if (machine.fuel.count == 0)
                 machine.fuel.item = kObjectEntryIndexNull;
@@ -695,7 +697,7 @@ namespace OpenRCT2::Factory
                 return false;
             }
         }
-        return machineBurnFuel(machine, props);
+        return machineBurnFuel(state, machine, props);
     }
 
     // Tries to push one output item onto whatever is on the tile ahead of the front edge's centre (belt, container
@@ -813,7 +815,7 @@ namespace OpenRCT2::Factory
         }
     }
 
-    static bool startCraft(MachineRecord& machine, const FactoryPrototypeObject& recipeProto)
+    static bool startCraft(State& state, MachineRecord& machine, const FactoryPrototypeObject& recipeProto)
     {
         const auto& recipe = recipeProto.getRecipe();
         for (const auto& ingredient : recipe.ingredients)
@@ -831,7 +833,10 @@ namespace OpenRCT2::Factory
             }
         }
         for (const auto& ingredient : recipe.ingredients)
+        {
             stackRemove(machine.inputs, ingredient.item.resolve(), ingredient.count);
+            state.production.consume(ingredient.item.resolve(), ingredient.count);
+        }
         machine.craftCost = static_cast<uint32_t>(recipe.timeTicks) * kWorkUnitsPerTick;
         machine.progress = 0;
         return true;
@@ -872,7 +877,7 @@ namespace OpenRCT2::Factory
             return;
         }
 
-        if (machine.craftCost == 0 && !startCraft(machine, *recipeProto))
+        if (machine.craftCost == 0 && !startCraft(state, machine, *recipeProto))
         {
             if (machine.getStatus() != MachineStatus::outputFull)
                 setMachineStatus(machine, MachineStatus::noInput);
@@ -919,7 +924,10 @@ namespace OpenRCT2::Factory
                 }
             }
             for (const auto& pack : tech.packs)
+            {
                 stackRemove(machine.inputs, pack.item.resolve(), pack.count);
+                state.production.consume(pack.item.resolve(), pack.count);
+            }
             machine.recipe = current;
             machine.craftCost = static_cast<uint32_t>(tech.unitTicks) * kWorkUnitsPerTick;
             machine.progress = 0;
@@ -1114,7 +1122,7 @@ namespace OpenRCT2::Factory
             network->supply += props.powerOutput;
             return;
         }
-        if (!machineBurnFuel(machine, props))
+        if (!machineBurnFuel(state, machine, props))
             return;
         setMachineStatus(machine, MachineStatus::working);
         network->supply += props.powerOutput;
@@ -1201,6 +1209,10 @@ namespace OpenRCT2::Factory
         state.market.update(gameState);
         if (gameState.currentTicks % PollutionLayer::kSpreadTicks == 0)
             state.pollution.spread();
+        if (gameState.currentTicks % kAlertCheckTicks == 0)
+            updateAlerts(gameState);
+        if (gameState.currentTicks % kProductionSampleTicks == 0)
+            state.production.advanceSample();
         // Fixed order: belts move, then inserters pick up and drop, then machines work. Containers have no
         // per-tick behaviour.
         if (times == nullptr)

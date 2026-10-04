@@ -39,6 +39,7 @@
 #include <openrct2/interface/Viewport.h>
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/network/Network.h>
+#include <openrct2/paint/tile_element/Paint.Factory.h> // FACTORY-TOUR
 #include <openrct2/ui/UiContext.h>
 #include <openrct2/ui/WindowManager.h>
 #include <openrct2/windows/Intent.h>
@@ -135,7 +136,8 @@ namespace OpenRCT2::Ui::Windows
         DDIDX_HIGHLIGHT_PATH_ISSUES = 19,
         // separator
         DDIDX_TRANSPARENCY = 21,
-        DDIDX_FACTORY_ORE = 22, // FACTORY-TOUR
+        DDIDX_FACTORY_ORE = 22,       // FACTORY-TOUR
+        DDIDX_FACTORY_POLLUTION = 23, // FACTORY-TOUR
 
         TOP_TOOLBAR_VIEW_MENU_COUNT,
     };
@@ -305,7 +307,8 @@ namespace OpenRCT2::Ui::Windows
                 ToggleOption(DDIDX_HIGHLIGHT_PATH_ISSUES, STR_HIGHLIGHT_PATH_ISSUES_MENU),
                 ExtSeparator(),
                 ToggleOption(DDIDX_TRANSPARENCY, STR_TRANSPARENCY_OPTIONS),
-                ToggleOption(DDIDX_FACTORY_ORE, STR_FT_SHOW_ORE), // FACTORY-TOUR
+                ToggleOption(DDIDX_FACTORY_ORE, STR_FT_SHOW_ORE),             // FACTORY-TOUR
+                ToggleOption(DDIDX_FACTORY_POLLUTION, STR_FT_SHOW_POLLUTION), // FACTORY-TOUR
             };
 
             static_assert(ItemIDsMatchIndices(items));
@@ -334,7 +337,11 @@ namespace OpenRCT2::Ui::Windows
             gDropdown.items[DDIDX_PATH_HEIGHTS].setChecked(mvpFlags.has(ViewportFlag::pathHeights));
             gDropdown.items[DDIDX_VIEW_CLIPPING].setChecked(mvpFlags.has(ViewportFlag::clipView));
             gDropdown.items[DDIDX_HIGHLIGHT_PATH_ISSUES].setChecked(mvpFlags.has(ViewportFlag::highlightPathIssues));
-            gDropdown.items[DDIDX_FACTORY_ORE].setChecked(mvpFlags.has(ViewportFlag::factoryOre)); // FACTORY-TOUR
+            // FACTORY-TOUR: one overlay flag, two modes
+            gDropdown.items[DDIDX_FACTORY_ORE].setChecked(
+                mvpFlags.has(ViewportFlag::factoryOre) && Factory::gOverlay == Factory::Overlay::ore);
+            gDropdown.items[DDIDX_FACTORY_POLLUTION].setChecked(
+                mvpFlags.has(ViewportFlag::factoryOre) && Factory::gOverlay == Factory::Overlay::pollution);
 
             gDropdown.defaultIndex = DDIDX_UNDERGROUND_INSIDE;
         }
@@ -414,8 +421,15 @@ namespace OpenRCT2::Ui::Windows
                         break;
                     // FACTORY-TOUR
                     case DDIDX_FACTORY_ORE:
-                        w->viewport->flags.flip(ViewportFlag::factoryOre);
+                    case DDIDX_FACTORY_POLLUTION:
+                    {
+                        const auto mode = dropdownIndex == DDIDX_FACTORY_ORE ? Factory::Overlay::ore
+                                                                             : Factory::Overlay::pollution;
+                        const bool showing = w->viewport->flags.has(ViewportFlag::factoryOre) && Factory::gOverlay == mode;
+                        w->viewport->flags.set(ViewportFlag::factoryOre, !showing);
+                        Factory::gOverlay = mode;
                         break;
+                    }
                     default:
                         return;
                 }

@@ -180,6 +180,18 @@ object-selection tabs, combat stub (health, damage, Threat, turret), first conte
 Freight railway with cargo cars and loader stations, blueprints and copy/paste, production graphs, alerts,
 pollution overlay, machine audio and smoke.
 
+- [x] Alerts: every 1024 ticks machine statuses are counted; a growing count of machines without power, fuel, ore
+  or ammunition, or with full output, posts a news item linked to the first of them (at most one per kind per 4096
+  ticks); a destroyed machine is announced at once.
+- [x] Pollution overlay: View menu "Show factory pollution" shares the ore overlay's viewport flag (no free bits
+  remain) with a client-side mode, and tints the ground yellow, orange or red by the 8x8 pollution cell.
+- [x] Production graphs: production and consumption per item (ingredients, lab packs, fuel, ammunition) with a
+  48-sample history (one sample per 1024 ticks, about 20 minutes) in the Factory production window (WindowClass 147):
+  per-minute rates and a bar graph of production up and consumption down.
+- [ ] Blueprints and copy/paste.
+- [ ] Machine audio and smoke.
+- [ ] Freight railway with cargo cars and loader stations.
+
 ### M7 Multi-world I `[ ]`
 
 E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two worlds with item transfer
