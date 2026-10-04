@@ -17,6 +17,7 @@
 #include <openrct2-ui/interface/Window.h>
 #include <openrct2-ui/ride/Construction.h>
 #include <openrct2-ui/windows/Windows.h>
+#include <openrct2-ui/windows/factory/FactoryUi.h> // FACTORY-TOUR
 #include <openrct2/Cheats.h>
 #include <openrct2/Context.h>
 #include <openrct2/GameState.h>
@@ -1741,8 +1742,10 @@ namespace OpenRCT2::Ui::Windows
             if (_currentTrackPrice != kMoney64Undefined && !getGameState().park.flags.has(ParkFlag::noMoney))
             {
                 auto ft = Formatter();
-                ft.Add<money64>(_currentTrackPrice);
-                drawText(rt, screenCoords, STR_COST_LABEL, ft, { TextAlignment::centre });
+                // FACTORY-TOUR: materials-aware cost line (STR_COST_LABEL in money mode)
+                const auto costText = Ui::Factory::constructionCostText(
+                    _currentTrackPrice, ExpenditureType::rideConstruction, ft);
+                drawText(rt, screenCoords, costText, ft, { TextAlignment::centre });
             }
         }
 

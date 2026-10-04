@@ -82,5 +82,7 @@ namespace OpenRCT2
         STR_FT_THOUGHT_FACTORY_DANGER = 20538,
         STR_FT_NEEDS_MATERIALS = 20539,
         STR_FT_WAREHOUSE = 20540,
+        STR_FT_COST_AND_MATERIALS = 20541,
+        STR_FT_COST_MATERIALS = 20542,
     };
 } // namespace OpenRCT2

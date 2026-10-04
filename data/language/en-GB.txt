@@ -3934,3 +3934,5 @@ STR_20537   :“It’s sold out!”
 STR_20538   :“That machinery looks dangerous”
 STR_20539   :Needs {COMMA32} {STRING} ({COMMA32} in the warehouse)
 STR_20540   :{WINDOW_COLOUR_2}Warehouse (park-wide)
+STR_20541   :{BLACK}{CURRENCY} + {COMMA32} {STRING}
+STR_20542   :{WINDOW_COLOUR_2}Needs {BLACK}{COMMA32} {STRING}

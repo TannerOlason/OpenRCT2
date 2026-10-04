@@ -128,8 +128,10 @@ Exhibit Paths.
   materials) in `parkExt`, set by `FactorySetParkOptionAction`. In hybrid and materials mode upstream construction
   (ride construction and landscaping, not fork actions) carries a bill of one Iron plate per 5.00 of cost: the query
   fails with `insufficientMaterials` ("Needs N Iron plate") when the warehouse is short, execute takes it (materials
-  mode charges no money), and refunds put plates back. Cost text in construction windows is still to do.
-- [ ] Construction window cost text ("needs N Iron plate").
+  mode charges no money), and refunds put plates back.
+- [x] Construction window cost text: the ride construction, footpath and scenery windows show "$12 + 3 Iron plate"
+  in hybrid mode and "Needs 3 Iron plate" in materials mode (`Ui::Factory::constructionCostText`); money mode is
+  unchanged. Checked in the GUI with a plugin calling `factorysetparkoption`.
 - [ ] Market, export depot and new expenditure rows.
 - [ ] Warehouse-stocked shops and souvenir shop items.
 - [ ] Park rating terms (pollution near paths, uptime) and park flags.

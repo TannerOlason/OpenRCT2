@@ -15,6 +15,7 @@
 #include <openrct2-ui/interface/Widget.h>
 #include <openrct2-ui/interface/Window.h>
 #include <openrct2-ui/windows/Windows.h>
+#include <openrct2-ui/windows/factory/FactoryUi.h> // FACTORY-TOUR
 #include <openrct2/Context.h>
 #include <openrct2/GameState.h>
 #include <openrct2/Input.h>
@@ -908,11 +909,11 @@ namespace OpenRCT2::Ui::Windows
             if (price != kMoney64Undefined && !getGameState().park.flags.has(ParkFlag::noMoney))
             {
                 auto ft = Formatter();
-                ft.Add<money64>(price);
+                // FACTORY-TOUR: materials-aware cost line (STR_COST_LABEL in money mode)
+                const auto costText = Ui::Factory::constructionCostText(price, ExpenditureType::landscaping, ft);
 
                 // -14
-                drawText(
-                    rt, windowPos + ScreenCoordsXY{ width - 0x1A, height - 13 }, STR_COST_LABEL, ft, { TextAlignment::right });
+                drawText(rt, windowPos + ScreenCoordsXY{ width - 0x1A, height - 13 }, costText, ft, { TextAlignment::right });
             }
 
             auto ft = Formatter();
