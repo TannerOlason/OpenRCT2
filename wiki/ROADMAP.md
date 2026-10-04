@@ -75,7 +75,10 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   stone furnace (auto recipe from its input); recipe, ore and fuel prototypes; `FactorySetRecipeAction` for
   assemblers; inserters feed and empty machines. Test: ore → drill → belt → inserter → furnace → inserter →
   chest yields 90 plates from 90 ore.
-- [ ] Multi-tile footprints (machines are 1x1 until the paint pipeline slices composite sprites per tile).
+- [x] Multi-tile footprints: square machines (`size`), one element per tile sharing the record, validated per
+  tile, removed as a whole from any tile; drills mine around the centre and drop past the front edge's centre; power
+  reaches the nearest footprint tile; fluid boxes connect at edge centres; the painter draws a per-tile slice chosen
+  by view position. Content: the 3x3 electric mining drill. Checked in the GUI under Xvfb.
 - [x] Assembler + electric power: pole prototypes (wire reach, supply radius), power networks rebuilt by
   flood fill when poles or machines change, burner generators that burn fuel only under load, consumers
   scaling progress by last tick's satisfaction. Test: plates → assembler → gears only once a fuelled

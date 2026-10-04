@@ -88,6 +88,10 @@ namespace OpenRCT2::Ui::Windows
         Direction _ghostDirection{};
         ObjectEntryIndex _ghostEntry = kObjectEntryIndexNull;
 
+        // Click-and-drag placement of other kinds: the last origin placed this press, so a drag never re-places on
+        // top of it (which would only report "in the way").
+        std::optional<CoordsXYZ> _lastPlaced;
+
         // Belt drags: tool down fixes the start, dragging previews a ghost run, tool up builds it.
         bool _dragging = false;
         CoordsXYZ _dragStart{};
@@ -199,6 +203,7 @@ namespace OpenRCT2::Ui::Windows
                 PlaceLine();
             }
             _errorOccurred = false;
+            _lastPlaced.reset();
         }
 
         void onToolAbort(WidgetIndex widgetIndex) override
@@ -349,6 +354,20 @@ namespace OpenRCT2::Ui::Windows
             return (_rotation - GetCurrentRotation()) & 3;
         }
 
+        // Multi-tile machines are centred on the cursor: their origin (minimum corner) sits half a footprint back.
+        std::optional<CoordsXYZ> PlacementOrigin(const ScreenCoordsXY& screenCoords) const
+        {
+            auto tile = CursorTile(screenCoords);
+            const int32_t half = (footprintSize(getPrototype(_selected)) - 1) / 2;
+            if (!tile.has_value() || half == 0)
+                return tile;
+            const CoordsXY origin{ tile->x - half * kCoordsXYStep, tile->y - half * kCoordsXYStep };
+            auto* surface = MapIsLocationValid(origin) ? MapGetSurfaceElementAt(origin) : nullptr;
+            if (surface == nullptr)
+                return std::nullopt;
+            return CoordsXYZ{ origin, surface->getBaseZ() };
+        }
+
         std::optional<CoordsXYZ> CursorTile(const ScreenCoordsXY& screenCoords) const
         {
             auto info = GetMapCoordinatesFromPos(screenCoords, { ViewportInteractionItem::terrain });
@@ -375,7 +394,7 @@ namespace OpenRCT2::Ui::Windows
 
         void UpdateGhost(const ScreenCoordsXY& screenCoords)
         {
-            auto tile = CursorTile(screenCoords);
+            auto tile = PlacementOrigin(screenCoords);
             if (!tile.has_value() || _selected == kObjectEntryIndexNull)
             {
                 RemoveGhost();
@@ -391,7 +410,8 @@ namespace OpenRCT2::Ui::Windows
             RemoveGhost();
             gMapSelectFlags.set(MapSelectFlag::enable);
             gMapSelectType = MapSelectType::full;
-            setMapSelectRange(*tile);
+            const int32_t span = (footprintSize(getPrototype(_selected)) - 1) * kCoordsXYStep;
+            setMapSelectRange(MapRange{ CoordsXY(*tile), CoordsXY{ tile->x + span, tile->y + span } });
 
             auto action = GameActions::FactoryPlaceAction(*tile, direction, _selected);
             action.SetFlags(
@@ -522,9 +542,18 @@ namespace OpenRCT2::Ui::Windows
         {
             if (_errorOccurred || _selected == kObjectEntryIndexNull)
                 return;
-            auto tile = CursorTile(screenCoords);
+            auto tile = PlacementOrigin(screenCoords);
             if (!tile.has_value())
                 return;
+            if (_lastPlaced.has_value())
+            {
+                const int32_t size = footprintSize(getPrototype(_selected));
+                const int32_t dx = std::abs(tile->x - _lastPlaced->x) / kCoordsXYStep;
+                const int32_t dy = std::abs(tile->y - _lastPlaced->y) / kCoordsXYStep;
+                if (dx < size && dy < size)
+                    return; // still over what this press just built
+            }
+            _lastPlaced = *tile;
 
             RemoveGhost();
             auto action = GameActions::FactoryPlaceAction(*tile, PlacementDirection(), _selected);

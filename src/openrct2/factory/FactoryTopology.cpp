@@ -21,6 +21,7 @@
 #include "Belts.h"
 #include "Fluids.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace OpenRCT2::Factory
@@ -610,6 +611,76 @@ namespace OpenRCT2::Factory
         return MapIsLocationValid(second);
     }
 
+    uint8_t footprintSize(const FactoryPrototypeObject* proto)
+    {
+        if (proto == nullptr || proto->getSubtype() != FactoryElementSubtype::machine)
+            return 1;
+        return std::max<uint8_t>(1, proto->getMachine().size);
+    }
+
+    CoordsXYZ footprintOrigin(const FactoryElement& element, const CoordsXYZ& loc)
+    {
+        if (element.getSubtype() != FactoryElementSubtype::machine)
+            return loc;
+        const uint8_t size = footprintSize(getPrototype(element));
+        const int32_t index = element.getFootprintIndex();
+        return CoordsXYZ{ loc.x - (index % size) * kCoordsXYStep, loc.y - (index / size) * kCoordsXYStep, loc.z };
+    }
+
+    CoordsXYZ footprintCentre(const CoordsXYZ& origin, uint8_t size)
+    {
+        const int32_t half = (size - 1) / 2;
+        return CoordsXYZ{ origin.x + half * kCoordsXYStep, origin.y + half * kCoordsXYStep, origin.z };
+    }
+
+    CoordsXYZ footprintEdgeNeighbour(const CoordsXYZ& origin, uint8_t size, Direction d)
+    {
+        // From the centre: positive directions (+y = 1, +x = 2) step past the far edge, negative ones past the near.
+        const int32_t half = (size - 1) / 2;
+        const int32_t steps = (d == 1 || d == 2) ? size - half : half + 1;
+        const auto centre = footprintCentre(origin, size);
+        const auto delta = CoordsDirectionDelta[d & 3];
+        return CoordsXYZ{ centre.x + delta.x * steps, centre.y + delta.y * steps, origin.z };
+    }
+
+    int32_t distanceToFootprint(int32_t x, int32_t y, int32_t originX, int32_t originY, uint8_t size)
+    {
+        const int32_t dx = std::max({ 0, originX - x, x - (originX + size - 1) });
+        const int32_t dy = std::max({ 0, originY - y, y - (originY + size - 1) });
+        return std::max(dx, dy);
+    }
+
+    uint8_t footprintViewSlice(uint8_t index, uint8_t size, uint8_t rotation)
+    {
+        // Map offset (i, j) = i * (+x) + j * (+y). At view rotation r, map direction d shows as view direction
+        // (d + r) & 3, so +x (2) and +y (1) become view directions (2 + r) and (1 + r); a negated axis counts from
+        // the far side of the square.
+        const int32_t i = index % size;
+        const int32_t j = index / size;
+        int32_t column = 0;
+        int32_t row = 0;
+        auto add = [&](Direction viewDir, int32_t amount) {
+            switch (viewDir & 3)
+            {
+                case 0:
+                    column += size - 1 - amount;
+                    break;
+                case 1:
+                    row += amount;
+                    break;
+                case 2:
+                    column += amount;
+                    break;
+                default:
+                    row += size - 1 - amount;
+                    break;
+            }
+        };
+        add(static_cast<Direction>((2 + rotation) & 3), i);
+        add(static_cast<Direction>((1 + rotation) & 3), j);
+        return static_cast<uint8_t>(row * size + column);
+    }
+
     FactoryElement* placeElement(
         GameState_t& gameState, const CoordsXYZ& loc, Direction dir, ObjectEntryIndex entry, bool ghost)
     {
@@ -663,6 +734,38 @@ namespace OpenRCT2::Factory
             MapInvalidateTileFull(secondLoc);
             MapAnimations::MarkTileForInvalidation(TileCoordsXY(secondLoc));
         }
+
+        // Machines larger than 1x1 own one element per footprint tile; the origin carries index 0.
+        const uint8_t size = footprintSize(proto);
+        std::vector<CoordsXYZ> extraTiles;
+        for (int32_t index = 1; index < size * size; index++)
+        {
+            const CoordsXYZ at{ loc.x + (index % size) * kCoordsXYStep, loc.y + (index / size) * kCoordsXYStep, loc.z };
+            auto* extra = MapIsLocationValid(at) ? TileElementInsert<FactoryElement>(at, 0b1111) : nullptr;
+            if (extra == nullptr)
+            {
+                for (const auto& placed : extraTiles)
+                    if (auto* undo = findFactoryElement(placed, ghost))
+                        TileElementRemove(reinterpret_cast<TileElement*>(undo));
+                if (auto* undo = findFactoryElement(loc, ghost))
+                    TileElementRemove(reinterpret_cast<TileElement*>(undo));
+                return nullptr;
+            }
+            extra->setClearanceZ(at.z + proto->getClearance() * kCoordsZStep);
+            extra->setDirection(dir & 3);
+            extra->setSubtype(subtype);
+            extra->setEntryIndex(entry);
+            extra->setRecordId(kNullRecord);
+            extra->setFootprintIndex(static_cast<uint8_t>(index));
+            extra->setConnectionCache(0);
+            extra->setFactoryFlags(0);
+            extra->setGhost(ghost);
+            extraTiles.push_back(at);
+            MapInvalidateTileFull(at);
+            MapAnimations::MarkTileForInvalidation(TileCoordsXY(at));
+        }
+        if (!extraTiles.empty())
+            element = findFactoryElement(loc, ghost); // inserting may have moved the element array
 
         auto& state = gameState.factory;
         if (!ghost)
@@ -721,6 +824,9 @@ namespace OpenRCT2::Factory
                     record.outputs.assign(props.outputSlots, ItemStack{});
                     record.status = static_cast<uint8_t>(MachineStatus::idle);
                     element->setRecordId(id);
+                    for (const auto& at : extraTiles)
+                        if (auto* extra = findFactoryElement(at))
+                            extra->setRecordId(id);
                     if (props.energy == EnergySource::electric || proto->isGenerator())
                         state.powerDirty = true;
                     if (!props.fluidBoxes.empty())
@@ -764,6 +870,8 @@ namespace OpenRCT2::Factory
 
         refreshBeltShapesAround(loc);
         refreshPipeConnectionsAround(loc);
+        for (const auto& at : extraTiles)
+            refreshPipeConnectionsAround(at);
         MapInvalidateTileFull(loc);
         MapAnimations::MarkTileForInvalidation(TileCoordsXY(loc));
         return element;
@@ -780,6 +888,21 @@ namespace OpenRCT2::Factory
         {
             partnerLoc = splitterPartnerTile(loc, dir, element.getFootprintIndex());
             hasPartner = true;
+        }
+        // The other tiles of a multi-tile machine go with it.
+        std::vector<CoordsXYZ> footprintTiles;
+        const auto entry = element.getEntryIndex();
+        if (subtype == FactoryElementSubtype::machine)
+        {
+            const uint8_t size = footprintSize(getPrototype(element));
+            const auto origin = footprintOrigin(element, loc);
+            for (int32_t index = 0; index < size * size && size > 1; index++)
+            {
+                const CoordsXYZ at{ origin.x + (index % size) * kCoordsXYStep, origin.y + (index / size) * kCoordsXYStep,
+                                    origin.z };
+                if (at != loc)
+                    footprintTiles.push_back(at);
+            }
         }
 
         if (!element.isGhost())
@@ -839,6 +962,16 @@ namespace OpenRCT2::Factory
                 TileElementRemove(reinterpret_cast<TileElement*>(partner));
             }
         }
+        for (const auto& at : footprintTiles)
+        {
+            auto* part = findFactoryElement(at, ghost);
+            if (part != nullptr && part->getSubtype() == FactoryElementSubtype::machine && part->isGhost() == ghost
+                && part->getEntryIndex() == entry)
+            {
+                MapInvalidateTileFull(at);
+                TileElementRemove(reinterpret_cast<TileElement*>(part));
+            }
+        }
         if (!ghost)
         {
             relinkAround(state, loc);
@@ -847,6 +980,8 @@ namespace OpenRCT2::Factory
         }
         refreshBeltShapesAround(loc);
         refreshPipeConnectionsAround(loc);
+        for (const auto& at : footprintTiles)
+            refreshPipeConnectionsAround(at);
         if (hasPartner)
             refreshBeltShapesAround(partnerLoc);
     }

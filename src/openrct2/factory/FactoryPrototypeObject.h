@@ -57,7 +57,10 @@ namespace OpenRCT2::Factory
      *              enter travelling in (d + 1) & 3), 2 turn right (enter travelling in (d + 3) & 3)
      *   inserter:  [direction * frames + frame], frame 0 = arm over the pickup tile, frames-1 = over the drop tile
      *   container: [direction] when rotations == 4, otherwise [0]
-     *   machine:   [direction * frames + frame] (or [frame] when rotations == 1); frame 0 = idle
+     *   machine:   [(direction * frames + frame) * size * size + slice] (direction is 0 when rotations == 1);
+     *              frame 0 = idle; slice = viewRow * size + viewColumn, the tile's position in the view-rotated
+     *              footprint (see footprintViewSlice), so a 1x1 machine has one slice; a multi-tile machine may add
+     *              one whole-machine preview image after the last slice for the build palette
      *   ore:       [0] ground overlay (64x32 diamond), [1] icon
      *   pole:      [0] the pole
      *   underground: [direction] entrance, [4 + direction] exit
@@ -163,6 +166,7 @@ namespace OpenRCT2::Factory
         uint16_t miningTimeTicks = 80; // drills: ticks per ore item at speed 1.0
         uint8_t frames = 1;            // working animation frames per direction
         uint8_t rotations = 4;         // 1 or 4
+        uint8_t size = 1;              // square footprint, size x size tiles from the origin (minimum) corner
         std::vector<FluidBoxProperties> fluidBoxes;
         PrototypeRef inputFluid;  // boilers and steam engines: what the input box must hold
         PrototypeRef outputFluid; // pumps and boilers: what the output box receives
@@ -298,7 +302,7 @@ namespace OpenRCT2::Factory
         ImageIndex getBeltImage(BeltShape shape, uint8_t direction, uint8_t frame) const;
         ImageIndex getInserterImage(uint8_t direction, uint8_t frame) const;
         ImageIndex getContainerImage(uint8_t direction) const;
-        ImageIndex getMachineImage(uint8_t direction, uint8_t frame) const;
+        ImageIndex getMachineImage(uint8_t direction, uint8_t frame, uint8_t slice = 0) const;
         ImageIndex getOreOverlayImage() const;
         ImageIndex getOreIconImage() const;
         ImageIndex getPoleImage() const;

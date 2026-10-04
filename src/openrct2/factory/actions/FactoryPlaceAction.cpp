@@ -124,6 +124,34 @@ namespace OpenRCT2::GameActions
             }
             res.cost += canBuildSecond.cost;
         }
+
+        // Every other tile of a multi-tile machine must be just as buildable at the same height.
+        const uint8_t size = footprintSize(proto);
+        for (int32_t index = 1; index < size * size; index++)
+        {
+            const CoordsXYZ at{ _loc.x + (index % size) * kCoordsXYStep, _loc.y + (index / size) * kCoordsXYStep, _loc.z };
+            if (!LocationValid(at))
+                return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_OFF_EDGE_OF_MAP);
+            if (!MapCanBuildAt(at))
+                return Result(Status::notOwned, STR_FT_CANT_BUILD_THIS_HERE, STR_LAND_NOT_OWNED_BY_PARK);
+            auto* tileSurface = MapGetSurfaceElementAt(at);
+            if (tileSurface == nullptr || tileSurface->getSlope() != 0 || tileSurface->getBaseZ() != _loc.z)
+                return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_LEVEL_LAND_REQUIRED);
+            if (tileSurface->getWaterHeight() > 0)
+                return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_CAN_ONLY_BUILD_THIS_ON_LAND);
+            if (findFactoryElement(at, GetFlags().has(CommandFlag::ghost)) != nullptr)
+                return Result(Status::itemAlreadyPlaced, STR_FT_CANT_BUILD_THIS_HERE, STR_FT_FACTORY_IN_THE_WAY);
+            if (!MapCheckCapacityAndReorganise(at))
+                return Result(Status::noFreeElements, STR_FT_CANT_BUILD_THIS_HERE, STR_TILE_ELEMENT_LIMIT_REACHED);
+            auto canBuildTile = MapCanConstructWithClearAt(
+                { at, at.z, clearanceZ }, MapPlaceNonSceneryClearFunc, QuarterTile{ 0b1111, 0 }, flags);
+            if (canBuildTile.error != Status::ok)
+            {
+                canBuildTile.errorTitle = STR_FT_CANT_BUILD_THIS_HERE;
+                return canBuildTile;
+            }
+            res.cost += canBuildTile.cost;
+        }
         return res;
     }
 

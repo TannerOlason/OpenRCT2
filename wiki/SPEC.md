@@ -57,6 +57,15 @@ of the tile ahead; source and target re-resolved when `topologyVersion` changes.
 Furnaces auto-select a recipe from `smeltingByInput`. Drills scan their area with a rotating cursor and
 decrement the Ore Layer. Kinds: `drill, furnace, assembler, boiler, engine, pump, lab, turret, exportDepot`.
 
+**Footprints.** A machine prototype's `size` makes it a size x size square whose origin (the record location) is
+the minimum corner. Each tile has its own element with the record id and `footprintIndex = dy * size + dx`; only
+the origin carries `FACTORY_ELEMENT_FLAG_ORIGIN`. Placement validates every tile; removing any tile removes all.
+Drills mine a square of `miningRadius` around the centre and drop onto the tile beyond the front edge's centre;
+power reaches a machine when a pole's supply radius touches any footprint tile; fluid boxes connect through the
+tile beyond each edge's centre, and the other node must face back from exactly that tile. Images hold one slice per
+tile per direction and frame, indexed by the tile's row-major place in the view-rotated square, so lids join and
+only outer edges get walls; an optional last image is the palette preview. Splitters keep their own two-tile rule.
+
 **Ore Layer.** Dense `OreCell {ore, richness, amount}` (8 bytes) per tile, resized with the map, RLE-saved
 in chunk 0x42, painted as a surface overlay.
 

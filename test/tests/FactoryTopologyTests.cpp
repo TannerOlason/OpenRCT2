@@ -73,6 +73,7 @@ protected:
         _pump = Index(objectManager.LoadObject("factory-tour.factory_prototype.offshore_pump"));
         _boiler = Index(objectManager.LoadObject("factory-tour.factory_prototype.boiler"));
         _steamEngine = Index(objectManager.LoadObject("factory-tour.factory_prototype.steam_engine"));
+        _electricDrill = Index(objectManager.LoadObject("factory-tour.factory_prototype.electric_drill"));
         ASSERT_NE(_plate, kObjectEntryIndexNull);
         ASSERT_NE(_belt, kObjectEntryIndexNull);
         ASSERT_NE(_inserter, kObjectEntryIndexNull);
@@ -190,6 +191,7 @@ protected:
     static ObjectEntryIndex _pump;
     static ObjectEntryIndex _boiler;
     static ObjectEntryIndex _steamEngine;
+    static ObjectEntryIndex _electricDrill;
 };
 
 std::shared_ptr<IContext> FactoryTopologyTests::_context;
@@ -216,6 +218,7 @@ ObjectEntryIndex FactoryTopologyTests::_pipe = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_pump = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_boiler = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_steamEngine = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_electricDrill = kObjectEntryIndexNull;
 
 TEST_F(FactoryTopologyTests, PlacingBeltsInARowFormsOneSegment)
 {
@@ -431,6 +434,12 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
         for (int i = 0; i < 3; i++)
             laneInsertAt(logistics->lanes[0], segmentLength(*logistics), 20 + i * 80, _plate);
     }
+    // A 3x3 electric drill east of the drill row, with a belt leaving its east edge.
+    placeElement(
+        gameState, CoordsXYZ{ (kRowX0 + 9) * kCoordsXYStep, (kRowY + 3) * kCoordsXYStep, GroundZ(kRowX0) }, east,
+        _electricDrill, false);
+    PlaceAt(kRowX0 + 12, kRowY + 4, east, _belt);
+
     // Fluid row two tiles north: a pipe run with a tee into a boiler facing south and a steam engine below it.
     for (int32_t i = 0; i <= 4; i++)
         PlaceAt(kRowX0 + i, kRowY - 2, east, _pipe);
@@ -473,7 +482,7 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     EXPECT_EQ(loaded.beltSegments.aliveCount(), beltsBefore);
     EXPECT_EQ(loaded.inserters.aliveCount(), insertersBefore);
     EXPECT_EQ(loaded.containers.aliveCount(), 3u);
-    EXPECT_EQ(loaded.machines.aliveCount(), 6u);
+    EXPECT_EQ(loaded.machines.aliveCount(), 7u);
     EXPECT_EQ(loaded.pipes.aliveCount(), 6u);
     EXPECT_NE(findBeltElement(Tile(kRowX0 + 2)), nullptr);
     EXPECT_NE(findFactoryElement(Tile(kRowX0 + 1)), nullptr);
@@ -961,4 +970,77 @@ TEST_F(FactoryTopologyTests, SplitterFilterAndPrioritiesRouteItems)
     Tick(400);
     EXPECT_EQ(out0->lanes[0].items.size(), 7u);
     EXPECT_EQ(out1->lanes[0].items.size(), 3u);
+}
+
+TEST(FactoryFootprintTests, GeometryHelpers)
+{
+    const CoordsXYZ origin{ 10 * kCoordsXYStep, 20 * kCoordsXYStep, 64 };
+    EXPECT_EQ(footprintCentre(origin, 3), (CoordsXYZ{ 11 * kCoordsXYStep, 21 * kCoordsXYStep, 64 }));
+    // Just beyond each edge centre: -x, +y, +x, -y.
+    EXPECT_EQ(footprintEdgeNeighbour(origin, 3, 0), (CoordsXYZ{ 9 * kCoordsXYStep, 21 * kCoordsXYStep, 64 }));
+    EXPECT_EQ(footprintEdgeNeighbour(origin, 3, 1), (CoordsXYZ{ 11 * kCoordsXYStep, 23 * kCoordsXYStep, 64 }));
+    EXPECT_EQ(footprintEdgeNeighbour(origin, 3, 2), (CoordsXYZ{ 13 * kCoordsXYStep, 21 * kCoordsXYStep, 64 }));
+    EXPECT_EQ(footprintEdgeNeighbour(origin, 3, 3), (CoordsXYZ{ 11 * kCoordsXYStep, 19 * kCoordsXYStep, 64 }));
+    // A 1x1 footprint degenerates to the plain neighbour.
+    for (Direction d = 0; d < 4; d++)
+        EXPECT_EQ(footprintEdgeNeighbour(origin, 1, d), neighbourTile(origin, d));
+    EXPECT_EQ(distanceToFootprint(11, 21, 10, 20, 3), 0);
+    EXPECT_EQ(distanceToFootprint(14, 21, 10, 20, 3), 2);
+    EXPECT_EQ(distanceToFootprint(8, 17, 10, 20, 3), 3);
+    // Every rotation maps the nine tiles onto the nine slices exactly once; rotation 0 is row-major map order.
+    for (uint8_t rotation = 0; rotation < 4; rotation++)
+    {
+        uint32_t seen = 0;
+        for (uint8_t index = 0; index < 9; index++)
+            seen |= 1u << footprintViewSlice(index, 3, rotation);
+        EXPECT_EQ(seen, 0x1FFu) << int(rotation);
+    }
+    for (uint8_t index = 0; index < 9; index++)
+        EXPECT_EQ(footprintViewSlice(index, 3, 0), index);
+}
+
+TEST_F(FactoryTopologyTests, ElectricDrillMinesAroundItsCentreAndDropsAheadOfItsFront)
+{
+    ASSERT_NE(_electricDrill, kObjectEntryIndexNull);
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    const Direction east = 2;
+    auto at = [](int32_t tx, int32_t ty) { return CoordsXYZ{ tx * kCoordsXYStep, ty * kCoordsXYStep, GroundZ(kRowX0) }; };
+
+    // Ore only on the far corners of the 5x5 mining area around the centre (kRowX0 + 2, kRowY + 1).
+    state.ore.resize(gameState.mapSize);
+    state.ore.set({ kRowX0, kRowY - 1 }, { _ironOrePatch, 0, 3 });
+    state.ore.set({ kRowX0 + 4, kRowY + 3 }, { _ironOrePatch, 0, 3 });
+    auto* drillElement = placeElement(gameState, at(kRowX0 + 1, kRowY), east, _electricDrill, false);
+    ASSERT_NE(drillElement, nullptr);
+    const RecordId drillId = drillElement->getRecordId();
+    // The output lands on the belt beyond the east edge's centre.
+    PlaceAt(kRowX0 + 4, kRowY + 1, east, _belt);
+    PlaceAt(kRowX0 + 5, kRowY + 1, east, _belt);
+    PlaceAt(kRowX0 + 6, kRowY + 1, east, _belt);
+
+    // Unpowered, nothing happens. A pole touching the footprint's south edge and a fuelled generator power it.
+    Tick(50);
+    EXPECT_EQ(state.machines.get(drillId)->getStatus(), MachineStatus::noPower);
+    PlaceAt(kRowX0 + 1, kRowY + 3, east, _pole);
+    auto* generatorElement = PlaceAt(kRowX0 + 1, kRowY + 4, east, _generator);
+    ASSERT_NE(generatorElement, nullptr);
+    for (int i = 0; i < 5; i++)
+        machineInsertInput(state, *state.machines.get(generatorElement->getRecordId()), _coal);
+    Tick(1);
+    EXPECT_NE(state.machines.get(drillId)->powerNetwork, kNullRecord);
+    EXPECT_EQ(state.machines.get(drillId)->powerNetwork, state.machines.get(generatorElement->getRecordId())->powerNetwork);
+
+    Tick(1200);
+    // All six ore came out onto the belt (it compresses at the dead end, two lanes' worth of room).
+    EXPECT_EQ(state.ore.get({ kRowX0, kRowY - 1 }).amount, 0u);
+    EXPECT_EQ(state.ore.get({ kRowX0 + 4, kRowY + 3 }).amount, 0u);
+    auto* belt = state.beltSegments.get(findBeltElement(at(kRowX0 + 4, kRowY + 1))->getRecordId());
+    ASSERT_NE(belt, nullptr);
+    EXPECT_EQ(belt->lanes[0].items.size() + belt->lanes[1].items.size(), 6u);
+    EXPECT_EQ(state.machines.get(drillId)->getStatus(), MachineStatus::noOre);
+
+    removeElement(gameState, *findFactoryElement(at(kRowX0 + 3, kRowY + 2)), at(kRowX0 + 3, kRowY + 2));
+    EXPECT_EQ(state.machines.get(drillId), nullptr);
+    EXPECT_EQ(findFactoryElement(at(kRowX0 + 1, kRowY)), nullptr);
 }

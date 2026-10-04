@@ -60,8 +60,14 @@ namespace OpenRCT2::Factory
         uint8_t mask = 0;
         for (Direction d = 0; d < 4; d++)
         {
-            auto* neighbour = findFactoryElement(neighbourTile(loc, d));
-            if (neighbour != nullptr && (fluidFacingMask(*neighbour) & (1 << oppositeOf(d))))
+            const auto neighbourLoc = neighbourTile(loc, d);
+            auto* neighbour = findFactoryElement(neighbourLoc);
+            if (neighbour == nullptr || !(fluidFacingMask(*neighbour) & (1 << oppositeOf(d))))
+                continue;
+            // A multi-tile machine connects only through the centre of each edge.
+            const auto origin = footprintOrigin(*neighbour, neighbourLoc);
+            const uint8_t size = footprintSize(getPrototype(*neighbour));
+            if (footprintEdgeNeighbour(origin, size, oppositeOf(d)) == loc)
                 mask |= static_cast<uint8_t>(1 << d);
         }
         return mask;
@@ -117,7 +123,8 @@ namespace OpenRCT2::Factory
     {
         struct FluidNode
         {
-            TileCoordsXYZ tile;
+            TileCoordsXYZ tile;  // footprint origin (a pipe's own tile)
+            uint8_t size{ 1 };   // footprint size; a node connects through its edge centres
             uint8_t sides{};     // world directions this node faces
             uint32_t capacity{}; // what it adds to its network
             RecordId oldNetwork{ kNullRecord };
@@ -163,6 +170,7 @@ namespace OpenRCT2::Factory
             {
                 FluidNode node;
                 node.tile = machine.location();
+                node.size = footprintSize(proto);
                 node.sides = fluidBoxWorldSides(boxes[b], machine.direction);
                 node.capacity = boxes[b].capacity;
                 node.oldNetwork = machine.fluidNetworks[b];
@@ -261,20 +269,24 @@ namespace OpenRCT2::Factory
                     else
                         it->second += node.content;
                 }
-                const auto loc = tileToCoords(node.tile);
+                const auto origin = tileToCoords(node.tile);
                 for (Direction d = 0; d < 4; d++)
                 {
                     if (!(node.sides & (1 << d)))
                         continue;
-                    nodesAt(neighbourTile(loc, d), around);
+                    // Through the edge centre on side d; the other node must face back from exactly that tile.
+                    const auto beyond = footprintEdgeNeighbour(origin, node.size, d);
+                    const auto edge = neighbourTile(beyond, oppositeOf(d));
+                    nodesAt(beyond, around);
                     for (auto other : around)
                     {
                         auto& otherNode = nodes[other];
-                        if (otherNode.network == kNullRecord && (otherNode.sides & (1 << oppositeOf(d))))
-                        {
-                            otherNode.network = networkId;
-                            stack.push_back(other);
-                        }
+                        if (otherNode.network != kNullRecord || !(otherNode.sides & (1 << oppositeOf(d))))
+                            continue;
+                        if (footprintEdgeNeighbour(tileToCoords(otherNode.tile), otherNode.size, oppositeOf(d)) != edge)
+                            continue;
+                        otherNode.network = networkId;
+                        stack.push_back(other);
                     }
                 }
             }

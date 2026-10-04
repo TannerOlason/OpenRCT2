@@ -513,6 +513,92 @@ def write_machine(name, display, props, draw_fn, frames):
         fh.write("\n")
 
 
+def draw_machine_slice(n, vx, vy, d, frame, frames, body, roof, outline, h, centre_detail=None):
+    """One tile of an n x n machine box seen at a view rotation: (vx, vy) is the tile's place in the view square
+    (vx along view +x = screen down-left, vy along view +y = screen down-right). Lids join seamlessly; walls and
+    outlines appear only on the outer edges. Returns the image (anchored at -32, -h) and h."""
+    img = Image.new("RGBA", (64, 33 + h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    top, right, bottom, left = (32, 0), (63, 16), (32, 32), (0, 16)
+    if vx == n - 1:  # down-left face (view +x)
+        draw.polygon([left, bottom, (32, 32 + h), (0, 16 + h)], fill=body)
+        draw.line([left, (0, 16 + h), (32, 32 + h), bottom], fill=outline)
+    if vy == n - 1:  # down-right face (view +y)
+        lighter = tuple(min(255, c + 25) for c in body[:3]) + (255,)
+        draw.polygon([bottom, right, (63, 16 + h), (32, 32 + h)], fill=lighter)
+        draw.line([bottom, (32, 32 + h), (63, 16 + h), right], fill=outline)
+    draw.polygon([top, right, bottom, left], fill=roof)
+    # Lid outline on the footprint's outer edges only: up-right faces view -x, up-left view -y.
+    if vx == 0:
+        draw.line([top, right], fill=outline)
+    if vy == 0:
+        draw.line([left, top], fill=outline)
+    if vx == n - 1:
+        draw.line([bottom, left], fill=outline)
+    if vy == n - 1:
+        draw.line([right, bottom], fill=outline)
+    c = n // 2
+    if vx == c and vy == c:
+        if centre_detail:
+            centre_detail(draw, 32, 16, frame, frames)
+        # An arrow on the lid towards the facing direction (d is the view direction).
+        sx, sy = SCREEN_DIR[d]
+        draw.line([(32, 16), (32 + sx * 0.4, 16 + sy * 0.4)], fill=(230, 200, 60, 255), width=2)
+    # Output chute on the visible face that the machine faces.
+    if (d == 2 and vx == n - 1 and vy == c) or (d == 1 and vy == n - 1 and vx == c):
+        sx, sy = SCREEN_DIR[d]
+        ex, ey = 32 + sx * 0.5, 16 + h // 2 + sy * 0.5
+        draw.rectangle([ex - 4, ey - 3, ex + 4, ey + 3], fill=(60, 60, 70, 255), outline=(20, 20, 30, 255))
+    return img, h
+
+
+def compose_preview(n, slices, h):
+    """The whole machine from its rotation-0 slices, scaled down to fit a 64-pixel palette button."""
+    width, height = 64 * n, 32 * n + h + 1
+    canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    # Draw back to front: tiles with smaller vx + vy are further away.
+    for vx, vy in sorted(((x, y) for x in range(n) for y in range(n)), key=lambda t: t[0] + t[1]):
+        sx = (vy - vx) * 32 + (n - 1) * 32
+        sy = (vx + vy) * 16
+        tile = slices[(vx, vy)]
+        canvas.alpha_composite(tile, (sx, sy))
+    scale = min(1.0, 60 / width, 60 / height)
+    return canvas.resize((max(1, int(width * scale)), max(1, int(height * scale))), Image.NEAREST)
+
+
+def write_multitile_machine(name, display, props, n, h, colours, centre_detail, frames):
+    body, roof, outline = colours
+    images = []
+    folder = write_object(name, "machine", {**props, "frames": frames, "rotations": 4, "size": n}, [], display)
+    preview_slices = {}
+    for d in range(4):
+        for f in range(frames):
+            for vy in range(n):
+                for vx in range(n):
+                    fname = f"m_d{d}_f{f}_{vy}{vx}.png"
+                    img, hh = draw_machine_slice(n, vx, vy, d, f, frames, body, roof, outline, h, centre_detail)
+                    save(img, folder, fname)
+                    images.append({"path": f"images/{fname}", "x": -32, "y": -hh})
+                    if d == 2 and f == 0:
+                        preview_slices[(vx, vy)] = img
+    preview = compose_preview(n, preview_slices, h)
+    save(preview, folder, "preview.png")
+    images.append({"path": "images/preview.png", "x": -(preview.width // 2), "y": -(preview.height // 2)})
+    with open(os.path.join(folder, "object.json")) as fh:
+        obj = json.load(fh)
+    obj["images"] = images
+    with open(os.path.join(folder, "object.json"), "w") as fh:
+        json.dump(obj, fh, indent=4)
+        fh.write("\n")
+
+
+def drill_head(draw, cx, cy, frame, frames):
+    draw.ellipse([cx - 12, cy - 7, cx + 12, cy + 6], fill=(80, 80, 90, 255), outline=(30, 30, 40, 255))
+    ang = math.pi * frame / max(1, frames)
+    dx, dy = math.cos(ang) * 14, math.sin(ang) * 6
+    draw.line([(cx - dx, cy - dy), (cx + dx, cy + dy)], fill=(230, 200, 60, 255), width=3)
+
+
 def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0):
     icon, belt = draw_item_small(colour, dark)
     item_props = {"stackSize": 50}
@@ -574,6 +660,12 @@ def main():
     write_machine("stone_furnace", "Stone furnace", {
         "machineKind": "furnace", "energy": "burner", "speedQ8": 256, "recipeCategories": ["smelting"],
         "inputSlots": 1, "outputSlots": 1, "price": 60, "removalPrice": -45, "clearance": 7}, draw_furnace, 4)
+
+    # A 3x3 electric mining drill: per-tile slices so it sorts correctly at every rotation.
+    write_multitile_machine("electric_drill", "Electric mining drill", {
+        "machineKind": "drill", "energy": "electric", "speedQ8": 256, "powerUsage": 90, "miningRadius": 2,
+        "miningTimeTicks": 60, "inputSlots": 0, "outputSlots": 1, "price": 200, "removalPrice": -150,
+        "clearance": 6}, 3, 22, ((110, 120, 90, 255), (140, 150, 110, 255), (40, 45, 30, 255)), drill_head, 4)
 
     # Fluids and the steam chain: offshore pump -> boiler -> steam engine.
     write_fluid("water", "Water", (60, 110, 200), (30, 60, 130))

@@ -229,7 +229,10 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
                     frame = static_cast<uint8_t>(1 + ((getGameState().currentTicks / 4) % (props.frames - 1)));
                 }
             }
-            auto image = proto->getMachineImage(direction, frame);
+            // Multi-tile machines draw one slice per tile, chosen by the tile's place in the view-rotated square.
+            const uint8_t size = std::max<uint8_t>(1, proto->getMachine().size);
+            const uint8_t slice = footprintViewSlice(factoryElement.getFootprintIndex(), size, session.CurrentRotation & 3);
+            auto image = proto->getMachineImage(direction, frame, slice);
             if (image != kImageIndexUndefined)
             {
                 PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);

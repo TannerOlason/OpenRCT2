@@ -624,10 +624,38 @@ namespace OpenRCT2::Factory
         return true;
     }
 
-    // Tries to push one output item onto whatever is on the tile ahead (belt, container or machine).
+    /**
+     * This tick's energy: electric machines register their demand and get their network's satisfaction (Q16), burner
+     * machines burn a tick of fuel. Returns false, with the status set, when the machine cannot work this tick.
+     */
+    static bool takeEnergy(State& state, MachineRecord& machine, const MachineProperties& props, uint32_t& satisfactionQ16)
+    {
+        satisfactionQ16 = kSatisfactionFull;
+        if (props.energy == EnergySource::electric)
+        {
+            auto* network = machine.powerNetwork != kNullRecord ? state.powerNetworks.get(machine.powerNetwork) : nullptr;
+            if (network == nullptr)
+            {
+                setMachineStatus(machine, MachineStatus::noPower);
+                return false;
+            }
+            network->demand += props.powerUsage;
+            satisfactionQ16 = network->satisfactionQ16;
+            if (satisfactionQ16 == 0)
+            {
+                setMachineStatus(machine, MachineStatus::noPower);
+                return false;
+            }
+        }
+        return machineBurnFuel(machine, props);
+    }
+
+    // Tries to push one output item onto whatever is on the tile ahead of the front edge's centre (belt, container
+    // or machine).
     static void drillDropAhead(State& state, MachineRecord& machine)
     {
-        auto loc = neighbourTile(tileToCoords(machine.location()), machine.direction);
+        const auto loc = footprintEdgeNeighbour(
+            tileToCoords(machine.location()), footprintSize(getPrototype(machine.entry)), machine.direction);
         auto* element = findFactoryElement(loc);
         if (element == nullptr || !element->hasRecord())
             return;
@@ -678,11 +706,12 @@ namespace OpenRCT2::Factory
         const auto& props = proto.getMachine();
         drillDropAhead(state, machine);
 
-        // Find the next cell with ore in the mining area (a square of radius miningRadius).
+        // Find the next cell with ore in the mining area (a square of radius miningRadius around the centre).
         const int32_t radius = props.miningRadius;
         const int32_t side = radius * 2 + 1;
         const int32_t cells = side * side;
-        const auto origin = TileCoordsXY(machine.x - radius, machine.y - radius);
+        const int32_t half = (props.size - 1) / 2;
+        const auto origin = TileCoordsXY(machine.x + half - radius, machine.y + half - radius);
         OreCell cell{};
         TileCoordsXY cellTile;
         bool found = false;
@@ -716,12 +745,13 @@ namespace OpenRCT2::Factory
             setMachineStatus(machine, MachineStatus::outputFull);
             return;
         }
-        if (!machineBurnFuel(machine, props))
+        uint32_t satisfactionQ16;
+        if (!takeEnergy(state, machine, props, satisfactionQ16))
             return;
 
         setMachineStatus(machine, MachineStatus::working);
         machine.craftCost = static_cast<uint32_t>(props.miningTimeTicks) * kWorkUnitsPerTick;
-        machine.progress += props.speedQ8;
+        machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
         if (machine.progress >= machine.craftCost)
         {
             machine.progress -= machine.craftCost;
@@ -799,24 +829,8 @@ namespace OpenRCT2::Factory
             return;
         }
 
-        uint32_t satisfactionQ16 = kSatisfactionFull;
-        if (props.energy == EnergySource::electric)
-        {
-            auto* network = machine.powerNetwork != kNullRecord ? state.powerNetworks.get(machine.powerNetwork) : nullptr;
-            if (network == nullptr)
-            {
-                setMachineStatus(machine, MachineStatus::noPower);
-                return;
-            }
-            network->demand += props.powerUsage;
-            satisfactionQ16 = network->satisfactionQ16;
-            if (satisfactionQ16 == 0)
-            {
-                setMachineStatus(machine, MachineStatus::noPower);
-                return;
-            }
-        }
-        if (!machineBurnFuel(machine, props))
+        uint32_t satisfactionQ16;
+        if (!takeEnergy(state, machine, props, satisfactionQ16))
             return;
 
         setMachineStatus(machine, MachineStatus::working);
@@ -956,7 +970,8 @@ namespace OpenRCT2::Factory
                 return;
             RecordId best = kNullRecord;
             RecordId bestNetwork = kNullRecord;
-            grid.forEachNear(machine.x, machine.y, maxRadius, [&](RecordId poleId) {
+            const uint8_t size = std::max<uint8_t>(1, props.size);
+            grid.forEachNear(machine.x + (size - 1) / 2, machine.y + (size - 1) / 2, maxRadius + size, [&](RecordId poleId) {
                 if (best != kNullRecord && poleId > best)
                     return;
                 auto* pole = state.poles.get(poleId);
@@ -964,7 +979,7 @@ namespace OpenRCT2::Factory
                     return;
                 auto* poleProto = getPrototype(pole->entry);
                 const int32_t radius = poleProto != nullptr ? poleProto->getPole().supplyRadius : 0;
-                if (tileDistance(*pole, machine) <= radius)
+                if (distanceToFootprint(pole->x, pole->y, machine.x, machine.y, size) <= radius)
                 {
                     best = poleId;
                     bestNetwork = pole->network;

@@ -41,7 +41,8 @@ scripts/factory-tour/xdrive.py sleep 12 move 1075 12 click sleep 1 shot $S/build
 At 1280x720 the factory toolbar button is at (1075, 12). Reinstall data after changing strings or objects
 (`DESTDIR=$FT_BUILD_DIR/install ninja -C build install`), otherwise the game shows "(undefined string)".
 Checked this way so far: belt-line drag (ghost run, cost line, build on release), machine, chest, pipe and splitter
-info windows (recipe and filter dropdowns), the power overview from a pole and from the build window.
+info windows (recipe and filter dropdowns), the power overview from a pole and from the build window, and placing
+the 3x3 electric drill (centred ghost, refused over the map edge, no repeat placement while the button is held).
 
 ## Text colour convention
 

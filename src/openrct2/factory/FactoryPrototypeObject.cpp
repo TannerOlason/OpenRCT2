@@ -225,6 +225,7 @@ namespace OpenRCT2::Factory
                 _machine.miningTimeTicks = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["miningTimeTicks"], 80));
                 _machine.frames = std::max<uint8_t>(1, Json::GetNumber<uint8_t>(properties["frames"], 1));
                 _machine.rotations = Json::GetNumber<uint8_t>(properties["rotations"], 4) == 1 ? 1 : 4;
+                _machine.size = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["size"], 1), 1, 5);
                 _machine.inputFluid.identifier = Json::GetString(properties["inputFluid"]);
                 _machine.outputFluid.identifier = Json::GetString(properties["outputFluid"]);
                 _machine.fluidRate = Json::GetNumber<uint32_t>(properties["fluidRate"], 0);
@@ -347,11 +348,12 @@ namespace OpenRCT2::Factory
         return imageAt(_container.rotations == 4 ? (direction & 3) : 0);
     }
 
-    ImageIndex FactoryPrototypeObject::getMachineImage(uint8_t direction, uint8_t frame) const
+    ImageIndex FactoryPrototypeObject::getMachineImage(uint8_t direction, uint8_t frame, uint8_t slice) const
     {
         const uint32_t frames = _machine.frames;
         const uint32_t dir = _machine.rotations == 4 ? (direction & 3) : 0;
-        return imageAt(dir * frames + (frame % frames));
+        const uint32_t slices = static_cast<uint32_t>(_machine.size) * _machine.size;
+        return imageAt((dir * frames + (frame % frames)) * slices + (slice % slices));
     }
 
     ImageIndex FactoryPrototypeObject::getOreOverlayImage() const
@@ -404,8 +406,12 @@ namespace OpenRCT2::Factory
                 break;
             case PrototypeKind::machine:
             case PrototypeKind::generator:
-                image = getMachineImage(0, 0);
+            {
+                const uint32_t slices = static_cast<uint32_t>(_machine.size) * _machine.size;
+                const uint32_t previewIndex = static_cast<uint32_t>(_machine.rotations) * _machine.frames * slices;
+                image = slices > 1 && previewIndex < _numImages ? imageAt(previewIndex) : getMachineImage(0, 0);
                 break;
+            }
             case PrototypeKind::ore:
                 image = getOreIconImage();
                 break;

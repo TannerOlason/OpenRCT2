@@ -55,6 +55,22 @@ namespace OpenRCT2::Factory
     // The second tile a splitter facing `dir` placed at loc occupies (to its right).
     bool splitterSecondTile(const CoordsXYZ& loc, Direction dir, CoordsXYZ& second);
 
+    /**
+     * Machine footprints are squares of `size` tiles whose origin (the record's location) is the minimum corner;
+     * footprint index = dy * size + dx. Every other placeable is 1x1 except splitters (two tiles, see above).
+     */
+    uint8_t footprintSize(const FactoryPrototypeObject* proto);
+    // The origin tile of the footprint that the element at loc belongs to.
+    CoordsXYZ footprintOrigin(const FactoryElement& element, const CoordsXYZ& loc);
+    // The centre tile, rounded towards the origin for even sizes.
+    CoordsXYZ footprintCentre(const CoordsXYZ& origin, uint8_t size);
+    // The tile just beyond the centre of the footprint's edge on side d (where drills drop, fluid connects).
+    CoordsXYZ footprintEdgeNeighbour(const CoordsXYZ& origin, uint8_t size, Direction d);
+    // Chebyshev distance from a tile to the nearest tile of the footprint (0 inside it).
+    int32_t distanceToFootprint(int32_t x, int32_t y, int32_t originX, int32_t originY, uint8_t size);
+    // Which image slice footprint tile `index` uses at a view rotation: its row-major position in the rotated square.
+    uint8_t footprintViewSlice(uint8_t index, uint8_t size, uint8_t rotation);
+
     CoordsXYZ tileToCoords(const TileCoordsXYZ& tile);
     CoordsXYZ neighbourTile(const CoordsXYZ& loc, Direction d);
 

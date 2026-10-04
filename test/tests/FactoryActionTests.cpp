@@ -59,6 +59,7 @@ protected:
         _belt = index("factory-tour.factory_prototype.belt_basic");
         _chest = index("factory-tour.factory_prototype.chest_wooden");
         _plate = index("factory-tour.factory_prototype.iron_plate");
+        _drill = index("factory-tour.factory_prototype.electric_drill");
         ASSERT_NE(_belt, kObjectEntryIndexNull);
         ASSERT_NE(_chest, kObjectEntryIndexNull);
         ASSERT_NE(_plate, kObjectEntryIndexNull);
@@ -110,12 +111,14 @@ protected:
     static ObjectEntryIndex _belt;
     static ObjectEntryIndex _chest;
     static ObjectEntryIndex _plate;
+    static ObjectEntryIndex _drill;
 };
 
 std::shared_ptr<IContext> FactoryActionTests::_context;
 ObjectEntryIndex FactoryActionTests::_belt = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryActionTests::_chest = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryActionTests::_plate = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryActionTests::_drill = kObjectEntryIndexNull;
 
 TEST_F(FactoryActionTests, RegistryResolvesForkCommands)
 {
@@ -276,4 +279,54 @@ TEST_F(FactoryActionTests, BeltLinePlacesARunAndSkipsOccupiedTiles)
     gGamePaused = 0;
     EXPECT_EQ(pausedRes.error, Status::gamePaused);
     EXPECT_EQ(findFactoryElement(Tile(kX0 + 8)), nullptr);
+}
+
+TEST_F(FactoryActionTests, MultiTileMachinesNeedEveryTileFreeAndGoAsAWhole)
+{
+    ASSERT_NE(_drill, kObjectEntryIndexNull);
+    auto& state = getGameState().factory;
+    auto at = [](int32_t tx, int32_t ty) { return CoordsXYZ{ tx * kCoordsXYStep, ty * kCoordsXYStep, GroundZ() }; };
+    for (int32_t ty = kY; ty <= kY + 2; ty++)
+    {
+        for (int32_t tx = kX0 + 4; tx <= kX0 + 6; tx++)
+        {
+            while (auto* element = findFactoryElement(at(tx, ty), true))
+                removeElement(getGameState(), *element, at(tx, ty));
+            auto* surface = MapGetSurfaceElementAt(TileCoordsXY{ tx, ty });
+            ASSERT_NE(surface, nullptr);
+            surface->setSlope(0);
+            surface->setBaseZ(GroundZ());
+            surface->setClearanceZ(GroundZ());
+        }
+    }
+
+    // A chest under the far corner blocks the 3x3 drill; with it gone the drill takes all nine tiles.
+    FactoryPlaceAction chest(at(kX0 + 6, kY + 2), 0, _chest);
+    ASSERT_EQ(Run(chest).error, Status::ok);
+    FactoryPlaceAction drill(at(kX0 + 4, kY), 2, _drill);
+    EXPECT_EQ(Run(drill).error, Status::itemAlreadyPlaced);
+    FactoryRemoveAction removeChest(at(kX0 + 6, kY + 2));
+    ASSERT_EQ(Run(removeChest).error, Status::ok);
+    auto res = Run(drill);
+    ASSERT_EQ(res.error, Status::ok);
+    EXPECT_EQ(res.cost, 200);
+    ASSERT_EQ(state.machines.aliveCount(), 1u);
+    const auto record = findFactoryElement(at(kX0 + 4, kY))->getRecordId();
+    for (int32_t index = 0; index < 9; index++)
+    {
+        auto* element = findFactoryElement(at(kX0 + 4 + index % 3, kY + index / 3));
+        ASSERT_NE(element, nullptr) << index;
+        EXPECT_EQ(element->getSubtype(), FactoryElementSubtype::machine);
+        EXPECT_EQ(element->getRecordId(), record);
+        EXPECT_EQ(element->getFootprintIndex(), index);
+        EXPECT_EQ((element->getFactoryFlags() & FACTORY_ELEMENT_FLAG_ORIGIN) != 0, index == 0);
+        EXPECT_EQ(footprintOrigin(*element, at(kX0 + 4 + index % 3, kY + index / 3)), at(kX0 + 4, kY));
+    }
+
+    // Removing it from any tile removes every tile and the record.
+    FactoryRemoveAction removeDrill(at(kX0 + 5, kY + 2));
+    ASSERT_EQ(Run(removeDrill).error, Status::ok);
+    EXPECT_EQ(state.machines.aliveCount(), 0u);
+    for (int32_t index = 0; index < 9; index++)
+        EXPECT_EQ(findFactoryElement(at(kX0 + 4 + index % 3, kY + index / 3), true), nullptr) << index;
 }
