@@ -205,8 +205,12 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
 - **Rating**: `ParkFlag::factoryAffectsRating = 33` (32 stays reserved for `factoryEnabled`). With it set,
   `CalculateParkRating` adds `Factory::parkRatingAdjustment` after the litter term: minus up to 150 for the average
   pollution (capped at 8000) in the cells of guests inside the park, and `working * 50 / machines - 25` for uptime.
-- **Objectives**: `ObjectiveType` appended:
-  `produceItemsBy, launchRocket, guestsTouredFactory`.
+- **Objectives**: `ObjectiveType::produceItemsBy` and `guestsTouredFactory` are appended. The produce objective
+  keeps its item entry in `NumGuests` and its quantity in `Currency`, so upstream's objective save layout and editor
+  plumbing are reused; the toured objective uses `NumGuests`. Both succeed once reached and fail at the end of October
+  of their year (`Factory::checkObjective`). `ProductionStats` (pools chunk version 9) counts crafted results and
+  mined ore per item; `ParkExt::guestsToured` (version 3) counts guests ever marked toured. Rocket launches wait for
+  the rocket silo (M7). Options: the Factory options window (WindowClass 145).
 - **Persistence rule**: guest, ride, scenario and objective fork fields are Side Tables in chunk `0x45 parkExt`.
 
 ## E5 Research and progression

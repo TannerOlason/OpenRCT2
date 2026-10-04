@@ -4832,7 +4832,10 @@ declare global {
         "10RollercoastersLength" |
         "finish5Rollercoasters" |
         "repayLoanAndParkValue" |
-        "monthlyFoodIncome";
+        "monthlyFoodIncome" |
+        // FACTORY-TOUR
+        "produceItemsBy" |
+        "guestsTouredFactory";
 
     interface ScenarioObjective {
         /**

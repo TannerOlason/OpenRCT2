@@ -41,10 +41,10 @@ namespace OpenRCT2::Factory
 
     constexpr uint16_t kFactoryHeaderVersion = 1;
     // Pools chunk versions: 2 belt link kinds, undergrounds, splitters, poles, networks; 3 fluids; 4 splitter filters;
-    // 5 ride proximity totals; 6 pollution; 7 warehouse; 8 market.
-    constexpr uint16_t kFactoryPoolsVersion = 8;
+    // 5 ride proximity totals; 6 pollution; 7 warehouse; 8 market; 9 production statistics.
+    constexpr uint16_t kFactoryPoolsVersion = 9;
     constexpr uint16_t kFactoryOreVersion = 1;
-    constexpr uint16_t kParkExtVersion = 2; // 2: scenario options
+    constexpr uint16_t kParkExtVersion = 3; // 2: scenario options; 3: guests toured
 
     /**
      * Visitor that reads or writes record fields through an OrcaStream chunk.

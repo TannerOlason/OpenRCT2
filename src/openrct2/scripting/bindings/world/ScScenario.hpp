@@ -34,6 +34,9 @@ namespace OpenRCT2::Scripting
             { "finish5Rollercoasters", ObjectiveType::finishFiveRollercoasters },
             { "repayLoanAndParkValue", ObjectiveType::repayLoanAndParkValue },
             { "monthlyFoodIncome", ObjectiveType::monthlyFoodIncome },
+            // FACTORY-TOUR
+            { "produceItemsBy", ObjectiveType::produceItemsBy },
+            { "guestsTouredFactory", ObjectiveType::guestsTouredFactory },
         });
 
     class ScScenarioObjective;

@@ -48,16 +48,19 @@ namespace OpenRCT2::Factory
         // Scenario options (Factory::ConstructionMode, ShopStockMode); 0 is upstream behaviour.
         uint8_t constructionMode{};
         uint8_t shopStockMode{};
+        // Guests ever marked kGuestTouredFactory (the guest entries are pruned when they leave).
+        uint32_t guestsToured{};
 
         bool isEmpty() const
         {
-            return guests.empty() && constructionMode == 0 && shopStockMode == 0;
+            return guests.empty() && constructionMode == 0 && shopStockMode == 0 && guestsToured == 0;
         }
         void reset()
         {
             guests.clear();
             constructionMode = 0;
             shopStockMode = 0;
+            guestsToured = 0;
         }
         uint8_t guestFlags(uint16_t id) const;
         void addGuestFlags(uint16_t id, uint8_t flags);
@@ -69,6 +72,7 @@ namespace OpenRCT2::Factory
             v.vec(guests, [](GuestExt& guest, auto& vv) { guest.visit(vv); });
             v(constructionMode);
             v(shopStockMode);
+            v(guestsToured);
         }
     };
 

@@ -25,5 +25,5 @@ namespace OpenRCT2::Ui
 {
     void formatObjective(Formatter& ft, const Scenario::Objective& objective);
 
-    extern const StringId kObjectiveNames[12];
+    extern const StringId kObjectiveNames[14]; // FACTORY-TOUR: 12 -> 14
 } // namespace OpenRCT2::Ui

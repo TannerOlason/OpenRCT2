@@ -142,7 +142,10 @@ Exhibit Paths.
   the stock cost, and guests think "It's sold out!" when it runs out.
 - [x] Park rating term behind `ParkFlag::factoryAffectsRating` (bit 33, off by default so ratings stay upstream's):
   up to -150 for the average pollution where guests stand and -25 to +25 for the share of machines working.
-- [ ] Objectives and scenario editor options.
+- [x] Objectives `produceItemsBy` (item in `NumGuests`, quantity in `Currency`) and `guestsTouredFactory`, with
+  production statistics and an all-time tour count; listed in the scenario editor's objective dropdown with
+  quantity/guest and year spinners. A Factory options window (from the build window) sets construction mode, shop
+  stock, the rating flag and the produce objective's item, all through `FactorySetParkOptionAction`.
 - [ ] Exhibit Paths.
 
 ### M5 Progression and modding `[ ]`

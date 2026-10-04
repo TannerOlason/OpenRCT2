@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <openrct2/Context.h>
+#include <openrct2/Date.h>
 #include <openrct2/Game.h>
 #include <openrct2/GameState.h>
 #include <openrct2/OpenRCT2.h>
@@ -36,12 +37,14 @@
 #include <openrct2/factory/Fluids.h>
 #include <openrct2/factory/GuestFactory.h>
 #include <openrct2/factory/Market.h>
+#include <openrct2/factory/Objectives.h>
 #include <openrct2/factory/ParkExt.h>
 #include <openrct2/factory/Pollution.h>
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
+#include <openrct2/factory/actions/FactorySetParkOptionAction.h>
 #include <openrct2/management/Research.h>
 #include <openrct2/object/ObjectManager.h>
 #include <openrct2/object/RideObject.h>
@@ -52,6 +55,7 @@
 #include <openrct2/ride/ShopItem.h>
 #include <openrct2/ride/ted/TrackElemType.h>
 #include <openrct2/scenario/Scenario.h>
+#include <openrct2/scenario/ScenarioObjective.h>
 #include <openrct2/world/Map.h>
 #include <openrct2/world/Park.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
@@ -1373,7 +1377,8 @@ TEST_F(FactoryTopologyTests, WatchableMachinesAndParkExtPruning)
     markGuestToured(gameState, 4321);
     EXPECT_EQ(state.parkExt.guestFlags(4321), kGuestTouredFactory);
     pruneParkExt(gameState);
-    EXPECT_TRUE(state.parkExt.isEmpty());
+    EXPECT_TRUE(state.parkExt.guests.empty());
+    EXPECT_EQ(state.parkExt.guestsToured, 1u); // the all-time count stays
 }
 
 TEST_F(FactoryTopologyTests, InsertersFillTheWarehouseThroughADepot)
@@ -1521,4 +1526,67 @@ TEST_F(FactoryTopologyTests, ParkRatingTermFollowsMachineUptimeOnlyWhenEnabled)
     EXPECT_EQ(Park::CalculateParkRating(park, gameState), std::clamp(ratingWithoutTerm + 25, 0, 999));
     park.flags.unset(ParkFlag::factoryAffectsRating);
     EXPECT_EQ(Park::CalculateParkRating(park, gameState), ratingWithoutTerm);
+}
+
+TEST_F(FactoryTopologyTests, FactoryObjectivesCountProductionAndTours)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    Place(kRowX0, 2, _chest); // a non-empty factory
+    const auto savedDate = gameState.date;
+    gameState.date = Date::FromYMD(1); // the test park is decades old; objective years count from its start
+    Scenario::Objective objective{};
+    objective.Type = Scenario::ObjectiveType::produceItemsBy;
+    objective.Year = 200; // far in the future: undecided until reached
+    objective.NumGuests = _plate;
+    objective.Currency = 10;
+    EXPECT_EQ(checkObjective(objective, gameState), Scenario::ObjectiveStatus::undecided);
+    state.production.add(_plate, 9);
+    EXPECT_EQ(checkObjective(objective, gameState), Scenario::ObjectiveStatus::undecided);
+    state.production.add(_plate, 1);
+    EXPECT_EQ(checkObjective(objective, gameState), Scenario::ObjectiveStatus::success);
+    objective.Year = 0; // the deadline has passed
+    objective.Currency = 1000;
+    EXPECT_EQ(checkObjective(objective, gameState), Scenario::ObjectiveStatus::failure);
+
+    // Tours count each guest once, even after their entry is pruned.
+    objective.Type = Scenario::ObjectiveType::guestsTouredFactory;
+    objective.Year = 200;
+    objective.NumGuests = 2;
+    markGuestToured(gameState, 11);
+    markGuestToured(gameState, 11);
+    EXPECT_EQ(state.parkExt.guestsToured, 1u);
+    markGuestToured(gameState, 12);
+    pruneParkExt(gameState);
+    EXPECT_EQ(state.parkExt.guestsToured, 2u);
+    EXPECT_EQ(checkObjective(objective, gameState), Scenario::ObjectiveStatus::success);
+
+    // A furnace's plates are counted as they are made.
+    auto* furnace = Place(kRowX0 + 2, 2, _furnace);
+    const auto before = state.production.count(_plate);
+    for (int i = 0; i < 5; i++)
+        machineInsertInput(state, *state.machines.get(furnace->getRecordId()), _coal);
+    for (int i = 0; i < 3; i++)
+        machineInsertInput(state, *state.machines.get(furnace->getRecordId()), _ironOre);
+    Tick(600);
+    EXPECT_EQ(state.production.count(_plate), before + 3);
+    gameState.date = savedDate;
+}
+
+TEST_F(FactoryTopologyTests, ParkOptionActionSetsRatingFlagAndObjectiveItem)
+{
+    auto& gameState = getGameState();
+    auto run = [&](GameActions::FactoryParkOption option, uint16_t value) {
+        auto action = GameActions::FactorySetParkOptionAction(option, value);
+        return GameActions::ExecuteNested(&action, gameState).error;
+    };
+    EXPECT_EQ(run(GameActions::FactoryParkOption::affectsRating, 1), GameActions::Status::ok);
+    EXPECT_TRUE(gameState.park.flags.has(ParkFlag::factoryAffectsRating));
+    EXPECT_EQ(run(GameActions::FactoryParkOption::affectsRating, 0), GameActions::Status::ok);
+    EXPECT_FALSE(gameState.park.flags.has(ParkFlag::factoryAffectsRating));
+    EXPECT_EQ(run(GameActions::FactoryParkOption::objectiveItem, _gear), GameActions::Status::ok);
+    EXPECT_EQ(gameState.scenarioOptions.objective.NumGuests, _gear);
+    EXPECT_EQ(run(GameActions::FactoryParkOption::objectiveItem, _furnace), GameActions::Status::invalidParameters);
+    EXPECT_EQ(run(GameActions::FactoryParkOption::objectiveItem, _water), GameActions::Status::invalidParameters);
+    gameState.scenarioOptions.objective.NumGuests = 0;
 }

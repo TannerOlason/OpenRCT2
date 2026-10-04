@@ -13,13 +13,15 @@
 
 #include "../../GameState.h"
 #include "../../localisation/StringIds.h"
+#include "../FactoryPrototypeObject.h"
 #include "../FactoryState.h"
 #include "../FactoryStringIds.h"
+#include "../FactoryTopology.h"
 #include "../Materials.h"
 
 namespace OpenRCT2::GameActions
 {
-    FactorySetParkOptionAction::FactorySetParkOptionAction(FactoryParkOption option, uint8_t value)
+    FactorySetParkOptionAction::FactorySetParkOptionAction(FactoryParkOption option, uint16_t value)
         : _option(static_cast<uint8_t>(option))
         , _value(value)
     {
@@ -51,9 +53,17 @@ namespace OpenRCT2::GameActions
                     return Result();
                 break;
             case FactoryParkOption::shopStockMode:
+            case FactoryParkOption::affectsRating:
                 if (_value <= 1)
                     return Result();
                 break;
+            case FactoryParkOption::objectiveItem:
+            {
+                auto* proto = Factory::getPrototype(static_cast<ObjectEntryIndex>(_value));
+                if (proto != nullptr && proto->getKind() == Factory::PrototypeKind::item && !proto->isFluid())
+                    return Result();
+                break;
+            }
             default:
                 break;
         }
@@ -66,10 +76,21 @@ namespace OpenRCT2::GameActions
         if (res.error != Status::ok)
             return res;
         auto& ext = gameState.factory.parkExt;
-        if (static_cast<FactoryParkOption>(_option) == FactoryParkOption::constructionMode)
-            ext.constructionMode = _value;
-        else
-            ext.shopStockMode = _value;
+        switch (static_cast<FactoryParkOption>(_option))
+        {
+            case FactoryParkOption::constructionMode:
+                ext.constructionMode = static_cast<uint8_t>(_value);
+                break;
+            case FactoryParkOption::shopStockMode:
+                ext.shopStockMode = static_cast<uint8_t>(_value);
+                break;
+            case FactoryParkOption::affectsRating:
+                gameState.park.flags.set(ParkFlag::factoryAffectsRating, _value != 0);
+                break;
+            default:
+                gameState.scenarioOptions.objective.NumGuests = _value;
+                break;
+        }
         return res;
     }
 } // namespace OpenRCT2::GameActions

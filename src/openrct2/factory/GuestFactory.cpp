@@ -94,7 +94,10 @@ namespace OpenRCT2::Factory
 
     void markGuestToured(GameState_t& gameState, uint16_t guestId)
     {
-        gameState.factory.parkExt.addGuestFlags(guestId, kGuestTouredFactory);
+        auto& ext = gameState.factory.parkExt;
+        if (!(ext.guestFlags(guestId) & kGuestTouredFactory))
+            ext.guestsToured++;
+        ext.addGuestFlags(guestId, kGuestTouredFactory);
     }
 
     bool isFactoryTourRide(const Ride& ride)

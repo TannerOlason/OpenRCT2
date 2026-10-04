@@ -20,6 +20,8 @@ namespace OpenRCT2::GameActions
     {
         constructionMode, // Factory::ConstructionMode
         shopStockMode,    // 0 infinite, 1 warehouse
+        affectsRating,    // ParkFlag::factoryAffectsRating, 0 or 1
+        objectiveItem,    // the item a produceItemsBy objective counts (an item prototype entry)
         count,
     };
 
@@ -28,11 +30,11 @@ namespace OpenRCT2::GameActions
     {
     private:
         uint8_t _option{};
-        uint8_t _value{};
+        uint16_t _value{};
 
     public:
         FactorySetParkOptionAction() = default;
-        FactorySetParkOptionAction(FactoryParkOption option, uint8_t value);
+        FactorySetParkOptionAction(FactoryParkOption option, uint16_t value);
 
         void AcceptParameters(GameActionParameterVisitor& visitor) final;
         uint16_t GetActionFlags() const override;

@@ -126,6 +126,7 @@ namespace OpenRCT2::Ui::Windows
     void ToggleFactoryBuildWindow();
     WindowBase* FactoryInfoOpen(const CoordsXYZ& loc);
     WindowBase* FactoryPowerOpen(uint32_t network);
+    WindowBase* FactoryOptionsOpen();
 
     // Footpath
     WindowBase* FootpathOpen();

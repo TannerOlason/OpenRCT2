@@ -44,6 +44,7 @@ namespace OpenRCT2::Factory
         pollution.clear();
         warehouse.stock.clear();
         market = Market{};
+        production.produced.clear();
         ore.clear();
         parkExt.reset();
         powerDirty = false;
@@ -774,6 +775,7 @@ namespace OpenRCT2::Factory
             if (state.ore.take(cellTile, 1) == 1)
             {
                 stackAdd(machine.outputs, product, 1, stackSizeOf(product));
+                state.production.add(product, 1);
                 // Move the cursor on so neighbouring cells deplete evenly.
                 machine.miningCursor = static_cast<uint16_t>((machine.miningCursor + 1) % cells);
             }
@@ -804,12 +806,13 @@ namespace OpenRCT2::Factory
         return true;
     }
 
-    static void finishCraft(MachineRecord& machine, const FactoryPrototypeObject& recipeProto)
+    static void finishCraft(State& state, MachineRecord& machine, const FactoryPrototypeObject& recipeProto)
     {
         for (const auto& result : recipeProto.getRecipe().results)
         {
             const auto item = result.item.resolve();
             stackAdd(machine.outputs, item, result.count, stackSizeOf(item));
+            state.production.add(item, result.count);
         }
         machine.craftCost = 0;
         machine.progress = 0;
@@ -853,7 +856,7 @@ namespace OpenRCT2::Factory
         machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
         if (machine.progress >= machine.craftCost)
         {
-            finishCraft(machine, *recipeProto);
+            finishCraft(state, machine, *recipeProto);
         }
     }
 

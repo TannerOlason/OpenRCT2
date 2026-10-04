@@ -11,10 +11,14 @@
 
 #include <cstdint>
 #include <openrct2/Date.h>
+#include <openrct2/factory/FactoryPrototypeObject.h> // FACTORY-TOUR
+#include <openrct2/factory/FactoryStringIds.h>       // FACTORY-TOUR
+#include <openrct2/factory/FactoryTopology.h>        // FACTORY-TOUR
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/ride/Ride.h>
 #include <openrct2/ride/RideData.h>
 #include <openrct2/scenario/ScenarioObjective.h>
+#include <string>
 
 namespace OpenRCT2::Ui
 {
@@ -31,6 +35,9 @@ namespace OpenRCT2::Ui
         STR_OBJECTIVE_FINISH_5_ROLLERCOASTERS,
         STR_OBJECTIVE_REPLAY_LOAN_AND_PARK_VALUE,
         STR_OBJECTIVE_MONTHLY_FOOD_INCOME,
+        // FACTORY-TOUR
+        STR_FT_OBJECTIVE_PRODUCE_ITEMS_BY,
+        STR_FT_OBJECTIVE_GUESTS_TOURED_FACTORY,
     };
 
     void formatObjective(Formatter& ft, const Scenario::Objective& objective)
@@ -57,6 +64,21 @@ namespace OpenRCT2::Ui
         else if (objective.Type == Scenario::ObjectiveType::tenRollercoastersLength)
         {
             ft.Add<int16_t>(objective.MinimumLength);
+        }
+        // FACTORY-TOUR: produce N of an item / have N guests tour the factory, by the end of October of a year
+        else if (objective.Type == Scenario::ObjectiveType::produceItemsBy)
+        {
+            static std::string itemName;
+            auto* proto = OpenRCT2::Factory::getPrototype(objective.NumGuests);
+            itemName = proto != nullptr ? proto->GetName() : std::string();
+            ft.Add<int32_t>(static_cast<int32_t>(objective.Currency));
+            ft.Add<const char*>(itemName.c_str());
+            ft.Add<int16_t>(DateGetTotalMonths(MONTH_OCTOBER, objective.Year));
+        }
+        else if (objective.Type == Scenario::ObjectiveType::guestsTouredFactory)
+        {
+            ft.Add<int32_t>(objective.NumGuests);
+            ft.Add<int16_t>(DateGetTotalMonths(MONTH_OCTOBER, objective.Year));
         }
         else
         {

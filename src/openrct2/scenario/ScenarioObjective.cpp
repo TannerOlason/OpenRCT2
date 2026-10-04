@@ -12,6 +12,7 @@
 #include "../GameState.h"
 #include "../config/Config.h"
 #include "../core/UnitConversion.h"
+#include "../factory/Objectives.h" // FACTORY-TOUR
 #include "../localisation/Formatter.h"
 #include "../localisation/StringIds.h"
 #include "../object/ObjectLimits.h"
@@ -246,6 +247,10 @@ namespace OpenRCT2::Scenario
                 return CheckRepayLoanAndParkValue(park, gameState);
             case ObjectiveType::monthlyFoodIncome:
                 return CheckMonthlyFoodIncome(park, gameState);
+            // FACTORY-TOUR
+            case ObjectiveType::produceItemsBy:
+            case ObjectiveType::guestsTouredFactory:
+                return Factory::checkObjective(*this, gameState);
             default:
                 return ObjectiveStatus::undecided;
         }

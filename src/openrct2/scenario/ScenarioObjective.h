@@ -39,6 +39,9 @@ namespace OpenRCT2::Scenario
         finishFiveRollercoasters,
         repayLoanAndParkValue,
         monthlyFoodIncome,
+        // FACTORY-TOUR: NumGuests holds the item entry and Currency the quantity for produceItemsBy
+        produceItemsBy,
+        guestsTouredFactory,
 
         count
     };

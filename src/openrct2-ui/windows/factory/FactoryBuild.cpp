@@ -61,6 +61,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_LIST,
         WIDX_ROTATE,
         WIDX_POWER,
+        WIDX_OPTIONS,
     };
     VALIDATE_GLOBAL_WIDX(WC_FACTORY_BUILD, WIDX_ROTATE);
 
@@ -69,7 +70,8 @@ namespace OpenRCT2::Ui::Windows
         makeWindowShim(kWindowTitle, kWindowSize),
         makeWidget({  2,  17}, {272, 150}, WidgetType::scroll,  WindowColour::secondary, SCROLL_VERTICAL                                 ),
         makeWidget({276,  17}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_ROTATE_ARROW), STR_FT_ROTATE_TIP     ),
-        makeWidget({276,  43}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_GRAPH),        STR_FT_POWER_TIP      )
+        makeWidget({276,  43}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_GRAPH),        STR_FT_POWER_TIP      ),
+        makeWidget({276,  69}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_GEARS_0),  STR_FT_OPTIONS_TIP    )
     );
     // clang-format on
 
@@ -145,6 +147,9 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_POWER:
                     FactoryPowerOpen(kNullRecord);
+                    break;
+                case WIDX_OPTIONS:
+                    FactoryOptionsOpen();
                     break;
             }
         }

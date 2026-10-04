@@ -28,6 +28,8 @@
 #include <openrct2/drawing/Rectangle.h>
 #include <openrct2/drawing/RenderTarget.h>
 #include <openrct2/drawing/Text.h>
+#include <openrct2/factory/FactoryStringIds.h> // FACTORY-TOUR
+#include <openrct2/factory/Objectives.h>       // FACTORY-TOUR
 #include <openrct2/localisation/Formatter.h>
 #include <openrct2/management/Finance.h>
 #include <openrct2/ride/Ride.h>
@@ -97,6 +99,9 @@ namespace OpenRCT2::Ui::Windows
         STR_OBJECTIVE_DROPDOWN_FINISH_BUILDING_5_ROLLER_COASTERS,
         STR_OBJECTIVE_DROPDOWN_REPAY_LOAN_AND_ACHIEVE_A_GIVEN_PARK_VALUE,
         STR_OBJECTIVE_DROPDOWN_MONTHLY_PROFIT_FROM_FOOD_MERCHANDISE,
+        // FACTORY-TOUR
+        STR_FT_OBJECTIVE_DROPDOWN_PRODUCE_ITEMS,
+        STR_FT_OBJECTIVE_DROPDOWN_GUESTS_TOURED,
     };
 
     enum WindowEditorScenarioOptionsWidgetIdx : WidgetIndex
@@ -689,6 +694,16 @@ namespace OpenRCT2::Ui::Windows
                 case Scenario::ObjectiveType::monthlyFoodIncome:
                     scenarioOptions.objective.Currency = 1000.00_GBP;
                     break;
+                // FACTORY-TOUR: 500 Iron plates (the item can be changed in the factory options window) / 500 tourists
+                case Scenario::ObjectiveType::produceItemsBy:
+                    scenarioOptions.objective.Year = 3;
+                    scenarioOptions.objective.NumGuests = Factory::defaultObjectiveItem();
+                    scenarioOptions.objective.Currency = 500;
+                    break;
+                case Scenario::ObjectiveType::guestsTouredFactory:
+                    scenarioOptions.objective.Year = 3;
+                    scenarioOptions.objective.NumGuests = 500;
+                    break;
                 default:
                     break;
             }
@@ -769,6 +784,18 @@ namespace OpenRCT2::Ui::Windows
                         invalidate();
                     }
                     break;
+                // FACTORY-TOUR: produce quantity in steps of 100
+                case Scenario::ObjectiveType::produceItemsBy:
+                    if (scenarioOptions.objective.Currency >= 1000000)
+                    {
+                        ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
+                    }
+                    else
+                    {
+                        scenarioOptions.objective.Currency += 100;
+                        invalidate();
+                    }
+                    break;
                 case Scenario::ObjectiveType::monthlyFoodIncome:
                     if (scenarioOptions.objective.Currency >= kObjectiveCurrencyFoodMax)
                     {
@@ -833,6 +860,18 @@ namespace OpenRCT2::Ui::Windows
                     else
                     {
                         scenarioOptions.objective.Currency -= kObjectiveCurrencyLoanAndValueAdjustment;
+                        invalidate();
+                    }
+                    break;
+                // FACTORY-TOUR: produce quantity in steps of 100
+                case Scenario::ObjectiveType::produceItemsBy:
+                    if (scenarioOptions.objective.Currency <= 100)
+                    {
+                        ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
+                    }
+                    else
+                    {
+                        scenarioOptions.objective.Currency -= 100;
                         invalidate();
                     }
                     break;
@@ -1034,6 +1073,8 @@ namespace OpenRCT2::Ui::Windows
             {
                 case Scenario::ObjectiveType::guestsBy:
                 case Scenario::ObjectiveType::parkValueBy:
+                case Scenario::ObjectiveType::produceItemsBy:      // FACTORY-TOUR
+                case Scenario::ObjectiveType::guestsTouredFactory: // FACTORY-TOUR
                     hasPrimaryObjectiveArg = true;
                     hasSecondaryObjectiveArg = true;
                     break;
@@ -1067,7 +1108,11 @@ namespace OpenRCT2::Ui::Windows
                 {
                     case Scenario::ObjectiveType::guestsBy:
                     case Scenario::ObjectiveType::guestsAndRating:
+                    case Scenario::ObjectiveType::guestsTouredFactory: // FACTORY-TOUR
                         arg1StringId = STR_WINDOW_OBJECTIVE_GUEST_COUNT;
+                        break;
+                    case Scenario::ObjectiveType::produceItemsBy: // FACTORY-TOUR
+                        arg1StringId = STR_FT_OBJECTIVE_QUANTITY;
                         break;
                     case Scenario::ObjectiveType::parkValueBy:
                     case Scenario::ObjectiveType::repayLoanAndParkValue:
@@ -1126,8 +1171,13 @@ namespace OpenRCT2::Ui::Windows
                 {
                     case Scenario::ObjectiveType::guestsBy:
                     case Scenario::ObjectiveType::guestsAndRating:
+                    case Scenario::ObjectiveType::guestsTouredFactory: // FACTORY-TOUR
                         stringId = STR_WINDOW_COLOUR_2_COMMA32;
                         ft.Add<int32_t>(scenarioOptions.objective.NumGuests);
+                        break;
+                    case Scenario::ObjectiveType::produceItemsBy: // FACTORY-TOUR
+                        stringId = STR_WINDOW_COLOUR_2_COMMA32;
+                        ft.Add<int32_t>(static_cast<int32_t>(scenarioOptions.objective.Currency));
                         break;
                     case Scenario::ObjectiveType::parkValueBy:
                     case Scenario::ObjectiveType::repayLoanAndParkValue:

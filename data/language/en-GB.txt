@@ -3950,3 +3950,20 @@ STR_20553   :Gear keyring
 STR_20554   :Gear keyrings
 STR_20555   :a Gear keyring
 STR_20556   :“{STRINGID}” Gear keyring
+STR_20557   :{BLACK}To have produced {COMMA32} {STRING} by the end of {MONTHYEAR_SENTENCE}
+STR_20558   :{BLACK}To have {COMMA32} guests tour the factory by the end of {MONTHYEAR_SENTENCE}
+STR_20559   :Produce a quantity of an item by a given date
+STR_20560   :Number of guests to tour the factory by a given date
+STR_20561   :{WINDOW_COLOUR_2}Quantity:
+STR_20562   :Factory options
+STR_20563   :Factory options: construction materials, shop stock, park rating
+STR_20564   :{WINDOW_COLOUR_2}Construction costs:
+STR_20565   :{WINDOW_COLOUR_2}Shop stock:
+STR_20566   :Pollution and uptime affect park rating
+STR_20567   :{WINDOW_COLOUR_2}Objective item:
+STR_20568   :{WINDOW_COLOUR_2}(objective item: only for a produce objective)
+STR_20569   :Money
+STR_20570   :Money and materials
+STR_20571   :Materials only
+STR_20572   :Bought in (unlimited)
+STR_20573   :From the warehouse
