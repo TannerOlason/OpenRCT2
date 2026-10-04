@@ -1722,6 +1722,10 @@ namespace OpenRCT2
      */
     void Guest::onExitRide(Ride& ride)
     {
+        // FACTORY-TOUR: a Factory Tour counts as touring the factory
+        if (Factory::isFactoryTourRide(ride))
+            Factory::markGuestToured(getGameState(), id.ToUnderlying());
+
         if (peepFlags.has(PeepFlag::rideShouldBeMarkedAsFavourite))
         {
             peepFlags.unset(PeepFlag::rideShouldBeMarkedAsFavourite);
@@ -5633,7 +5637,14 @@ namespace OpenRCT2
         {
             insertNewThought(PeepThoughtType::newRide);
         }
-        if (currentRide.IsNull())
+        // FACTORY-TOUR: watching machinery
+        if (currentRide.IsNull() && (currentSeat & Factory::kWatchingFactorySeatBit))
+        {
+            insertNewThought(PeepThoughtType::factoryWatching);
+            happinessTarget = std::min(kPeepMaxHappiness, happinessTarget + 20);
+            Factory::markGuestToured(getGameState(), id.ToUnderlying());
+        }
+        else if (currentRide.IsNull())
         {
             insertNewThought(PeepThoughtType::scenery);
         }
@@ -6524,6 +6535,17 @@ namespace OpenRCT2
                 {
                     return Loc690FD0(guest, rideToView, rideSeatToView, tileElement);
                 }
+            }
+
+            // FACTORY-TOUR: working photogenic machinery is worth watching too
+            if (tileElement->getType() == TileElementType::factory
+                && Factory::isWatchableMachine(getGameState(), *tileElement->asFactory()))
+            {
+                *rideSeatToView = Factory::kWatchingFactorySeatBit;
+                if (tileElement->getClearanceZ() >= guest.nextLoc.z + (8 * kCoordsZStep))
+                    *rideSeatToView |= 0x02;
+                *rideToView = RideId::GetNull();
+                return true;
             }
 
             if (tileElement->getType() == TileElementType::largeScenery)

@@ -740,6 +740,7 @@
     <ClInclude Include="factory\FactoryBench.h" />
     <ClInclude Include="factory\FactoryTourRTD.h" />
     <ClInclude Include="factory\GuestFactory.h" />
+    <ClInclude Include="factory\ParkExt.h" />
     <ClInclude Include="factory\Pollution.h" />
     <ClInclude Include="factory\RideRatingsFactory.h" />
     <ClInclude Include="factory\Fluids.h" />
@@ -1342,6 +1343,7 @@
     <ClCompile Include="factory\Belts.cpp" />
     <ClCompile Include="factory\FactoryBench.cpp" />
     <ClCompile Include="factory\GuestFactory.cpp" />
+    <ClCompile Include="factory\ParkExt.cpp" />
     <ClCompile Include="factory\Pollution.cpp" />
     <ClCompile Include="factory\RideRatingsFactory.cpp" />
     <ClCompile Include="factory\Fluids.cpp" />

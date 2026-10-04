@@ -43,6 +43,7 @@ namespace OpenRCT2::Factory
         rideProximity.clear();
         pollution.clear();
         ore.clear();
+        parkExt.reset();
         powerDirty = false;
         fluidDirty = false;
         topologyVersion = 0;
@@ -50,7 +51,7 @@ namespace OpenRCT2::Factory
 
     bool State::isEmpty() const
     {
-        return recordCount() == 0 && topologyVersion == 0 && ore.isEmpty();
+        return recordCount() == 0 && topologyVersion == 0 && ore.isEmpty() && parkExt.isEmpty();
     }
 
     size_t State::recordCount() const
@@ -1093,6 +1094,8 @@ namespace OpenRCT2::Factory
             return;
         }
         state.pollution.ensureSize(gameState.mapSize);
+        if (gameState.currentTicks % kParkExtPruneTicks == 0)
+            pruneParkExt(gameState);
         if (gameState.currentTicks % PollutionLayer::kSpreadTicks == 0)
             state.pollution.spread();
         // Fixed order: belts move, then inserters pick up and drop, then machines work. Containers have no

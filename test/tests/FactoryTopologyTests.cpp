@@ -35,6 +35,7 @@
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/Fluids.h>
 #include <openrct2/factory/GuestFactory.h>
+#include <openrct2/factory/ParkExt.h>
 #include <openrct2/factory/Pollution.h>
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
@@ -570,6 +571,9 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     }
     Tick(600);
 
+    // A park-side side table entry rides along in its own chunk.
+    state.parkExt.addGuestFlags(7, kGuestTouredFactory);
+
     ASSERT_EQ(ScenarioSave(getGameState(), out, {}), 1);
 
     // Round trip: the park must come back with the same elements and records.
@@ -584,6 +588,7 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     EXPECT_EQ(loaded.containers.aliveCount(), 3u);
     EXPECT_EQ(loaded.machines.aliveCount(), 7u);
     EXPECT_EQ(loaded.pipes.aliveCount(), 6u);
+    EXPECT_EQ(loaded.parkExt.guestFlags(7), kGuestTouredFactory);
     EXPECT_NE(findBeltElement(Tile(kRowX0 + 2)), nullptr);
     EXPECT_NE(findFactoryElement(Tile(kRowX0 + 1)), nullptr);
     EXPECT_EQ(computeSyncChecksum(getGameState()).toString(), checksumBefore);
@@ -1330,4 +1335,38 @@ TEST_F(FactoryTopologyTests, WorkingMachinesPollute)
         machineInsertInput(state, *state.machines.get(furnace->getRecordId()), _ironOre);
     Tick(200);
     EXPECT_GT(state.pollution.at({ kRowX0 + 2, kRowY }), 1000u);
+}
+
+TEST(FactoryParkExtTests, GuestFlagsStaySortedCountAndPrune)
+{
+    ParkExt ext;
+    EXPECT_TRUE(ext.isEmpty());
+    ext.addGuestFlags(30, kGuestTouredFactory);
+    ext.addGuestFlags(10, kGuestTouredFactory);
+    ext.addGuestFlags(20, 0);
+    ext.addGuestFlags(20, kGuestTouredFactory);
+    ASSERT_EQ(ext.guests.size(), 3u);
+    EXPECT_EQ(ext.guests[0].id, 10);
+    EXPECT_EQ(ext.guests[2].id, 30);
+    EXPECT_EQ(ext.guestFlags(20), kGuestTouredFactory);
+    EXPECT_EQ(ext.guestFlags(99), 0);
+    EXPECT_EQ(ext.countGuestsWith(kGuestTouredFactory), 3u);
+}
+
+TEST_F(FactoryTopologyTests, WatchableMachinesAndParkExtPruning)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    auto* furnace = Place(kRowX0 + 2, 2, _furnace);
+    ASSERT_NE(furnace, nullptr);
+    EXPECT_FALSE(isWatchableMachine(gameState, *furnace)); // idle
+    state.machines.get(furnace->getRecordId())->status = static_cast<uint8_t>(MachineStatus::working);
+    EXPECT_TRUE(isWatchableMachine(gameState, *findFactoryElement(Tile(kRowX0 + 2))));
+    EXPECT_FALSE(isWatchableMachine(gameState, *Place(kRowX0 + 4, 2, _belt)));
+
+    // The test park has no guest with this id, so pruning drops the entry.
+    markGuestToured(gameState, 4321);
+    EXPECT_EQ(state.parkExt.guestFlags(4321), kGuestTouredFactory);
+    pruneParkExt(gameState);
+    EXPECT_TRUE(state.parkExt.isEmpty());
 }

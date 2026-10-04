@@ -18,6 +18,8 @@
 namespace OpenRCT2
 {
     struct GameState_t;
+    struct FactoryElement;
+    struct Ride;
     enum class PeepThoughtType : uint8_t;
 } // namespace OpenRCT2
 
@@ -44,4 +46,12 @@ namespace OpenRCT2::Factory
      * always get no thought, so they behave exactly as upstream.
      */
     GuestFactoryVerdict assessGuestSurroundings(const GameState_t& gameState, const CoordsXYZ& guestLoc);
+
+    // Seat bit a watching guest gets when the thing watched is factory machinery (bit 0 is upstream's "new ride").
+    constexpr uint8_t kWatchingFactorySeatBit = 0x04;
+    // True for a working machine whose prototype is photogenic: guests may stop beside it to watch.
+    bool isWatchableMachine(const GameState_t& gameState, const FactoryElement& element);
+    // Records that a guest toured the factory (watched machines, or rode a Factory Tour).
+    void markGuestToured(GameState_t& gameState, uint16_t guestId);
+    bool isFactoryTourRide(const Ride& ride);
 } // namespace OpenRCT2::Factory

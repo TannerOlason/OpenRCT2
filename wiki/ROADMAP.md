@@ -100,7 +100,7 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   the 8 ms per tick CI gate on 5000 cells (60k belts, 20k inserters, 20k machines: about 0.8 ms locally). Power
   networks rebuild through a spatial pole grid (a 12000-cell rebuild went from 1.46 s to 18 ms).
 
-### M3 Park intertwine I `[ ]`
+### M3 Park intertwine I `[x]`
 
 Factory Tour ride type, ratings modifier and tour vehicle object; guest thoughts and watching; pollution and
 noise effects; `parkExt` Side Table chunk. The first moment the two games touch.
@@ -111,10 +111,12 @@ noise effects; `parkExt` Side Table chunk. The first moment the two games touch.
 - [x] Guest thoughts 174-180 declared (strings, action map, plugin names, d.ts); walking guests near a factory think
   `factoryImpressive` (+30 happiness), `factoryNoise` (-10) or `factorySmell` (-20, +12 nausea) before upstream's
   scenery thoughts; parks without a factory are untouched.
-- [ ] Watching working photogenic machines (`factoryWatching`) and the `touredFactory` guest flag.
+- [x] Guests stop to watch working photogenic machines (`factoryWatching`, +20 happiness, seat bit 0x04) and are
+  marked `touredFactory` when they watch or ride a Factory Tour.
 - [x] Pollution and noise: machine `pollution` feeds an 8x8-tile pollution grid that spreads and decays every 64 ticks
   (sparse in saves and the checksum, pools chunk version 6); machine `noise` within three tiles annoys guests.
-- [ ] `parkExt` Side Table chunk (0x45) for park-side fork fields.
+- [x] `parkExt` Side Table chunk (0x45, own version): sorted guest flags, pruned of departed guests every 256 ticks,
+  part of the sync checksum; saves round-trip it.
 
 ### M4 Park intertwine II `[ ]`
 

@@ -44,6 +44,7 @@ namespace OpenRCT2::Factory
     // 5 ride proximity totals; 6 pollution.
     constexpr uint16_t kFactoryPoolsVersion = 6;
     constexpr uint16_t kFactoryOreVersion = 1;
+    constexpr uint16_t kParkExtVersion = 1;
 
     /**
      * Visitor that reads or writes record fields through an OrcaStream chunk.

@@ -22,6 +22,7 @@
 namespace OpenRCT2::Factory
 {
     static void readWriteOreChunk(State& state, OrcaStream& os);
+    static void readWriteParkExtChunk(State& state, OrcaStream& os);
 
     void readWriteParkChunks(GameState_t& gameState, OrcaStream& os)
     {
@@ -53,6 +54,7 @@ namespace OpenRCT2::Factory
         }
 
         readWriteOreChunk(state, os);
+        readWriteParkExtChunk(state, os);
 
         os.readWriteChunk(ChunkType::factoryPools, [&](OrcaStream::ChunkStream& cs) {
             uint16_t version = kFactoryPoolsVersion;
@@ -147,6 +149,27 @@ namespace OpenRCT2::Factory
         }
     }
 
+    static void readWriteParkExtChunk(State& state, OrcaStream& os)
+    {
+        const bool reading = os.getMode() == OrcaStream::Mode::reading;
+        if (!reading && state.parkExt.isEmpty())
+            return;
+        bool found = os.readWriteChunk(ChunkType::parkExt, [&](OrcaStream::ChunkStream& cs) {
+            uint16_t version = kParkExtVersion;
+            cs.readWrite(version);
+            if (version > kParkExtVersion)
+            {
+                LOG_ERROR("Park extension chunk version %u is newer than supported %u", version, kParkExtVersion);
+                state.parkExt.reset();
+                return;
+            }
+            ChunkVisitor visitor{ cs };
+            state.parkExt.visit(visitor);
+        });
+        if (reading && !found)
+            state.parkExt.reset();
+    }
+
     void serialise(State& state, DataSerialiser& ds)
     {
         SerialiserVisitor visitor{ ds };
@@ -159,5 +182,6 @@ namespace OpenRCT2::Factory
         uint64_t hash = state.ore.hash();
         uint32_t nonEmpty = state.ore.nonEmptyCount();
         ds << width << height << hash << nonEmpty;
+        state.parkExt.visit(visitor);
     }
 } // namespace OpenRCT2::Factory

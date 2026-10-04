@@ -165,6 +165,12 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
   +12 nausea); summed `noise / (1 + distance)` of working machines within three tiles >= 40 gives `factoryNoise` (-10);
   at least four machines within four tiles, half working, of two kinds gives `factoryImpressive` (+30). No factory
   thought (and always in parks without a factory) falls through to upstream's scenery, fountain and music thoughts.
+- **Watching and touring**: `GuestFindRideToLookAt` treats a working machine whose prototype is `photogenic` (default)
+  like photogenic scenery, with seat bit 0x04; the watching guest thinks `factoryWatching` (+20 happiness) and is
+  marked `touredFactory`, as is any guest leaving a Factory Tour ride.
+- **parkExt** (ADR 0008): `Factory::ParkExt` holds side tables keyed by upstream ids, saved in fork chunk 0x45 with
+  its own version and included in the sync checksum. Now: guest flags (`kGuestTouredFactory`), sorted by entity id,
+  pruned of ids that are no longer guests every 256 ticks.
 - **Exhibit Paths**: `FOOTPATH_ENTRY_FLAG_IS_EXHIBIT = 1<<5`, JSON `"isExhibit": true`; ~60% bias in
   `CalculateNextDestination`, no dead-end culling; guests marked `touredFactory`.
 - **Guest appreciation**: `GuestAssessSurroundings` counts machines, working, pollution and noise via

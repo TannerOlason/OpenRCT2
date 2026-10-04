@@ -64,6 +64,8 @@ jobs:
       - run: git config --global --add safe.directory $PWD
       - name: Run clang-format
         run: scripts/check-code-formatting
+      - name: Check fork sources are in the MSBuild projects
+        run: bash scripts/factory-tour/check-vcxproj.sh
 
   check-changelog-formatting:
     name: Check changelog formatting

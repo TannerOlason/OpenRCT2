@@ -13,6 +13,7 @@
 
 #include "../GameState.h"
 #include "../entity/Guest.h"
+#include "../ride/Ride.h"
 #include "../world/Map.h"
 #include "../world/TileElementsView.h"
 #include "../world/tile_element/FactoryElement.h"
@@ -78,5 +79,24 @@ namespace OpenRCT2::Factory
         else if (machines >= kImpressiveMachines && working * 2 >= machines && std::popcount(kinds) >= 2)
             verdict = { PeepThoughtType::factoryImpressive, 30, 0, true };
         return verdict;
+    }
+
+    bool isWatchableMachine(const GameState_t& gameState, const FactoryElement& element)
+    {
+        if (element.isGhost() || element.getSubtype() != FactoryElementSubtype::machine || !element.hasRecord())
+            return false;
+        const auto* proto = getPrototype(element);
+        const auto* machine = gameState.factory.machines.get(element.getRecordId());
+        return proto != nullptr && machine != nullptr && proto->getMachine().photogenic && machine->isWorking();
+    }
+
+    void markGuestToured(GameState_t& gameState, uint16_t guestId)
+    {
+        gameState.factory.parkExt.addGuestFlags(guestId, kGuestTouredFactory);
+    }
+
+    bool isFactoryTourRide(const Ride& ride)
+    {
+        return ride.type == RIDE_TYPE_FACTORY_TOUR;
     }
 } // namespace OpenRCT2::Factory

@@ -228,6 +228,7 @@ namespace OpenRCT2::Factory
                 _machine.size = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["size"], 1), 1, 5);
                 _machine.pollution = Json::GetNumber<uint16_t>(properties["pollution"], 0);
                 _machine.noise = Json::GetNumber<uint8_t>(properties["noise"], 0);
+                _machine.photogenic = Json::GetBoolean(properties["photogenic"], true);
                 _machine.inputFluid.identifier = Json::GetString(properties["inputFluid"]);
                 _machine.outputFluid.identifier = Json::GetString(properties["outputFluid"]);
                 _machine.fluidRate = Json::GetNumber<uint32_t>(properties["fluidRate"], 0);
