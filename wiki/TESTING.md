@@ -68,6 +68,14 @@ the 3x3 electric drill (centred ghost, refused over the map edge, no repeat plac
 and the Factory research window (target toggling, unit progress from a lab after reload; park from
 `FT_RESEARCH_PARK_OUT=$S/research.park` with the `LabsResearch...` test).
 
+## Regenerating content
+
+- Placeholder art and objects: `python3 scripts/factory-tour/gen-placeholder-art.py` (then `cmake build` before
+  `ninja install`, since install globs at configure time).
+- Trailer scenarios: `cd build && FT_SCENARIO_OUT=$PWD/../data/factory/scenarios ./OpenRCT2Tests
+  --gtest_filter='FactoryScenarios.*'`.
+- Fork replay pack: `FT_RECORD_REPLAYS=1 ./OpenRCT2Tests --gtest_filter='FactoryReplayTests.Record*'`.
+
 ## Pre-commit checks
 
 `scripts/factory-tour/check-touchpoint-format.sh` (clang-format hunks touching FACTORY-TOUR lines in upstream files,

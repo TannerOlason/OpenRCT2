@@ -117,3 +117,44 @@ jobs:
         run: . scripts/setenv && build
       - name: Run Tests
         run: . scripts/setenv -q && run-tests
+      - name: Package portable zip
+        if: github.event_name == 'push' && github.ref == 'refs/heads/factory-tour/main'
+        run: |
+          . scripts/setenv -q
+          build-portable
+          mv artifacts/openrct2-portable-*.zip artifacts/FactoryTour-${{ needs.build_variables.outputs.describe }}-windows-portable-$PLATFORM.zip
+      - name: Upload portable zip
+        if: github.event_name == 'push' && github.ref == 'refs/heads/factory-tour/main'
+        uses: actions/upload-artifact@v6
+        with:
+          name: FactoryTour-windows-portable-x64
+          path: artifacts/FactoryTour-*-windows-portable-x64.zip
+          if-no-files-found: error
+
+  linux-appimage:
+    name: Ubuntu Linux (AppImage, x86_64)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/factory-tour/main'
+    runs-on: ubuntu-24.04
+    needs: [check-code-formatting, build_variables]
+    container: openrct2/openrct2-build:24-jammy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.21
+        with:
+          key: factory-tour-linux-appimage
+      - name: Build OpenRCT2
+        run: |
+          . scripts/setenv -q && build -DCMAKE_CXX_COMPILER=clang++-20 -DCMAKE_BUILD_TYPE=Release -DAPPIMAGE=ON -DOPENRCT2_USE_CCACHE=on -DDISABLE_DISCORD_RPC=ON
+      - name: Build AppImage
+        env:
+          APPIMAGE_FILE_NAME: FactoryTour-${{ needs.build_variables.outputs.describe }}-linux-x86_64.AppImage
+          NO_STRIP: true
+        run: . scripts/setenv -q && build-appimage
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v6
+        with:
+          name: FactoryTour-linux-AppImage
+          path: artifacts
+          if-no-files-found: error

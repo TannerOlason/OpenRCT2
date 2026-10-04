@@ -95,6 +95,7 @@
     <ClCompile Include="FactoryOreTests.cpp" />
     <ClCompile Include="FactoryPrototypeTests.cpp" />
     <ClCompile Include="FactoryReplayTests.cpp" />
+    <ClCompile Include="FactoryScenarioTests.cpp" />
     <ClCompile Include="FactoryStateTests.cpp" />
     <ClCompile Include="FactoryTopologyTests.cpp" />
     <ClCompile Include="FormattingTests.cpp" />

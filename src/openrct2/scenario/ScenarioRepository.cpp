@@ -132,6 +132,8 @@ public:
                   env.GetDirectoryPath(DirBase::rct1, DirId::scenarios),
                   env.GetDirectoryPath(DirBase::rct2, DirId::scenarios),
                   env.GetDirectoryPath(DirBase::user, DirId::scenarios),
+                  // FACTORY-TOUR: the fork's own scenarios
+                  Path::Combine(env.GetDirectoryPath(DirBase::openrct2), u8"factory", u8"scenarios"),
               }))
     {
     }
