@@ -27,7 +27,7 @@
 #include "../entity/Particle.h"
 #include "../factory/GuestFactory.h" // FACTORY-TOUR
 #include "../factory/Materials.h"    // FACTORY-TOUR
-#include "../factory/Portals.h" // FACTORY-TOUR
+#include "../factory/Portals.h"      // FACTORY-TOUR
 #include "../interface/WindowBase.h"
 #include "../localisation/Formatter.h"
 #include "../localisation/Formatting.h"
