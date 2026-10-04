@@ -42,6 +42,7 @@ namespace OpenRCT2::Factory
         fluidNetworks.clear();
         rideProximity.clear();
         pollution.clear();
+        warehouse.stock.clear();
         ore.clear();
         parkExt.reset();
         powerDirty = false;
@@ -51,7 +52,7 @@ namespace OpenRCT2::Factory
 
     bool State::isEmpty() const
     {
-        return recordCount() == 0 && topologyVersion == 0 && ore.isEmpty() && parkExt.isEmpty();
+        return recordCount() == 0 && topologyVersion == 0 && ore.isEmpty() && parkExt.isEmpty() && warehouse.isEmpty();
     }
 
     size_t State::recordCount() const
@@ -256,6 +257,19 @@ namespace OpenRCT2::Factory
             }
         }
         return false;
+    }
+
+    // Puts one item into a container, or into the Warehouse when the container is a warehouse.
+    static bool containerAccept(State& state, ContainerRecord& container, ObjectEntryIndex item)
+    {
+        auto* proto = getPrototype(container.entry);
+        if (proto != nullptr && proto->getContainer().warehouse)
+        {
+            state.warehouse.deposit(item, 1);
+            return true;
+        }
+        auto* itemProto = getPrototype(item);
+        return containerInsert(container, item, itemProto != nullptr ? itemProto->getItem().stackSize : 1);
     }
 
     static int32_t beltTileStart(const BeltSegmentRecord& segment, const RecordRef& ref)
@@ -513,11 +527,7 @@ namespace OpenRCT2::Factory
             case FactoryElementSubtype::container:
             {
                 auto* container = state.containers.get(ref.id);
-                if (container == nullptr)
-                    return false;
-                auto* itemProto = getPrototype(inserter.hand.item);
-                const uint16_t stackSize = itemProto != nullptr ? itemProto->getItem().stackSize : 1;
-                return containerInsert(*container, inserter.hand.item, stackSize);
+                return container != nullptr && containerAccept(state, *container, inserter.hand.item);
             }
             case FactoryElementSubtype::belt:
             {
@@ -682,7 +692,7 @@ namespace OpenRCT2::Factory
                 case FactoryElementSubtype::container:
                 {
                     auto* container = state.containers.get(element->getRecordId());
-                    moved = container != nullptr && containerInsert(*container, slot.item, stackSizeOf(slot.item));
+                    moved = container != nullptr && containerAccept(state, *container, slot.item);
                     break;
                 }
                 case FactoryElementSubtype::machine:

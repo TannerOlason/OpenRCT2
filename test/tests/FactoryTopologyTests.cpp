@@ -1370,3 +1370,18 @@ TEST_F(FactoryTopologyTests, WatchableMachinesAndParkExtPruning)
     pruneParkExt(gameState);
     EXPECT_TRUE(state.parkExt.isEmpty());
 }
+
+TEST_F(FactoryTopologyTests, InsertersFillTheWarehouseThroughADepot)
+{
+    auto& state = getGameState().factory;
+    auto* depotObject = GetContext()->GetObjectManager().LoadObject("factory-tour.factory_prototype.warehouse_depot");
+    ASSERT_NE(depotObject, nullptr);
+    const auto depot = GetContext()->GetObjectManager().GetLoadedObjectEntryIndex(depotObject);
+    auto* source = Place(kRowX0, 2, _chest);
+    Place(kRowX0 + 1, 2, _inserter);
+    Place(kRowX0 + 2, 2, depot);
+    state.containers.get(source->getRecordId())->slots[0] = { _plate, 5 };
+    Tick(48 * 6);
+    EXPECT_EQ(state.warehouse.count(_plate), 5u);
+    EXPECT_TRUE(state.containers.get(source->getRecordId())->slots[0].isEmpty());
+}

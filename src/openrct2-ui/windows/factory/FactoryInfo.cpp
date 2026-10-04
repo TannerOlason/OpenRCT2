@@ -242,6 +242,17 @@ namespace OpenRCT2::Ui::Windows
                 auto* container = state.containers.get(element->getRecordId());
                 if (container == nullptr)
                     return;
+                if (proto != nullptr && proto->getContainer().warehouse)
+                {
+                    // A depot shows the park-wide stock it feeds.
+                    drawText(rt, pos, STR_FT_WAREHOUSE);
+                    pos.y += 12;
+                    std::vector<ItemStack> stock;
+                    for (const auto& entry : state.warehouse.stock)
+                        stock.push_back({ entry.item, static_cast<uint16_t>(std::min<uint32_t>(entry.count, 0xFFFF)) });
+                    DrawSlots(rt, pos, stock);
+                    return;
+                }
                 drawText(rt, pos, STR_FT_CONTENTS);
                 pos.y += 12;
                 DrawSlots(rt, pos, container->slots);

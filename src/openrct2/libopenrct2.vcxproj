@@ -740,6 +740,7 @@
     <ClInclude Include="factory\FactoryBench.h" />
     <ClInclude Include="factory\FactoryTourRTD.h" />
     <ClInclude Include="factory\GuestFactory.h" />
+    <ClInclude Include="factory\Materials.h" />
     <ClInclude Include="factory\ParkExt.h" />
     <ClInclude Include="factory\Pollution.h" />
     <ClInclude Include="factory\RideRatingsFactory.h" />
@@ -757,6 +758,7 @@
     <ClInclude Include="factory\actions\FactorySetOreAction.h" />
     <ClInclude Include="factory\actions\FactoryPlaceBeltLineAction.h" />
     <ClInclude Include="factory\actions\FactorySetFilterAction.h" />
+    <ClInclude Include="factory\actions\FactorySetParkOptionAction.h" />
     <ClInclude Include="factory\actions\FactorySetRecipeAction.h" />
     <ClInclude Include="factory\FactoryRecords.h" />
     <ClInclude Include="factory\FactorySerialisation.h" />
@@ -1343,6 +1345,7 @@
     <ClCompile Include="factory\Belts.cpp" />
     <ClCompile Include="factory\FactoryBench.cpp" />
     <ClCompile Include="factory\GuestFactory.cpp" />
+    <ClCompile Include="factory\Materials.cpp" />
     <ClCompile Include="factory\ParkExt.cpp" />
     <ClCompile Include="factory\Pollution.cpp" />
     <ClCompile Include="factory\RideRatingsFactory.cpp" />
@@ -1359,6 +1362,7 @@
     <ClCompile Include="factory\actions\FactorySetOreAction.cpp" />
     <ClCompile Include="factory\actions\FactoryPlaceBeltLineAction.cpp" />
     <ClCompile Include="factory\actions\FactorySetFilterAction.cpp" />
+    <ClCompile Include="factory\actions\FactorySetParkOptionAction.cpp" />
     <ClCompile Include="factory\actions\FactorySetRecipeAction.cpp" />
     <ClCompile Include="factory\SyncChecksum.cpp" />
     <ClCompile Include="world\tile_element\EntranceElement.cpp" />

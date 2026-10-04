@@ -13,6 +13,7 @@
 
 #include "FactoryPool.hpp"
 #include "FactoryRecords.h"
+#include "Materials.h"
 #include "Ore.h"
 #include "ParkExt.h"
 #include "Pollution.h"
@@ -48,6 +49,7 @@ namespace OpenRCT2::Factory
         // Factory proximity totals of rides part-way through a rating calculation, sorted by ride id.
         std::vector<RideProximityEntry> rideProximity;
         PollutionLayer pollution;
+        Warehouse warehouse;
         OreLayer ore;
         ParkExt parkExt; // saved in its own chunk (0x45); part of the sync checksum // saved in its own chunk (0x42); its hash
                          // joins the sync checksum
@@ -91,6 +93,7 @@ namespace OpenRCT2::Factory
             fluidDirty = fluidDirtyByte != 0;
             v.vec(rideProximity, VisitElement{});
             pollution.visit(v);
+            warehouse.visit(v);
         }
     };
 

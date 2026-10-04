@@ -178,11 +178,16 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
   factoryMadeHere, soldOut, factoryDanger`) in `PeepThoughtType`, `kPeepThoughtIds`, `ThoughtTypeMap`, d.ts.
   Negative thoughts subtract happiness; smell adds nausea. `GuestFindRideToLookAt` watches working photogenic
   machines. Per-128-tick pollution penalty in `Guest::update`.
-- **Material economy**: `Scenario::Options` gains `constructionMode ∈ {money, hybrid, materials}` and
-  `shopStockMode ∈ {infinite, warehouse}` (stored in `parkExt`). `GameActions::Result` gains `MaterialBill
-  materials` and `Status::insufficientMaterials`. Hooks in `GameActionRunner.cpp` `QueryInternal` (after
-  `FinanceCheckAffordability`, gated by `Materials::Active`) and `ExecuteInternal` (next to `FinancePayment`).
-  Bills come from optional `"materials"` on object JSON or `Materials::BillFromCost(cost, expenditure)`.
+- **Material economy**: `constructionMode ∈ {money, hybrid, materials}` and `shopStockMode ∈ {infinite,
+  warehouse}` live in `parkExt` (chunk version 2), set by `FactorySetParkOptionAction` (command `setParkOption`).
+  The Warehouse (`Factory::Warehouse`, pools chunk version 7) is a sorted item → count store; containers whose
+  prototype has `"warehouse": true` (the warehouse depot) deposit into it. `Status::insufficientMaterials` is
+  appended to `GameActions::Status`; `Result` is unchanged. Two runner hooks, top-level only:
+  `Factory::onQuery` runs before the affordability check (so materials mode can zero the money cost first) and
+  fails when the Warehouse cannot cover the bill; `Factory::onExecute` runs before `FinancePayment`, taking the bill
+  or, for a negative cost, depositing the equivalent refund. Bills come from `billFromCost`: one
+  `factory-tour.factory_prototype.iron_plate` per 5.00, for `rideConstruction` and `landscaping` only, never for
+  fork actions, ghosts, noSpend, the editor or no-money parks. Object JSON `"materials"` bills come later.
 - **Shops**: `ShopItem` 56–63 for manufactured souvenirs; `Ride::stockMode` side table checked in
   `GuestDecideAndBuyItem`; Market with saturation decay; `ExpenditureType` appended after `interest`:
   `factoryConstruction, factoryRunningCosts, goodsSales, rawMaterialPurchase`.

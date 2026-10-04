@@ -20,17 +20,21 @@
 #include <openrct2/actions/GameAction.hpp>
 #include <openrct2/actions/GameActionRegistry.h>
 #include <openrct2/actions/GameActionRunner.h>
+#include <openrct2/actions/terraform/LandRaiseAction.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/Materials.h>
 #include <openrct2/factory/actions/FactoryActionRegistry.h>
 #include <openrct2/factory/actions/FactoryPlaceAction.h>
 #include <openrct2/factory/actions/FactoryPlaceBeltLineAction.h>
 #include <openrct2/factory/actions/FactoryRemoveAction.h>
 #include <openrct2/factory/actions/FactoryRotateAction.h>
+#include <openrct2/factory/actions/FactorySetParkOptionAction.h>
 #include <openrct2/network/NetworkAction.h>
 #include <openrct2/object/ObjectManager.h>
 #include <openrct2/world/Map.h>
+#include <openrct2/world/MapSelection.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
 #include <openrct2/world/tile_element/SurfaceElement.h>
 
@@ -329,4 +333,85 @@ TEST_F(FactoryActionTests, MultiTileMachinesNeedEveryTileFreeAndGoAsAWhole)
     EXPECT_EQ(state.machines.aliveCount(), 0u);
     for (int32_t index = 0; index < 9; index++)
         EXPECT_EQ(findFactoryElement(at(kX0 + 4 + index % 3, kY + index / 3), true), nullptr) << index;
+}
+
+TEST(FactoryWarehouseTests, DepositTakeCoverAndConsume)
+{
+    Warehouse warehouse;
+    warehouse.deposit(5, 10);
+    warehouse.deposit(2, 3);
+    warehouse.deposit(5, 4);
+    ASSERT_EQ(warehouse.stock.size(), 2u);
+    EXPECT_EQ(warehouse.stock[0].item, 2); // sorted by item
+    EXPECT_EQ(warehouse.count(5), 14u);
+    EXPECT_EQ(warehouse.take(2, 10), 3u);
+    EXPECT_EQ(warehouse.count(2), 0u);
+    EXPECT_EQ(warehouse.stock.size(), 1u); // emptied entries go
+    const MaterialBill bill{ { 5, 12 } };
+    EXPECT_TRUE(warehouse.canCover(bill));
+    EXPECT_FALSE(warehouse.canCover({ { 5, 15 } }));
+    warehouse.consume(bill);
+    EXPECT_EQ(warehouse.count(5), 2u);
+    warehouse.depositBill({ { 7, 1 } });
+    EXPECT_EQ(warehouse.count(7), 1u);
+}
+
+TEST_F(FactoryActionTests, ConstructionModesBillTheWarehouse)
+{
+    auto& gameState = getGameState();
+    auto& factory = gameState.factory;
+    gameState.park.flags.unset(ParkFlag::noMoney);
+    gameState.park.cash = 100000.00_GBP;
+    // Construction bills only apply to upstream construction, here raising a tile.
+    const auto tile = Tile(kX0 + 3);
+    LandRaiseAction action(tile, MapRange{ tile, tile }, MapSelectType::full);
+
+    // Money mode (the default): upstream behaviour.
+    auto res = Query(&action, gameState);
+    ASSERT_EQ(res.error, Status::ok);
+    const auto cost = res.cost;
+    ASSERT_GT(cost, 0);
+    EXPECT_EQ(
+        billFromCost(cost, ExpenditureType::landscaping).front().count,
+        static_cast<uint32_t>((cost + kMoneyPerBillItem - 1) / kMoneyPerBillItem));
+    EXPECT_TRUE(billFromCost(cost, ExpenditureType::shopStock).empty());
+
+    // Materials mode with an empty warehouse refuses; with plates it is free in money and takes the bill.
+    FactorySetParkOptionAction setMode(FactoryParkOption::constructionMode, static_cast<uint8_t>(ConstructionMode::materials));
+    ASSERT_EQ(Run(setMode).error, Status::ok);
+    EXPECT_EQ(Query(&action, gameState).error, Status::insufficientMaterials);
+    const uint32_t billCount = billFromCost(cost, ExpenditureType::landscaping).front().count;
+    factory.warehouse.deposit(_plate, billCount + 5);
+    res = Query(&action, gameState);
+    ASSERT_EQ(res.error, Status::ok);
+    EXPECT_EQ(res.cost, 0);
+    const auto cashBefore = gameState.park.cash;
+    gInUpdateCode = true; // execute now instead of queueing for the end of the tick
+    res = Execute(&action, gameState);
+    gInUpdateCode = false;
+    ASSERT_EQ(res.error, Status::ok);
+    EXPECT_EQ(factory.warehouse.count(_plate), 5u);
+    EXPECT_EQ(gameState.park.cash, cashBefore);
+
+    // Hybrid mode pays both.
+    FactorySetParkOptionAction hybrid(FactoryParkOption::constructionMode, static_cast<uint8_t>(ConstructionMode::hybrid));
+    ASSERT_EQ(Run(hybrid).error, Status::ok);
+    factory.warehouse.deposit(_plate, 1000);
+    const auto platesBefore = factory.warehouse.count(_plate);
+    gInUpdateCode = true;
+    res = Execute(&action, gameState);
+    gInUpdateCode = false;
+    ASSERT_EQ(res.error, Status::ok);
+    EXPECT_LT(factory.warehouse.count(_plate), platesBefore);
+    EXPECT_LT(gameState.park.cash, cashBefore);
+
+    // Fork actions are never billed.
+    FactoryPlaceAction belt(Tile(kX0 + 6), 0, _belt);
+    EXPECT_EQ(Query(&belt, gameState).error, Status::ok);
+
+    // Back to money mode: the side table empties again.
+    FactorySetParkOptionAction money(FactoryParkOption::constructionMode, 0);
+    ASSERT_EQ(Run(money).error, Status::ok);
+    EXPECT_FALSE(materialsActive(gameState));
+    gameState.park.flags.set(ParkFlag::noMoney);
 }

@@ -45,14 +45,19 @@ namespace OpenRCT2::Factory
     struct ParkExt
     {
         std::vector<GuestExt> guests;
+        // Scenario options (Factory::ConstructionMode, ShopStockMode); 0 is upstream behaviour.
+        uint8_t constructionMode{};
+        uint8_t shopStockMode{};
 
         bool isEmpty() const
         {
-            return guests.empty();
+            return guests.empty() && constructionMode == 0 && shopStockMode == 0;
         }
         void reset()
         {
             guests.clear();
+            constructionMode = 0;
+            shopStockMode = 0;
         }
         uint8_t guestFlags(uint16_t id) const;
         void addGuestFlags(uint16_t id, uint8_t flags);
@@ -62,6 +67,8 @@ namespace OpenRCT2::Factory
         void visit(V& v)
         {
             v.vec(guests, [](GuestExt& guest, auto& vv) { guest.visit(vv); });
+            v(constructionMode);
+            v(shopStockMode);
         }
     };
 

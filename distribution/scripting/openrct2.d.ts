@@ -424,6 +424,7 @@ declare global {
         queryAction(action: "factorysetfilter", args: FactorySetFilterArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorysetore", args: FactorySetOreArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorysetrecipe", args: FactorySetRecipeArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
 
         /**
          * Executes a game action. In a network game, this will send a request to the server and wait
@@ -523,6 +524,7 @@ declare global {
         executeAction(action: "factorysetfilter", args: FactorySetFilterArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorysetore", args: FactorySetOreArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorysetrecipe", args: FactorySetRecipeArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
 
         /**
          * Subscribes to the given hook.
@@ -794,7 +796,8 @@ declare global {
         "factoryrotate" |
         "factorysetfilter" |
         "factorysetore" |
-        "factorysetrecipe";
+        "factorysetrecipe" |
+        "factorysetparkoption";
 
 
     interface GameActionArgs {
@@ -1709,6 +1712,12 @@ declare global {
         ore: number;
         amount: number;
         richness: number;
+    }
+
+    interface FactorySetParkOptionArgs extends GameActionArgs {
+        /** 0 construction mode (0 money, 1 hybrid, 2 materials), 1 shop stock mode (0 infinite, 1 warehouse) */
+        option: number;
+        value: number;
     }
 
     interface FactorySetRecipeArgs extends GameActionArgs {

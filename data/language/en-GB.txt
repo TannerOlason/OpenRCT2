@@ -3932,3 +3932,5 @@ STR_20535   :“I could watch these machines all day”
 STR_20536   :“I wonder where they make these”
 STR_20537   :“It’s sold out!”
 STR_20538   :“That machinery looks dangerous”
+STR_20539   :Needs {COMMA32} {STRING} ({COMMA32} in the warehouse)
+STR_20540   :{WINDOW_COLOUR_2}Warehouse (park-wide)

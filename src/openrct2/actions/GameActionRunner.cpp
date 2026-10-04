@@ -14,6 +14,7 @@
 #include "../Game.h"
 #include "../GameState.h"
 #include "../ReplayManager.h"
+#include "../factory/Materials.h" // FACTORY-TOUR
 #include "../core/Guard.hpp"
 #include "../core/MemoryStream.h"
 #include "../entity/MoneyEffect.h"
@@ -184,6 +185,9 @@ namespace OpenRCT2::GameActions
         auto& park = gameState.park;
 
         auto result = action->Query(gameState, park);
+        // FACTORY-TOUR: material bills (no effect unless the park's construction mode needs materials)
+        if (topLevel)
+            Factory::onQuery(gameState, *action, result);
         if (result.error == Status::ok)
         {
             if (!FinanceCheckAffordability(result.cost, action->GetFlags()))
@@ -354,6 +358,8 @@ namespace OpenRCT2::GameActions
             // If not top level just give away the result.
             if (!topLevel)
                 return result;
+
+            Factory::onExecute(gameState, *action, result); // FACTORY-TOUR: take or refund the material bill
 
             // Update money balance
             if (result.error == Status::ok && FinanceCheckMoneyRequired(flags) && result.cost != 0)

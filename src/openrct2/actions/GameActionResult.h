@@ -45,6 +45,8 @@ namespace OpenRCT2::GameActions
 
         noFreeElements,
 
+        insufficientMaterials, // FACTORY-TOUR: the Warehouse cannot cover a Material Bill
+
         unknown = std::numeric_limits<std::underlying_type_t<Status>>::max(),
     };
 

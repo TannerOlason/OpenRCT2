@@ -33,6 +33,7 @@ namespace OpenRCT2::GameActions
         setWire = 8,
         cheat = 9,
         setOre = 10,
+        setParkOption = 11,
         count,
     };
 

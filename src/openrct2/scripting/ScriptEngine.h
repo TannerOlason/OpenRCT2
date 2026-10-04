@@ -43,8 +43,8 @@ namespace OpenRCT2
 namespace OpenRCT2::Scripting
 {
     // Grepped from CI (.github/workflows/publish-plugin-types.yml); keep the format `kPluginApiVersion = N`.
-    // FACTORY-TOUR: 124 -> 129 (factory_prototype objects, factory tile elements, fork actions, ride, thoughts)
-    static constexpr int32_t kPluginApiVersion = 129;
+    // FACTORY-TOUR: 124 -> 130 (factory_prototype objects, factory tile elements, fork actions, ride, thoughts)
+    static constexpr int32_t kPluginApiVersion = 130;
 
     // Versions marking breaking changes.
     static constexpr int32_t kApiVersionPeepDeprecation = 33;

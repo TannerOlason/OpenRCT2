@@ -164,6 +164,21 @@ def draw_chest():
     return img, h
 
 
+def draw_warehouse():
+    """A full-tile depot shed with a roller door: where the factory's output joins the park-wide warehouse."""
+    def top_detail(draw, cx, cy):
+        draw.polygon([(cx - 14, cy - 2), (cx, cy - 9), (cx + 14, cy - 2), (cx, cy + 5)], fill=(150, 150, 160, 255),
+                     outline=(70, 70, 80, 255))
+
+    def side_detail(draw, cx, cy, h, dd):
+        for k in range(4):
+            draw.line([(cx - 24, cy - 14 + k * 3), (cx - 8, cy - 6 + k * 3)], fill=(90, 90, 100, 255))
+
+    img, h = draw_machine_box(0, (120, 130, 110, 255), (150, 160, 140, 255), (50, 55, 45, 255), 22, top_detail,
+                              side_detail)
+    return img, h
+
+
 def draw_inserter(d, frame, frames):
     h = 28
     img = Image.new("RGBA", (64, 32 + h), (0, 0, 0, 0))
@@ -871,6 +886,14 @@ def main():
         {"slots": 16, "rotations": 1, "price": 30, "removalPrice": -20, "clearance": 6},
         [{"path": "images/chest.png", "x": -32, "y": -h}], "Wooden chest")
     save(img, folder, "chest.png")
+
+    # Warehouse depot: what goes in joins the park-wide Warehouse that construction draws on.
+    img, h = draw_warehouse()
+    folder = write_object(
+        "warehouse_depot", "container",
+        {"slots": 1, "rotations": 1, "warehouse": True, "price": 200, "removalPrice": -150, "clearance": 7},
+        [{"path": "images/depot.png", "x": -32, "y": -h}], "Warehouse depot")
+    save(img, folder, "depot.png")
     print("wrote content pack to", os.path.relpath(ROOT))
 
 

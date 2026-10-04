@@ -157,9 +157,10 @@ namespace OpenRCT2::Factory
         bool found = os.readWriteChunk(ChunkType::parkExt, [&](OrcaStream::ChunkStream& cs) {
             uint16_t version = kParkExtVersion;
             cs.readWrite(version);
-            if (version > kParkExtVersion)
+            if (version != kParkExtVersion)
             {
-                LOG_ERROR("Park extension chunk version %u is newer than supported %u", version, kParkExtVersion);
+                // Pre-release saves are not migrated.
+                LOG_ERROR("Park extension chunk version %u is not the supported %u", version, kParkExtVersion);
                 state.parkExt.reset();
                 return;
             }

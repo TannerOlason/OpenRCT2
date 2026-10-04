@@ -118,11 +118,23 @@ noise effects; `parkExt` Side Table chunk. The first moment the two games touch.
 - [x] `parkExt` Side Table chunk (0x45, own version): sorted guest flags, pruned of departed guests every 256 ticks,
   part of the sync checksum; saves round-trip it.
 
-### M4 Park intertwine II `[ ]`
+### M4 Park intertwine II `[~]`
 
 Material economy (construction modes, Material Bills, Warehouse, refunds, cost text), Warehouse-stocked shops
 and souvenir items, Market, new expenditure rows, park-rating terms, objectives, scenario editor options,
 Exhibit Paths.
+
+- [x] Warehouse (park-wide stock, fed by warehouse depot containers) and construction modes (money, hybrid,
+  materials) in `parkExt`, set by `FactorySetParkOptionAction`. In hybrid and materials mode upstream construction
+  (ride construction and landscaping, not fork actions) carries a bill of one Iron plate per 5.00 of cost: the query
+  fails with `insufficientMaterials` ("Needs N Iron plate") when the warehouse is short, execute takes it (materials
+  mode charges no money), and refunds put plates back. Cost text in construction windows is still to do.
+- [ ] Construction window cost text ("needs N Iron plate").
+- [ ] Market, export depot and new expenditure rows.
+- [ ] Warehouse-stocked shops and souvenir shop items.
+- [ ] Park rating terms (pollution near paths, uptime) and park flags.
+- [ ] Objectives and scenario editor options.
+- [ ] Exhibit Paths.
 
 ### M5 Progression and modding `[ ]`
 

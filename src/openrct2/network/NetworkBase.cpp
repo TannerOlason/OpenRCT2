@@ -48,7 +48,7 @@
 // It is used for making sure only compatible builds get connected, even within
 // single OpenRCT2 version.
 
-constexpr uint8_t kStreamVersion = 10; // FACTORY-TOUR: 2 -> 10 (fork actions and state)
+constexpr uint8_t kStreamVersion = 11; // FACTORY-TOUR: 2 -> 11 (fork actions and state)
 
 const std::string kStreamID = std::string(kOpenRCT2Version) + "-" + std::to_string(kStreamVersion);
 

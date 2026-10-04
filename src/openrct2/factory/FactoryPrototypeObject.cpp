@@ -274,6 +274,7 @@ namespace OpenRCT2::Factory
             case PrototypeKind::container:
                 _container.slots = std::clamp<uint16_t>(Json::GetNumber<uint16_t>(properties["slots"], 16), 1, 256);
                 _container.rotations = Json::GetNumber<uint8_t>(properties["rotations"], 1) == 4 ? 4 : 1;
+                _container.warehouse = Json::GetBoolean(properties["warehouse"], false);
                 break;
             case PrototypeKind::pole:
                 _pole.wireReach = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["wireReach"], 7), 1, 30);

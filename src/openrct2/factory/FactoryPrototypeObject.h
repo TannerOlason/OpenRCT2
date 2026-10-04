@@ -193,7 +193,8 @@ namespace OpenRCT2::Factory
     struct ContainerProperties
     {
         uint16_t slots = 16;
-        uint8_t rotations = 1; // 1 or 4 images
+        uint8_t rotations = 1;  // 1 or 4 images
+        bool warehouse = false; // items put in go to the park-wide Warehouse instead of its slots
     };
 
     class FactoryPrototypeObject final : public Object
