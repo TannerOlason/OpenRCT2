@@ -514,7 +514,10 @@ TEST_F(FactoryTopologyTests, AssemblerNeedsAPoweredNetworkAndMakesGears)
     PlaceAt(ax, kRowY + 4, east, _pole);
     auto* generatorElement = PlaceAt(ax, kRowY + 5, east, _generator);
     ASSERT_NE(generatorElement, nullptr);
+    // Pool storage may move when a record is added: re-fetch pointers after placements.
+    assembler = state.machines.get(assemblerElement->getRecordId());
     auto* generator = state.machines.get(generatorElement->getRecordId());
+    ASSERT_NE(assembler, nullptr);
     ASSERT_NE(generator, nullptr);
     EXPECT_TRUE(state.powerDirty);
     Tick(1);
