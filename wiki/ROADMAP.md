@@ -157,6 +157,15 @@ Technology prototypes in the research system, labs, unified unlock tree, script 
 object-selection tabs, combat stub (health, damage, Threat, turret), first content pack. A modder can ship a
 `.parkobj` turret.
 
+- [x] Technologies and labs (ADR 0012): technology prototypes form a fork tree beside upstream research; labs
+  consume packs to research the target chosen in the Factory research window; researched technologies unlock
+  factory prototypes, ride entries and scenery groups (withheld from upstream's research lists while gated). Starter
+  tree with research kits and labs.
+- [ ] Script bindings (`factory` global, machines, warehouse, market, technologies), hooks and d.ts.
+- [ ] Object selection sub-tabs by prototype kind.
+- [ ] Combat stub: machine health, `FactoryDamageAction`, Threat entity, turret machines.
+- [ ] First content pack (turret, longer technology chain) and a modding guide.
+
 ### M6 Logistics and polish `[ ]`
 
 Freight railway with cargo cars and loader stations, blueprints and copy/paste, production graphs, alerts,

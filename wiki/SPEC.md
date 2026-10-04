@@ -218,13 +218,21 @@ hazard, health}`, `pollutionAt(tile)`, `warehouse()` (`canCover / consume / depo
 
 ## E5 Research and progression
 
-Technologies are prototypes of kind `technology` (`prerequisites`, `cost: {packs, time}`, `unlocks:
-{recipes, machines, rideEntries, sceneryGroups}`, `allowFunding`). `Research::EntryType::technology = 2`,
-`ResearchCategory::technology = 7`. `ResearchFinishItem` calls `factory.unlockTechnology`, which also drives
-`RideEntrySetInvented` and `SceneryGroupSetInvented`. `ResearchUpdate` progresses technologies by
-`takeSciencePoints()` from Lab machines unless `allowFunding`. Windows: research icon switch,
-`EditorInventionsList.cpp`. Content: automation → logistics → electricity → steel → oil → modules → rocket,
-interleaved with ride categories, scenery groups, souvenir recipes and tour-ride tiers.
+Technologies are prototypes of kind `technology` (`prerequisites`, `packs` per unit, `units`, `unitTicks`, `unlocks`
+for factory prototypes, `rideEntries`, `sceneryGroups`). They form a fork tree beside upstream research (ADR 0012):
+`Factory::ResearchState` (pools chunk version 10) holds researched technologies, units done and the current target.
+Labs (`machineKind: "lab"`) accept only the current technology's packs (two units' worth), take a unit's packs when
+it starts, work `unitTicks` at their speed and power satisfaction, and credit the unit to the technology it started
+for. When the last unit lands, `completeTechnology` marks it researched, invents its rides and scenery groups and
+announces it. A prototype is locked while some loaded technology unlocks it and none of those is researched:
+placement and recipe actions refuse it ("Not yet researched"), the build palette and recipe dropdowns hide it and
+furnaces skip locked recipes. `Research.cpp` hooks (`withholdGatedResearch`, `applyTechnologyUnlocks`) in
+`ResearchResetCurrentItem` and `ResearchFix` keep upstream's research lists and invented tables consistent; both do
+nothing without technologies. The "ignore research status" cheat unlocks everything. The target is set with
+`FactorySetParkOptionAction` option `researchTarget` (an available technology, or 0xFFFF) from the Factory research
+window (WindowClass 146). Content: research kits (gear + plate), the lab, and Logistics, Electric mining, Steam
+power, Warehousing (after Logistics), Souvenir manufacturing (unlocks the gift shop) and Factory tours (unlocks the
+tour tram, after Logistics). Longer chains (electricity, steel, oil, modules, rocket) come with their content.
 
 ## E6 Modding surface and combat stub
 

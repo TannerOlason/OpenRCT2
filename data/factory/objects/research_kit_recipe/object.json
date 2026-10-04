@@ -1,0 +1,36 @@
+{
+    "id": "factory-tour.factory_prototype.research_kit_recipe",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "recipe",
+        "ingredients": [
+            {
+                "item": "factory-tour.factory_prototype.iron_gear",
+                "count": 1
+            },
+            {
+                "item": "factory-tour.factory_prototype.iron_plate",
+                "count": 1
+            }
+        ],
+        "results": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            }
+        ],
+        "timeTicks": 200,
+        "category": "crafting"
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Research kit"
+        }
+    }
+}

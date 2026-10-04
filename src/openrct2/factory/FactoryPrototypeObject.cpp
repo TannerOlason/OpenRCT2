@@ -21,6 +21,7 @@
 #include "../interface/ScreenCoords.hpp"
 #include "../object/ObjectManager.h"
 #include "../object/RideObject.h"
+#include "Technology.h"
 
 #include <algorithm>
 
@@ -288,6 +289,31 @@ namespace OpenRCT2::Factory
             case PrototypeKind::pipe:
                 _pipe.capacity = std::max<uint32_t>(1, Json::GetNumber<uint32_t>(properties["capacity"], 1000));
                 break;
+            case PrototypeKind::technology:
+            {
+                auto readStrings = [](json_t& array) {
+                    std::vector<std::string> result;
+                    if (array.is_array())
+                        for (auto& value : array)
+                            if (value.is_string() && !value.get<std::string>().empty())
+                                result.push_back(value.get<std::string>());
+                    return result;
+                };
+                auto toRefs = [](std::vector<std::string>&& identifiers) {
+                    std::vector<PrototypeRef> refs;
+                    for (auto& identifier : identifiers)
+                        refs.push_back(PrototypeRef{ std::move(identifier) });
+                    return refs;
+                };
+                _technology.prerequisites = toRefs(readStrings(properties["prerequisites"]));
+                _technology.packs = readItemAmounts(properties["packs"]);
+                _technology.units = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["units"], 10));
+                _technology.unitTicks = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["unitTicks"], 600));
+                _technology.unlocks = toRefs(readStrings(properties["unlocks"]));
+                _technology.rideEntries = readStrings(properties["rideEntries"]);
+                _technology.sceneryGroups = readStrings(properties["sceneryGroups"]);
+                break;
+            }
             default:
                 // Remaining kinds are parsed when their simulation lands (M2/M5).
                 break;
@@ -296,6 +322,7 @@ namespace OpenRCT2::Factory
 
     void FactoryPrototypeObject::Load()
     {
+        invalidateTechnologyIndex();
         _numImages = GetImageTable().GetCount();
         if (_numImages > 0)
         {
@@ -305,6 +332,7 @@ namespace OpenRCT2::Factory
 
     void FactoryPrototypeObject::Unload()
     {
+        invalidateTechnologyIndex();
         UnloadImages();
         _baseImageId = kImageIndexUndefined;
         _numImages = 0;
@@ -383,6 +411,11 @@ namespace OpenRCT2::Factory
     ImageIndex FactoryPrototypeObject::getSplitterImage(uint8_t side, uint8_t direction) const
     {
         return imageAt((side & 1) * 4u + (direction & 3));
+    }
+
+    ImageIndex FactoryPrototypeObject::getTechnologyIcon() const
+    {
+        return _kind == PrototypeKind::technology ? imageAt(0) : kImageIndexUndefined;
     }
 
     ImageIndex FactoryPrototypeObject::getPipeImage(uint8_t viewMask) const

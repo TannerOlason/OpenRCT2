@@ -66,6 +66,7 @@ namespace OpenRCT2::Factory
      *   underground: [direction] entrance, [4 + direction] exit
      *   splitter:  [side * 4 + direction], side 0 = origin tile (left of travel)
      *   pipe:      [mask], 16 images; bit d of mask = connected towards view direction d
+     *   technology: [0] icon (optional)
      */
     enum class BeltShape : uint8_t
     {
@@ -201,6 +202,22 @@ namespace OpenRCT2::Factory
         bool exportDepot = false; // items put in are sold to the Market at once (unsellable items are refused)
     };
 
+    /**
+     * A technology in the fork's research tree (ADR 0012). Labs research it unit by unit: each unit consumes `packs`
+     * and takes `unitTicks` of lab work at speed 1.0. Researching it unlocks factory prototypes, ride entries and
+     * scenery groups that are otherwise withheld while the technology is loaded.
+     */
+    struct TechnologyProperties
+    {
+        std::vector<PrototypeRef> prerequisites;
+        std::vector<ItemAmount> packs;
+        uint16_t units = 10;
+        uint16_t unitTicks = 600;
+        std::vector<PrototypeRef> unlocks;      // factory prototypes: recipes, machines, belts, ...
+        std::vector<std::string> rideEntries;   // ride object identifiers
+        std::vector<std::string> sceneryGroups; // scenery group object identifiers
+    };
+
     class FactoryPrototypeObject final : public Object
     {
     private:
@@ -214,6 +231,7 @@ namespace OpenRCT2::Factory
         MachineProperties _machine{};
         PoleProperties _pole{};
         PipeProperties _pipe{};
+        TechnologyProperties _technology{};
         money64 _price = 0;
         money64 _removalPrice = 0;
         uint8_t _clearance = 8; // height of the placed element in z units (kCoordsZStep multiples)
@@ -284,6 +302,10 @@ namespace OpenRCT2::Factory
         {
             return _pipe;
         }
+        const TechnologyProperties& getTechnology() const
+        {
+            return _technology;
+        }
         bool isFluid() const
         {
             return _kind == PrototypeKind::item && _item.fluid;
@@ -317,6 +339,7 @@ namespace OpenRCT2::Factory
         ImageIndex getUndergroundImage(bool exit, uint8_t direction) const;
         ImageIndex getSplitterImage(uint8_t side, uint8_t direction) const;
         ImageIndex getPipeImage(uint8_t viewMask) const;
+        ImageIndex getTechnologyIcon() const;
 
     private:
         ImageIndex imageAt(uint32_t offset) const;

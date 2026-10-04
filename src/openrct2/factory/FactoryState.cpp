@@ -45,6 +45,7 @@ namespace OpenRCT2::Factory
         warehouse.stock.clear();
         market = Market{};
         production.produced.clear();
+        research.reset();
         ore.clear();
         parkExt.reset();
         powerDirty = false;
@@ -54,7 +55,8 @@ namespace OpenRCT2::Factory
 
     bool State::isEmpty() const
     {
-        return recordCount() == 0 && topologyVersion == 0 && ore.isEmpty() && parkExt.isEmpty() && warehouse.isEmpty();
+        return recordCount() == 0 && topologyVersion == 0 && ore.isEmpty() && parkExt.isEmpty() && warehouse.isEmpty()
+            && research.isEmpty();
     }
 
     size_t State::recordCount() const
@@ -357,7 +359,8 @@ namespace OpenRCT2::Factory
             if (proto == nullptr || proto->getKind() != PrototypeKind::recipe)
                 continue;
             const auto& recipe = proto->getRecipe();
-            if (!machineProto.machineHandlesCategory(recipe.category))
+            if (!machineProto.machineHandlesCategory(recipe.category)
+                || !isPrototypeUnlocked(getGameState(), static_cast<ObjectEntryIndex>(i)))
                 continue;
             for (const auto& ingredient : recipe.ingredients)
             {
@@ -387,6 +390,22 @@ namespace OpenRCT2::Factory
         {
             case MachineKind::drill:
                 return false;
+            case MachineKind::lab:
+            {
+                // Packs of the technology being researched, at most two units' worth of each.
+                auto* technology = getPrototype(state.research.current);
+                if (technology == nullptr || technology->getKind() != PrototypeKind::technology)
+                    return false;
+                for (const auto& pack : technology->getTechnology().packs)
+                {
+                    if (pack.item.resolve() == item)
+                    {
+                        const uint16_t limit = static_cast<uint16_t>(std::max<uint32_t>(pack.count * 2u, 2u));
+                        return stackCount(machine.inputs, item) < limit && stackCanAdd(machine.inputs, item, 1, limit);
+                    }
+                }
+                return false;
+            }
             case MachineKind::furnace:
             {
                 if (machine.inputs.empty())
@@ -860,6 +879,54 @@ namespace OpenRCT2::Factory
         }
     }
 
+    /**
+     * Labs research the current technology a unit at a time. A unit's packs are taken when it starts and the unit is
+     * credited to the technology it started for (kept in `recipe`), even if the player switches target meanwhile.
+     */
+    static void updateLab(GameState_t& gameState, MachineRecord& machine, const FactoryPrototypeObject& proto)
+    {
+        auto& state = gameState.factory;
+        const auto& props = proto.getMachine();
+        if (machine.craftCost == 0)
+        {
+            const auto current = state.research.current;
+            auto* technology = getPrototype(current);
+            if (technology == nullptr || technology->getKind() != PrototypeKind::technology
+                || state.research.isResearched(current))
+            {
+                setMachineStatus(machine, MachineStatus::noRecipe);
+                return;
+            }
+            const auto& tech = technology->getTechnology();
+            for (const auto& pack : tech.packs)
+            {
+                if (stackCount(machine.inputs, pack.item.resolve()) < pack.count)
+                {
+                    setMachineStatus(machine, MachineStatus::noInput);
+                    return;
+                }
+            }
+            for (const auto& pack : tech.packs)
+                stackRemove(machine.inputs, pack.item.resolve(), pack.count);
+            machine.recipe = current;
+            machine.craftCost = static_cast<uint32_t>(tech.unitTicks) * kWorkUnitsPerTick;
+            machine.progress = 0;
+        }
+
+        uint32_t satisfactionQ16;
+        if (!takeEnergy(state, machine, props, satisfactionQ16))
+            return;
+
+        setMachineStatus(machine, MachineStatus::working);
+        machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
+        if (machine.progress >= machine.craftCost)
+        {
+            machine.craftCost = 0;
+            machine.progress = 0;
+            addResearchUnit(gameState, machine.recipe);
+        }
+    }
+
     static int32_t tileDistance(const RecordBase& a, const RecordBase& b)
     {
         return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
@@ -1060,8 +1127,9 @@ namespace OpenRCT2::Factory
         });
     }
 
-    static void updateMachines(State& state)
+    static void updateMachines(GameState_t& gameState)
     {
+        auto& state = gameState.factory;
         state.machines.forEach([&](RecordId, MachineRecord& machine) {
             auto* proto = getPrototype(machine.entry);
             if (proto == nullptr)
@@ -1092,6 +1160,9 @@ namespace OpenRCT2::Factory
                     break;
                 case MachineKind::boiler:
                     updateBoiler(state, machine, *proto);
+                    break;
+                case MachineKind::lab:
+                    updateLab(gameState, machine, *proto);
                     break;
                 default:
                     setMachineStatus(machine, MachineStatus::idle);
@@ -1124,7 +1195,7 @@ namespace OpenRCT2::Factory
             updateInserters(state);
             updatePower(state);
             updateFluidNetworks(state);
-            updateMachines(state);
+            updateMachines(gameState);
             return;
         }
         using Clock = std::chrono::steady_clock;
@@ -1144,7 +1215,7 @@ namespace OpenRCT2::Factory
         lap(times->power);
         updateFluidNetworks(state);
         lap(times->fluids);
-        updateMachines(state);
+        updateMachines(gameState);
         lap(times->machines);
     }
 } // namespace OpenRCT2::Factory

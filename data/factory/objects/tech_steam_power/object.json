@@ -1,0 +1,35 @@
+{
+    "id": "factory-tour.factory_prototype.tech_steam_power",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            }
+        ],
+        "units": 20,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.offshore_pump",
+            "factory-tour.factory_prototype.boiler",
+            "factory-tour.factory_prototype.steam_engine",
+            "factory-tour.factory_prototype.pipe_basic"
+        ],
+        "rideEntries": [],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Steam power"
+        }
+    }
+}

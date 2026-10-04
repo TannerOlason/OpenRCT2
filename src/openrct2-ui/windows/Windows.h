@@ -127,6 +127,7 @@ namespace OpenRCT2::Ui::Windows
     WindowBase* FactoryInfoOpen(const CoordsXYZ& loc);
     WindowBase* FactoryPowerOpen(uint32_t network);
     WindowBase* FactoryOptionsOpen();
+    WindowBase* FactoryResearchOpen();
 
     // Footpath
     WindowBase* FootpathOpen();

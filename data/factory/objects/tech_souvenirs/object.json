@@ -1,0 +1,35 @@
+{
+    "id": "factory-tour.factory_prototype.tech_souvenirs",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            }
+        ],
+        "units": 10,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.factory_model_recipe",
+            "factory-tour.factory_prototype.gear_keyring_recipe"
+        ],
+        "rideEntries": [
+            "factory-tour.ride.gift_shop"
+        ],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Souvenir manufacturing"
+        }
+    }
+}

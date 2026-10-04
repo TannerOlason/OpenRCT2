@@ -22,6 +22,7 @@ namespace OpenRCT2::GameActions
         shopStockMode,    // 0 infinite, 1 warehouse
         affectsRating,    // ParkFlag::factoryAffectsRating, 0 or 1
         objectiveItem,    // the item a produceItemsBy objective counts (an item prototype entry)
+        researchTarget,   // the technology labs research (an available technology entry, or 0xFFFF for none)
         count,
     };
 

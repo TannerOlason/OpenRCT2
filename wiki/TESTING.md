@@ -64,7 +64,9 @@ At 1280x720 the factory toolbar button is at (1075, 12). Reinstall data after ch
 (`DESTDIR=$FT_BUILD_DIR/install ninja -C build install`), otherwise the game shows "(undefined string)".
 Checked this way so far: belt-line drag (ghost run, cost line, build on release), machine, chest, pipe and splitter
 info windows (recipe and filter dropdowns), the power overview from a pole and from the build window, and placing
-the 3x3 electric drill (centred ghost, refused over the map edge, no repeat placement while the button is held).
+the 3x3 electric drill (centred ghost, refused over the map edge, no repeat placement while the button is held),
+and the Factory research window (target toggling, unit progress from a lab after reload; park from
+`FT_RESEARCH_PARK_OUT=$S/research.park` with the `LabsResearch...` test).
 
 ## Pre-commit checks
 

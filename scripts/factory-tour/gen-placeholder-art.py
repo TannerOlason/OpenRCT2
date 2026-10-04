@@ -833,6 +833,58 @@ def write_exhibit_path():
         fh.write("\n")
 
 
+def draw_lab(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        # A glass dome whose glow pulses while researching.
+        glow = (80 + 40 * frame // max(1, frames - 1), 160 + 20 * frame // max(1, frames - 1), 230, 255)
+        draw.ellipse([cx - 14, cy - 9, cx + 14, cy + 5], fill=(40, 60, 90, 255))
+        draw.ellipse([cx - 11, cy - 12, cx + 11, cy + 2], fill=glow, outline=(30, 50, 80, 255))
+
+    def side_detail(draw, cx, cy, h, dd):
+        draw.rectangle([cx - 24, cy - 14, cx - 8, cy - 6], fill=(200, 200, 210, 255))  # sign board
+
+    return draw_machine_box(d, (150, 150, 165, 255), (180, 180, 195, 255), (50, 50, 60, 255), 20, top_detail, side_detail)
+
+
+def write_research():
+    """The research chain: research kits crafted in assemblers, labs that consume them, and a starter technology tree
+    that gates both factory prototypes and park content (ADR 0012)."""
+    icon, belt = draw_item_small((70, 150, 220), (30, 70, 130))
+    folder = write_object("research_kit", "item", {"stackSize": 200, "marketPrice": 40},
+                          [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                          "Research kit")
+    save(icon, folder, "icon.png")
+    save(belt, folder, "belt.png")
+    write_object("research_kit_recipe", "recipe", {
+        "ingredients": [{"item": "factory-tour.factory_prototype.iron_gear", "count": 1},
+                        {"item": "factory-tour.factory_prototype.iron_plate", "count": 1}],
+        "results": [{"item": "factory-tour.factory_prototype.research_kit", "count": 1}],
+        "timeTicks": 200, "category": "crafting"}, [], "Research kit")
+    write_machine("lab", "Lab", {
+        "machineKind": "lab", "energy": "electric", "speedQ8": 256, "powerUsage": 60, "noise": 5,
+        "inputSlots": 2, "outputSlots": 0, "price": 120, "removalPrice": -90, "clearance": 6}, draw_lab, 4)
+
+    def proto(name):
+        return f"factory-tour.factory_prototype.{name}"
+
+    kit = [{"item": proto("research_kit"), "count": 1}]
+    technologies = [
+        ("tech_logistics", "Logistics", [], 10, [proto("splitter_basic"), proto("underground_belt_basic")], [], []),
+        ("tech_electric_mining", "Electric mining", [], 15, [proto("electric_drill")], [], []),
+        ("tech_steam_power", "Steam power", [], 20,
+         [proto("offshore_pump"), proto("boiler"), proto("steam_engine"), proto("pipe_basic")], [], []),
+        ("tech_warehousing", "Warehousing", ["tech_logistics"], 15,
+         [proto("warehouse_depot"), proto("export_depot")], [], []),
+        ("tech_souvenirs", "Souvenir manufacturing", [], 10,
+         [proto("factory_model_recipe"), proto("gear_keyring_recipe")], ["factory-tour.ride.gift_shop"], []),
+        ("tech_factory_tours", "Factory tours", ["tech_logistics"], 15, [], ["factory-tour.ride.tour_tram"], []),
+    ]
+    for name, display, prerequisites, units, unlocks, rides, scenery in technologies:
+        write_object(name, "technology", {
+            "prerequisites": [proto(p) for p in prerequisites], "packs": kit, "units": units, "unitTicks": 400,
+            "unlocks": unlocks, "rideEntries": rides, "sceneryGroups": scenery}, [], display)
+
+
 def write_ore_and_item(ore_name, item_name, display_ore, display_item, colour, dark, fuel_ticks=0, market_price=0):
     icon, belt = draw_item_small(colour, dark)
     item_props = {"stackSize": 50}
@@ -901,6 +953,9 @@ def main():
     # The Factory Tour ride's vehicle and the walkway that draws visitors past the machines.
     write_tour_tram()
     write_exhibit_path()
+
+    # Research: kits, labs and the starter technology tree.
+    write_research()
 
     # Manufactured souvenirs, their recipes and the shop that sells them (stocked from the Warehouse).
     for name, display, colour, dark, shop_item in (("factory_model", "Factory model", (190, 120, 60), (110, 60, 30), "factory_model"),

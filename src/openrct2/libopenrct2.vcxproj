@@ -751,6 +751,7 @@
     <ClInclude Include="factory\FactoryStringIds.h" />
     <ClInclude Include="factory\FactoryTopology.h" />
     <ClInclude Include="factory\Objectives.h" />
+    <ClInclude Include="factory\Technology.h" />
     <ClInclude Include="factory\Ore.h" />
     <ClInclude Include="factory\actions\FactoryActionRegistry.h" />
     <ClInclude Include="factory\actions\FactoryCommand.h" />
@@ -1359,6 +1360,7 @@
     <ClCompile Include="factory\FactoryState.cpp" />
     <ClCompile Include="factory\FactoryTopology.cpp" />
     <ClCompile Include="factory\Objectives.cpp" />
+    <ClCompile Include="factory\Technology.cpp" />
     <ClCompile Include="factory\Ore.cpp" />
     <ClCompile Include="factory\actions\FactoryActionRegistry.cpp" />
     <ClCompile Include="factory\actions\FactoryPlaceAction.cpp" />

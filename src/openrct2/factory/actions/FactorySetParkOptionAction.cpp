@@ -64,6 +64,10 @@ namespace OpenRCT2::GameActions
                     return Result();
                 break;
             }
+            case FactoryParkOption::researchTarget:
+                if (_value == kObjectEntryIndexNull || Factory::isTechnologyAvailable(gameState, _value))
+                    return Result();
+                break;
             default:
                 break;
         }
@@ -86,6 +90,9 @@ namespace OpenRCT2::GameActions
                 break;
             case FactoryParkOption::affectsRating:
                 gameState.park.flags.set(ParkFlag::factoryAffectsRating, _value != 0);
+                break;
+            case FactoryParkOption::researchTarget:
+                gameState.factory.research.current = _value;
                 break;
             default:
                 gameState.scenarioOptions.objective.NumGuests = _value;

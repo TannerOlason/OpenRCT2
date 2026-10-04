@@ -29,6 +29,7 @@
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/factory/FactoryStringIds.h>
 #include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/Technology.h>
 #include <openrct2/factory/actions/FactoryPlaceAction.h>
 #include <openrct2/factory/actions/FactoryPlaceBeltLineAction.h>
 #include <openrct2/factory/actions/FactoryRemoveAction.h>
@@ -62,6 +63,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_ROTATE,
         WIDX_POWER,
         WIDX_OPTIONS,
+        WIDX_RESEARCH,
     };
     VALIDATE_GLOBAL_WIDX(WC_FACTORY_BUILD, WIDX_ROTATE);
 
@@ -71,7 +73,8 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({  2,  17}, {272, 150}, WidgetType::scroll,  WindowColour::secondary, SCROLL_VERTICAL                                 ),
         makeWidget({276,  17}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_ROTATE_ARROW), STR_FT_ROTATE_TIP     ),
         makeWidget({276,  43}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_GRAPH),        STR_FT_POWER_TIP      ),
-        makeWidget({276,  69}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_GEARS_0),  STR_FT_OPTIONS_TIP    )
+        makeWidget({276,  69}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_GEARS_0),  STR_FT_OPTIONS_TIP    ),
+        makeWidget({276,  95}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_TAB_FINANCES_RESEARCH_0), STR_FT_RESEARCH_TIP)
     );
     // clang-format on
 
@@ -130,6 +133,13 @@ namespace OpenRCT2::Ui::Windows
             if (!isToolActive(WindowClass::factoryBuild, WIDX_BACKGROUND))
             {
                 close();
+                return;
+            }
+            // Research can unlock prototypes at any time.
+            if (currentFrame % 32 == 0)
+            {
+                RefreshEntries();
+                invalidate();
             }
         }
 
@@ -150,6 +160,9 @@ namespace OpenRCT2::Ui::Windows
                     break;
                 case WIDX_OPTIONS:
                     FactoryOptionsOpen();
+                    break;
+                case WIDX_RESEARCH:
+                    FactoryResearchOpen();
                     break;
             }
         }
@@ -343,11 +356,14 @@ namespace OpenRCT2::Ui::Windows
             for (size_t i = 0; i < count; i++)
             {
                 auto* proto = objectManager.GetLoadedObject<FactoryPrototypeObject>(i);
-                if (proto != nullptr && proto->isPlaceable())
+                if (proto != nullptr && proto->isPlaceable()
+                    && isPrototypeUnlocked(getGameState(), static_cast<ObjectEntryIndex>(i)))
                 {
                     _entries.push_back(static_cast<ObjectEntryIndex>(i));
                 }
             }
+            if (std::find(_entries.begin(), _entries.end(), _selected) == _entries.end())
+                _selected = kObjectEntryIndexNull;
             if (_selected == kObjectEntryIndexNull && !_entries.empty())
             {
                 _selected = _entries.front();

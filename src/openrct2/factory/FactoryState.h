@@ -20,6 +20,7 @@
 #include "ParkExt.h"
 #include "Pollution.h"
 #include "RideRatingsFactory.h"
+#include "Technology.h"
 
 #include <cstdint>
 
@@ -55,8 +56,8 @@ namespace OpenRCT2::Factory
         Market market;
         ProductionStats production;
         OreLayer ore;
-        ParkExt parkExt; // saved in its own chunk (0x45); part of the sync checksum // saved in its own chunk (0x42); its hash
-                         // joins the sync checksum
+        ResearchState research;
+        ParkExt parkExt; // saved in its own chunk (0x45); part of the sync checksum
 
         // Set when poles, generators or consumers change; networks are rebuilt by BFS on the next tick.
         bool powerDirty{};
@@ -100,6 +101,7 @@ namespace OpenRCT2::Factory
             warehouse.visit(v);
             market.visit(v);
             production.visit(v);
+            research.visit(v);
         }
     };
 

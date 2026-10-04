@@ -3967,3 +3967,18 @@ STR_20570   :Money and materials
 STR_20571   :Materials only
 STR_20572   :Bought in (unlimited)
 STR_20573   :From the warehouse
+STR_20574   :Technology researched: {STRING}
+STR_20575   :Not yet researched
+STR_20576   :Factory research
+STR_20577   :Click an available technology to have labs research it
+STR_20578   :{WINDOW_COLOUR_2}Needs prerequisites
+STR_20579   :{WINDOW_COLOUR_2}Researched
+STR_20580   :{BLACK}Researching
+STR_20581   :{BLACK}Available
+STR_20582   :{BLACK}{STRING}
+STR_20583   :{WINDOW_COLOUR_2}This park has no technologies
+STR_20584   :{WINDOW_COLOUR_2}Labs are idle: choose a technology below
+STR_20585   :{WINDOW_COLOUR_2}Researching: {BLACK}{STRING}
+STR_20586   :{WINDOW_COLOUR_2}Units: {BLACK}{COMMA32} / {COMMA32}
+STR_20587   :{WINDOW_COLOUR_2}Each unit: {BLACK}{STRING}
+STR_20588   :Factory research

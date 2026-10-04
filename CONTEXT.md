@@ -146,9 +146,14 @@ Export Depot machine and `MarketSellAction`.
 _Avoid_: shop, guest purchase
 
 **Technology**:
-A Prototype of kind `technology` that enters the upstream research system as
-`Research::EntryType::technology` and unlocks recipes, machines, ride entries and scenery groups together.
-_Avoid_: separate tech tree UI
+A Prototype of kind `technology`, researched unit by unit by Labs consuming packs, in a fork tree beside upstream
+research (ADR 0012). Researching it unlocks factory prototypes, ride entries and scenery groups together; until then
+they are locked (Prototypes) or withheld from upstream's research lists (rides, scenery).
+_Avoid_: research item (that is upstream's funded research)
+
+**Lab**:
+A machine of kind `lab` that consumes the current Technology's packs to research it.
+_Avoid_: research centre
 
 **Threat**:
 The single stub `EntityType::threat` that walks straight at a target and hits when adjacent. Everything

@@ -45,6 +45,7 @@
 #include <openrct2/factory/Pollution.h>
 #include <openrct2/factory/RideRatingsFactory.h>
 #include <openrct2/factory/SyncChecksum.h>
+#include <openrct2/factory/Technology.h>
 #include <openrct2/factory/actions/FactoryMarketSellAction.h>
 #include <openrct2/factory/actions/FactorySetFilterAction.h>
 #include <openrct2/factory/actions/FactorySetParkOptionAction.h>
@@ -1653,4 +1654,119 @@ TEST_F(FactoryTopologyTests, ExhibitPathsDrawGuestsAndMarkTheirTour)
         auto remove = GameActions::FootpathRemoveAction(Tile(tx));
         GameActions::ExecuteNested(&remove, gameState);
     }
+}
+
+TEST_F(FactoryTopologyTests, LabsResearchTechnologiesThatUnlockPrototypesAndRides)
+{
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
+    auto& objectManager = GetContext()->GetObjectManager();
+    const std::vector<std::string> ids = {
+        "factory-tour.factory_prototype.lab",
+        "factory-tour.factory_prototype.research_kit",
+        "factory-tour.factory_prototype.tech_logistics",
+        "factory-tour.factory_prototype.tech_warehousing",
+        "factory-tour.factory_prototype.tech_souvenirs",
+        "factory-tour.ride.gift_shop",
+        "factory-tour.factory_prototype.warehouse_depot",
+    };
+    std::vector<ObjectEntryIndex> index;
+    for (const auto& id : ids)
+    {
+        auto* object = objectManager.LoadObject(id);
+        ASSERT_NE(object, nullptr) << id;
+        index.push_back(objectManager.GetLoadedObjectEntryIndex(object));
+    }
+    const auto lab = index[0], kit = index[1], logistics = index[2], warehousing = index[3], souvenirs = index[4];
+    const auto giftShop = index[5], depot = index[6];
+
+    // Loaded technologies lock what they unlock; everything else stays available.
+    const auto& technologies = loadedTechnologies();
+    EXPECT_NE(std::find(technologies.begin(), technologies.end(), logistics), technologies.end());
+    EXPECT_FALSE(isPrototypeUnlocked(gameState, _splitter));
+    EXPECT_FALSE(isPrototypeUnlocked(gameState, _underground));
+    EXPECT_FALSE(isPrototypeUnlocked(gameState, depot));
+    EXPECT_TRUE(isPrototypeUnlocked(gameState, _belt));
+    gameState.cheats.ignoreResearchStatus = true;
+    EXPECT_TRUE(isPrototypeUnlocked(gameState, _splitter));
+    gameState.cheats.ignoreResearchStatus = false;
+
+    // Prerequisites gate the research target.
+    EXPECT_TRUE(isTechnologyAvailable(gameState, logistics));
+    EXPECT_FALSE(isTechnologyAvailable(gameState, warehousing));
+    using GameActions::FactoryParkOption;
+    auto early = GameActions::FactorySetParkOptionAction(FactoryParkOption::researchTarget, warehousing);
+    EXPECT_NE(GameActions::Query(&early, gameState).error, GameActions::Status::ok);
+    auto validTarget = GameActions::FactorySetParkOptionAction(FactoryParkOption::researchTarget, logistics);
+    ASSERT_EQ(GameActions::ExecuteNested(&validTarget, gameState).error, GameActions::Status::ok);
+    EXPECT_EQ(state.research.current, logistics);
+
+    // A powered lab takes kits (and nothing else) and turns two into two units of research.
+    auto* labElement = PlaceAt(kRowX0, kRowY, 0, lab);
+    ASSERT_NE(labElement, nullptr);
+    const RecordId labId = labElement->getRecordId();
+    PlaceAt(kRowX0 + 1, kRowY, 0, _pole);
+    auto* generatorElement = PlaceAt(kRowX0 + 2, kRowY, 0, _generator);
+    ASSERT_NE(generatorElement, nullptr);
+    for (int i = 0; i < 5; i++)
+        machineInsertInput(state, *state.machines.get(generatorElement->getRecordId()), _coal);
+    EXPECT_FALSE(machineInsertInput(state, *state.machines.get(labId), _plate));
+    EXPECT_TRUE(machineInsertInput(state, *state.machines.get(labId), kit));
+    EXPECT_TRUE(machineInsertInput(state, *state.machines.get(labId), kit));
+    EXPECT_FALSE(machineInsertInput(state, *state.machines.get(labId), kit)); // two units' worth buffered
+    Tick(805);
+    EXPECT_EQ(state.research.unitsDone(logistics), 2u);
+    EXPECT_EQ(state.machines.get(labId)->getStatus(), MachineStatus::noInput);
+
+    // The remaining units complete it: splitters and undergrounds unlock and warehousing becomes available.
+    for (int i = 0; i < 8; i++)
+        addResearchUnit(gameState, logistics);
+    EXPECT_TRUE(state.research.isResearched(logistics));
+    EXPECT_EQ(state.research.current, kObjectEntryIndexNull);
+    EXPECT_EQ(state.research.unitsDone(logistics), 0u);
+    EXPECT_TRUE(isPrototypeUnlocked(gameState, _splitter));
+    EXPECT_TRUE(isTechnologyAvailable(gameState, warehousing));
+    Tick(2);
+    EXPECT_EQ(state.machines.get(labId)->getStatus(), MachineStatus::noRecipe);
+
+    // Rides a technology unlocks leave upstream's research lists and are invented when it completes.
+    ResearchInsertRideEntry(giftShop, false);
+    EXPECT_TRUE(withholdGatedResearch(gameState));
+    for (const auto& item : gameState.researchItemsUninvented)
+        EXPECT_FALSE(item.type == Research::EntryType::ride && item.entryIndex == giftShop);
+    EXPECT_FALSE(RideEntryIsInvented(giftShop));
+    completeTechnology(gameState, souvenirs);
+    EXPECT_TRUE(RideEntryIsInvented(giftShop));
+    bool announced = false;
+    gameState.newsItems.foreachRecentNews(
+        [&](auto& item) { announced |= item.text.find("Souvenir manufacturing") != std::string::npos; });
+    EXPECT_TRUE(announced);
+
+    // With FT_RESEARCH_PARK_OUT, save a park mid-research (for the GUI) and check research survives a reload, including
+    // the rides it invented (re-applied by the ResearchFix hook).
+    if (const char* out = std::getenv("FT_RESEARCH_PARK_OUT"); out != nullptr)
+    {
+        auto next = GameActions::FactorySetParkOptionAction(FactoryParkOption::researchTarget, warehousing);
+        ASSERT_EQ(GameActions::ExecuteNested(&next, gameState).error, GameActions::Status::ok);
+        machineInsertInput(state, *state.machines.get(labId), kit);
+        ASSERT_EQ(ScenarioSave(getGameState(), out, {}), 1);
+        ASSERT_TRUE(GetContext()->LoadParkFromFile(out));
+        GameLoadInit();
+        auto& loaded = getGameState().factory;
+        EXPECT_TRUE(loaded.research.isResearched(logistics));
+        EXPECT_TRUE(loaded.research.isResearched(souvenirs));
+        EXPECT_EQ(loaded.research.current, warehousing);
+        EXPECT_TRUE(RideEntryIsInvented(giftShop));
+        EXPECT_FALSE(isPrototypeUnlocked(getGameState(), depot));
+    }
+
+    // Unloading the technologies lifts every lock.
+    std::vector<ObjectEntryDescriptor> unload;
+    for (const auto* id : { "factory-tour.factory_prototype.tech_logistics", "factory-tour.factory_prototype.tech_warehousing",
+                            "factory-tour.factory_prototype.tech_souvenirs" })
+        unload.emplace_back(id);
+    objectManager.UnloadObjects(unload);
+    EXPECT_TRUE(loadedTechnologies().empty());
+    EXPECT_TRUE(isPrototypeUnlocked(gameState, depot));
+    state.research.reset();
 }

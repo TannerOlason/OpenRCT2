@@ -20,6 +20,7 @@
 #include "../core/BitSet.hpp"
 #include "../core/EnumUtils.hpp"
 #include "../core/Guard.hpp"
+#include "../factory/Technology.h" // FACTORY-TOUR
 #include "../localisation/Formatter.h"
 #include "../localisation/StringIds.h"
 #include "../object/ObjectEntryManager.h"
@@ -382,10 +383,12 @@ void ResearchResetCurrentItem()
     SetAllSceneryItemsInvented();
     SetAllSceneryGroupsNotInvented();
 
+    Factory::withholdGatedResearch(gameState); // FACTORY-TOUR: technology-gated rides and scenery
     for (const auto& researchItem : gameState.researchItemsInvented)
     {
         ResearchFinishItem(researchItem);
     }
+    Factory::applyTechnologyUnlocks(gameState); // FACTORY-TOUR
 
     gameState.researchLastItem = std::nullopt;
     gameState.researchProgressStage = RESEARCH_STAGE_INITIAL_RESEARCH;
@@ -907,7 +910,10 @@ void ResearchFix()
     ResearchAddAllMissingItems(gameState.researchProgressStage == RESEARCH_STAGE_FINISHED_ALL);
 
     // Now rebuild all the tables that say whether a ride or scenery item is invented
+    // FACTORY-TOUR: rides and scenery a technology unlocks leave upstream's lists; researched technologies invent them
+    Factory::withholdGatedResearch(gameState);
     ResearchRebuildInventedTables();
+    Factory::applyTechnologyUnlocks(gameState);
     ResearchUpdateUncompletedTypes();
 }
 

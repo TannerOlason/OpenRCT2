@@ -24,6 +24,7 @@
 #include "../FactoryStringIds.h"
 #include "../FactoryTopology.h"
 #include "../Fluids.h"
+#include "../Technology.h"
 
 namespace OpenRCT2::GameActions
 {
@@ -67,6 +68,8 @@ namespace OpenRCT2::GameActions
         auto* proto = getPrototype(_entry);
         if (proto == nullptr || !proto->isPlaceable())
             return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_FT_PROTOTYPE_NOT_PLACEABLE);
+        if (!isPrototypeUnlocked(gameState, _entry))
+            return Result(Status::disallowed, STR_FT_CANT_BUILD_THIS_HERE, STR_FT_NOT_RESEARCHED);
 
         if (!MapCheckCapacityAndReorganise(_loc))
         {

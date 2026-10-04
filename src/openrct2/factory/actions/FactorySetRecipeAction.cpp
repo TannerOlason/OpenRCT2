@@ -67,6 +67,8 @@ namespace OpenRCT2::GameActions
             if (recipe == nullptr || recipe->getKind() != PrototypeKind::recipe
                 || !machineProto->machineHandlesCategory(recipe->getRecipe().category))
                 return Result(Status::invalidParameters, STR_FT_CANT_BUILD_THIS_HERE, STR_FT_PROTOTYPE_NOT_PLACEABLE);
+            if (!isPrototypeUnlocked(gameState, _recipe))
+                return Result(Status::disallowed, STR_FT_CANT_BUILD_THIS_HERE, STR_FT_NOT_RESEARCHED);
         }
         if (!MapCanBuildAt(_loc))
             return Result(Status::notOwned, STR_FT_CANT_BUILD_THIS_HERE, STR_LAND_NOT_OWNED_BY_PARK);

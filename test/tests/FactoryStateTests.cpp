@@ -110,12 +110,21 @@ TEST(FactoryStateTests, EmptyStateIsEmptyAndResetRestoresIt)
 
     state.reset();
     EXPECT_TRUE(state.isEmpty());
+
+    // Research alone (a park that researched before building anything) must still be saved.
+    state.research.researched.push_back(1);
+    EXPECT_FALSE(state.isEmpty());
+    state.reset();
+    EXPECT_TRUE(state.isEmpty());
 }
 
 TEST(FactoryStateTests, SerialisationRoundTripsEveryRecordKind)
 {
     State state;
     state.topologyVersion = 7;
+    state.research.researched = { 3, 8 };
+    state.research.progress = { { 12, 4 } };
+    state.research.current = 12;
 
     auto chestId = state.containers.allocate();
     auto* chest = state.containers.get(chestId);
@@ -214,6 +223,9 @@ TEST(FactoryStateTests, SerialisationRoundTripsEveryRecordKind)
     EXPECT_EQ(loaded.machines.get(machineId)->fluidNetworks, (std::vector<RecordId>{ fluidId, kNullRecord }));
     EXPECT_EQ(loaded.powerNetworks.get(powerId)->lastSupply, 450u);
     EXPECT_TRUE(loaded.fluidDirty);
+    EXPECT_EQ(loaded.research.researched, (std::vector<ObjectEntryIndex>{ 3, 8 }));
+    EXPECT_EQ(loaded.research.unitsDone(12), 4u);
+    EXPECT_EQ(loaded.research.current, 12);
 
     // The hole was reused as the lowest free id after loading.
     EXPECT_EQ(loaded.inserters.allocate(), holeId);

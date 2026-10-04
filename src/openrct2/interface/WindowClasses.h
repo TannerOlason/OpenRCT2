@@ -102,6 +102,7 @@ namespace OpenRCT2
         factoryInfo = 143,
         factoryPower = 144,
         factoryOptions = 145,
+        factoryResearch = 146,
 
         // Only used for colour schemes
         staff = 220,

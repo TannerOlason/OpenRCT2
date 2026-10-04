@@ -1,0 +1,34 @@
+{
+    "id": "factory-tour.factory_prototype.tech_factory_tours",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [
+            "factory-tour.factory_prototype.tech_logistics"
+        ],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            }
+        ],
+        "units": 15,
+        "unitTicks": 400,
+        "unlocks": [],
+        "rideEntries": [
+            "factory-tour.ride.tour_tram"
+        ],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Factory tours"
+        }
+    }
+}

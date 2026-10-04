@@ -1,0 +1,35 @@
+{
+    "id": "factory-tour.factory_prototype.tech_warehousing",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [
+            "factory-tour.factory_prototype.tech_logistics"
+        ],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            }
+        ],
+        "units": 15,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.warehouse_depot",
+            "factory-tour.factory_prototype.export_depot"
+        ],
+        "rideEntries": [],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Warehousing"
+        }
+    }
+}

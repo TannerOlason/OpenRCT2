@@ -471,7 +471,8 @@ namespace OpenRCT2::Ui::Windows
             {
                 auto* proto = objectManager.GetLoadedObject<FactoryPrototypeObject>(i);
                 if (proto != nullptr && proto->getKind() == PrototypeKind::recipe
-                    && machineProto->machineHandlesCategory(proto->getRecipe().category))
+                    && machineProto->machineHandlesCategory(proto->getRecipe().category)
+                    && isPrototypeUnlocked(getGameState(), static_cast<ObjectEntryIndex>(i)))
                 {
                     _recipeChoices.push_back(static_cast<ObjectEntryIndex>(i));
                 }
