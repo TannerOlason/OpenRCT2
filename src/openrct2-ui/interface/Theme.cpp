@@ -24,6 +24,7 @@
 #include <openrct2/core/String.hpp>
 #include <openrct2/drawing/Drawing.Screen.h>
 #include <openrct2/drawing/Drawing.h>
+#include <openrct2/factory/FactoryStringIds.h> // FACTORY-TOUR
 #include <openrct2/interface/ColourWithFlags.h>
 #include <openrct2/interface/WindowBase.h>
 #include <openrct2/localisation/Language.h>
@@ -173,6 +174,8 @@ namespace OpenRCT2::Ui
         { WindowClass::options,                     "WC_OPTIONS",                        STR_THEMES_WINDOW_OPTIONS,                        { opaque(Drawing::Colour::grey),                     opaque(Drawing::Colour::lightBlue),               opaque(Drawing::Colour::lightBlue)                                          } },
         { WindowClass::assetPacks,                  "WC_ASSET_PACKS",                    STR_ASSET_PACKS,                                  { opaque(Drawing::Colour::lightBlue),               opaque(Drawing::Colour::lightBlue),               opaque(Drawing::Colour::lightBlue)                                          } },
         { WindowClass::footpath,                    "WC_FOOTPATH",                       STR_THEMES_WINDOW_FOOTPATH,                       { opaque(Drawing::Colour::darkBrown),               opaque(Drawing::Colour::darkBrown),               opaque(Drawing::Colour::darkBrown)                                          } },
+        // FACTORY-TOUR
+        { WindowClass::factoryBuild,                "WC_FACTORY_BUILD",                  STR_FT_FACTORY,                                   { opaque(Drawing::Colour::darkBrown),               opaque(Drawing::Colour::darkGreen),               opaque(Drawing::Colour::darkGreen)                                          } },
         { WindowClass::land,                        "WC_LAND",                           STR_THEMES_WINDOW_LAND,                           { opaque(Drawing::Colour::darkBrown),               opaque(Drawing::Colour::darkBrown),               opaque(Drawing::Colour::darkBrown)                                          } },
         { WindowClass::water,                       "WC_WATER",                          STR_THEMES_WINDOW_WATER,                          { opaque(Drawing::Colour::darkBrown),               opaque(Drawing::Colour::darkBrown),               opaque(Drawing::Colour::darkBrown)                                          } },
         { WindowClass::peep,                        "WC_PEEP",                           STR_THEMES_WINDOW_PEEP,                           { opaque(Drawing::Colour::grey),                     opaque(Drawing::Colour::oliveGreen),              opaque(Drawing::Colour::oliveGreen)                                         } },

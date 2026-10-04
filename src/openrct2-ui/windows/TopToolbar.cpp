@@ -33,6 +33,7 @@
 #include <openrct2/core/String.hpp>
 #include <openrct2/drawing/Drawing.h>
 #include <openrct2/drawing/Text.h>
+#include <openrct2/factory/FactoryStringIds.h> // FACTORY-TOUR
 #include <openrct2/interface/ColourWithFlags.h>
 #include <openrct2/interface/Screenshot.h>
 #include <openrct2/interface/Viewport.h>
@@ -85,6 +86,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_NEWS,
         WIDX_NETWORK,
         WIDX_CHAT,
+        WIDX_FACTORY, // FACTORY-TOUR (appended so exported indices stay stable)
 
         WIDX_SEPARATOR,
     };
@@ -210,6 +212,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_SCENERY,
         WIDX_PATH,
         WIDX_CONSTRUCT_RIDE,
+        WIDX_FACTORY, // FACTORY-TOUR
 
         WIDX_SEPARATOR,
 
@@ -265,6 +268,7 @@ namespace OpenRCT2::Ui::Windows
         makeRemapWidget({ 30, 0}, {30, kTopToolbarHeight + 1}, WidgetType::trnBtn, WindowColour::quaternary, SPR_TAB_TOOLBAR,            STR_SHOW_RECENT_MESSAGES_TIP      ), // News
         makeRemapWidget({ 30, 0}, {30, kTopToolbarHeight + 1}, WidgetType::trnBtn, WindowColour::primary   , SPR_G2_TOOLBAR_MULTIPLAYER, STR_SHOW_MULTIPLAYER_STATUS_TIP   ), // Network
         makeRemapWidget({ 30, 0}, {30, kTopToolbarHeight + 1}, WidgetType::trnBtn, WindowColour::primary   , SPR_TAB_TOOLBAR,            STR_TOOLBAR_CHAT_TIP              ), // Chat
+        makeRemapWidget({ 30, 0}, {30, kTopToolbarHeight + 1}, WidgetType::trnBtn, WindowColour::tertiary  , SPR_TAB_TOOLBAR,            STR_FT_BUILD_FACTORY_TIP          ), // FACTORY-TOUR: Factory
         makeWidget     ({  0, 0}, {10,                     1}, WidgetType::empty,  WindowColour::primary                                                                   )  // Artificial widget separator
     );
     // clang-format on
@@ -831,6 +835,10 @@ namespace OpenRCT2::Ui::Windows
                 case WIDX_PATH:
                     ToggleFootpathWindow();
                     break;
+                // FACTORY-TOUR
+                case WIDX_FACTORY:
+                    ToggleFactoryBuildWindow();
+                    break;
                 case WIDX_CONSTRUCT_RIDE:
                     ContextOpenWindow(WindowClass::constructRide);
                     break;
@@ -1137,6 +1145,7 @@ namespace OpenRCT2::Ui::Windows
                 widgets[WIDX_MAP].setHidden();
                 widgets[WIDX_SCENERY].setHidden();
                 widgets[WIDX_PATH].setHidden();
+                widgets[WIDX_FACTORY].setHidden(); // FACTORY-TOUR
                 widgets[WIDX_CLEAR_SCENERY].setHidden();
 
                 widgets[WIDX_ZOOM_OUT].setHidden();
@@ -1219,6 +1228,8 @@ namespace OpenRCT2::Ui::Windows
             // Footpath button pressed down
             auto* windowMgr = GetWindowManager();
             setWidgetPressed(WIDX_PATH, windowMgr->FindByClass(WindowClass::footpath) != nullptr);
+            // FACTORY-TOUR
+            setWidgetPressed(WIDX_FACTORY, windowMgr->FindByClass(WindowClass::factoryBuild) != nullptr);
         }
 
         // TODO: look into using std::span
@@ -1406,6 +1417,15 @@ namespace OpenRCT2::Ui::Windows
                 if (widgetIsPressed(*this, WIDX_RESEARCH))
                     screenPos.y++;
                 GfxDrawSprite(rt, ImageId(SPR_TAB_FINANCES_RESEARCH_0), screenPos);
+            }
+
+            // FACTORY-TOUR: draw the factory button icon
+            if (widgets[WIDX_FACTORY].isVisible())
+            {
+                screenPos = windowPos + ScreenCoordsXY{ widgets[WIDX_FACTORY].left + 0, widgets[WIDX_FACTORY].top + 1 };
+                if (widgetIsPressed(*this, WIDX_FACTORY))
+                    screenPos.y++;
+                GfxDrawSprite(rt, ImageId(SPR_TAB_GEARS_0), screenPos);
             }
 
             // Draw finances button

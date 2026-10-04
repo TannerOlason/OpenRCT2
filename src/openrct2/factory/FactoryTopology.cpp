@@ -433,7 +433,9 @@ namespace OpenRCT2::Factory
         if (state.isEmpty())
             return;
 
-        // Drop records whose tiles no longer carry a matching element.
+        // Drop records whose tiles no longer carry a matching element. A consistent save changes nothing, so a
+        // joining client ends up with exactly the host's state (topologyVersion included).
+        bool changed = false;
         std::vector<RecordId> dead;
         state.beltSegments.forEach([&](RecordId id, BeltSegmentRecord& segment) {
             for (size_t i = 0; i < segment.tiles.size(); i++)
@@ -450,6 +452,7 @@ namespace OpenRCT2::Factory
         {
             unlinkSegment(state, id);
             state.beltSegments.release(id);
+            changed = true;
         }
         dead.clear();
         state.containers.forEach([&](RecordId id, ContainerRecord& record) {
@@ -458,7 +461,10 @@ namespace OpenRCT2::Factory
                 dead.push_back(id);
         });
         for (auto id : dead)
+        {
             state.containers.release(id);
+            changed = true;
+        }
         dead.clear();
         state.inserters.forEach([&](RecordId id, InserterRecord& record) {
             auto* element = findFactoryElement(tileToCoords(record.location()));
@@ -466,8 +472,14 @@ namespace OpenRCT2::Factory
                 dead.push_back(id);
         });
         for (auto id : dead)
+        {
             state.inserters.release(id);
+            changed = true;
+        }
 
-        state.topologyVersion++;
+        if (changed)
+        {
+            state.topologyVersion++;
+        }
     }
 } // namespace OpenRCT2::Factory

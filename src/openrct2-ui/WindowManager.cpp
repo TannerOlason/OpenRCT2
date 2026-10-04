@@ -89,6 +89,9 @@ public:
                 return FinancesOpen();
             case WindowClass::footpath:
                 return FootpathOpen();
+            // FACTORY-TOUR
+            case WindowClass::factoryBuild:
+                return FactoryBuildOpen();
             case WindowClass::guestList:
                 return GuestListOpen();
             case WindowClass::land:
@@ -1125,6 +1128,7 @@ public:
     {
         CloseByClass(WindowClass::rideConstruction);
         CloseByClass(WindowClass::footpath);
+        CloseByClass(WindowClass::factoryBuild); // FACTORY-TOUR
         CloseByClass(WindowClass::trackDesignList);
         CloseByClass(WindowClass::trackDesignPlace);
     }

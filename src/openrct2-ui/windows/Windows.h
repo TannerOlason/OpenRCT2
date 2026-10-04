@@ -119,6 +119,10 @@ namespace OpenRCT2::Ui::Windows
     WindowBase* FinancesResearchOpen();
     WindowBase* FinancesMarketingOpen();
 
+    // FACTORY-TOUR: factory build window (windows/factory/FactoryBuild.cpp)
+    WindowBase* FactoryBuildOpen();
+    void ToggleFactoryBuildWindow();
+
     // Footpath
     WindowBase* FootpathOpen();
     void WindowFootpathResetSelectedPath();

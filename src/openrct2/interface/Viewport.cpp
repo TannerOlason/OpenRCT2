@@ -1476,7 +1476,7 @@ namespace OpenRCT2
     static bool PSInteractionTypeIsInFilter(PaintStruct* ps, ViewportInteractionItems filter)
     {
         return (ps->InteractionItem != ViewportInteractionItem::none && ps->InteractionItem != ViewportInteractionItem::label
-                && ps->InteractionItem <= ViewportInteractionItem::banner)
+                && ps->InteractionItem <= ViewportInteractionItem::factory /* FACTORY-TOUR */)
             && filter.has(ps->InteractionItem);
     }
 

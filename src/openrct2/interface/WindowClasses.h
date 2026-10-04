@@ -97,6 +97,8 @@ namespace OpenRCT2
         editorParkEntrance = 139,
         editorStepController = 140,
         editorStatusLine = 141,
+        // FACTORY-TOUR: fork windows take 142-219
+        factoryBuild = 142,
 
         // Only used for colour schemes
         staff = 220,

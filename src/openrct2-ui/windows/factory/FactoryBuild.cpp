@@ -1,0 +1,416 @@
+/*****************************************************************************
+ * Copyright (c) 2014-2026 OpenRCT2 developers
+ *
+ * For a complete list of all authors, please refer to contributors.md
+ * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
+ *
+ * OpenRCT2 is licensed under the GNU General Public License version 3.
+ *****************************************************************************/
+
+// FACTORY-TOUR: fork-owned file. The factory build window: a palette of placeable prototypes, a rotate
+// button, a ghost preview under the cursor and click-to-place through FactoryPlaceAction.
+
+#include <openrct2-ui/interface/ViewportInteraction.h>
+#include <openrct2-ui/interface/Widget.h>
+#include <openrct2-ui/interface/Window.h>
+#include <openrct2-ui/windows/Windows.h>
+#include <openrct2/Context.h>
+#include <openrct2/GameState.h>
+#include <openrct2/Input.h>
+#include <openrct2/SpriteIds.h>
+#include <openrct2/actions/GameActionRunner.h>
+#include <openrct2/audio/Audio.h>
+#include <openrct2/drawing/ColourMap.h>
+#include <openrct2/drawing/Drawing.h>
+#include <openrct2/drawing/Rectangle.h>
+#include <openrct2/drawing/RenderTarget.h>
+#include <openrct2/drawing/Text.h>
+#include <openrct2/factory/FactoryPrototypeObject.h>
+#include <openrct2/factory/FactoryStringIds.h>
+#include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/actions/FactoryPlaceAction.h>
+#include <openrct2/factory/actions/FactoryRemoveAction.h>
+#include <openrct2/interface/Viewport.h>
+#include <openrct2/interface/WidgetIndexGlobals.h>
+#include <openrct2/localisation/Formatter.h>
+#include <openrct2/object/ObjectList.h>
+#include <openrct2/object/ObjectManager.h>
+#include <openrct2/ui/WindowManager.h>
+#include <openrct2/world/Map.h>
+#include <openrct2/world/MapSelection.h>
+#include <openrct2/world/ParkData.h>
+#include <openrct2/world/tile_element/SurfaceElement.h>
+#include <vector>
+
+namespace OpenRCT2::Ui::Windows
+{
+    using namespace OpenRCT2::Factory;
+
+    static constexpr StringId kWindowTitle = STR_FT_FACTORY;
+    static constexpr ScreenSize kWindowSize = { 302, 200 };
+    static constexpr int32_t kButtonWidth = 66;
+    static constexpr int32_t kButtonHeight = 66;
+
+    enum WindowFactoryBuildWidgetIdx : WidgetIndex
+    {
+        WIDX_BACKGROUND,
+        WIDX_TITLE,
+        WIDX_CLOSE,
+        WIDX_LIST,
+        WIDX_ROTATE,
+    };
+    VALIDATE_GLOBAL_WIDX(WC_FACTORY_BUILD, WIDX_ROTATE);
+
+    // clang-format off
+    static constexpr auto kWindowFactoryBuildWidgets = makeWidgets(
+        makeWindowShim(kWindowTitle, kWindowSize),
+        makeWidget({  2,  17}, {272, 150}, WidgetType::scroll,  WindowColour::secondary, SCROLL_VERTICAL                                 ),
+        makeWidget({276,  17}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_ROTATE_ARROW), STR_FT_ROTATE_TIP     )
+    );
+    // clang-format on
+
+    class FactoryBuildWindow final : public Window
+    {
+    private:
+        std::vector<ObjectEntryIndex> _entries;
+        ObjectEntryIndex _selected = kObjectEntryIndexNull;
+        ObjectEntryIndex _hover = kObjectEntryIndexNull;
+        uint8_t _rotation = 0; // view-relative, converted to a map direction at placement
+        money64 _cost = kMoney64Undefined;
+        bool _errorOccurred = false;
+
+        bool _ghostPlaced = false;
+        CoordsXYZ _ghostLoc{};
+        Direction _ghostDirection{};
+        ObjectEntryIndex _ghostEntry = kObjectEntryIndexNull;
+
+    public:
+        void onOpen() override
+        {
+            setWidgets(kWindowFactoryBuildWidgets);
+            WindowInitScrollWidgets(*this);
+            WindowPushOthersRight(*this);
+            ShowGridlines();
+            RefreshEntries();
+
+            ToolCancel();
+            ToolSet(*this, WIDX_BACKGROUND, Tool::crosshair);
+            gInputFlags.set(InputFlag::allowRightMouseRemoval);
+            _errorOccurred = false;
+        }
+
+        void onClose() override
+        {
+            RemoveGhost();
+            gMapSelectFlags.unset(MapSelectFlag::enable);
+            auto* windowMgr = GetWindowManager();
+            windowMgr->InvalidateByClass(WindowClass::topToolbar);
+            HideGridlines();
+        }
+
+        void onUpdate() override
+        {
+            if (!isToolActive(WindowClass::factoryBuild, WIDX_BACKGROUND))
+            {
+                close();
+            }
+        }
+
+        void onMouseUp(WidgetIndex widgetIndex) override
+        {
+            switch (widgetIndex)
+            {
+                case WIDX_CLOSE:
+                    close();
+                    break;
+                case WIDX_ROTATE:
+                    _rotation = (_rotation + 1) & 3;
+                    RemoveGhost();
+                    invalidate();
+                    break;
+            }
+        }
+
+        void onToolUpdate(WidgetIndex widgetIndex, const ScreenCoordsXY& screenCoords) override
+        {
+            if (widgetIndex != WIDX_BACKGROUND)
+                return;
+            UpdateGhost(screenCoords);
+        }
+
+        void onToolDown(WidgetIndex widgetIndex, const ScreenCoordsXY& screenCoords) override
+        {
+            if (widgetIndex != WIDX_BACKGROUND)
+                return;
+            PlaceAtCursor(screenCoords);
+        }
+
+        void onToolDrag(WidgetIndex widgetIndex, const ScreenCoordsXY& screenCoords) override
+        {
+            if (widgetIndex != WIDX_BACKGROUND)
+                return;
+            PlaceAtCursor(screenCoords);
+        }
+
+        void onToolUp(WidgetIndex widgetIndex, const ScreenCoordsXY&) override
+        {
+            _errorOccurred = false;
+        }
+
+        void onToolAbort(WidgetIndex widgetIndex) override
+        {
+            RemoveGhost();
+            gMapSelectFlags.unset(MapSelectFlag::enable);
+        }
+
+        ScreenSize onScrollGetSize(int32_t scrollIndex) override
+        {
+            const auto columns = GetNumColumns();
+            const auto rows = (static_cast<int32_t>(_entries.size()) + columns - 1) / columns;
+            return { 0, rows * kButtonHeight };
+        }
+
+        void onScrollMouseDown(int32_t scrollIndex, const ScreenCoordsXY& screenCoords) override
+        {
+            auto entry = EntryAt(screenCoords);
+            if (entry == kObjectEntryIndexNull)
+                return;
+            _selected = entry;
+            RemoveGhost();
+            Audio::Play(Audio::SoundId::click1, 0, windowPos.x + (width / 2));
+            _cost = kMoney64Undefined;
+            invalidate();
+        }
+
+        void onScrollMouseOver(int32_t scrollIndex, const ScreenCoordsXY& screenCoords) override
+        {
+            auto entry = EntryAt(screenCoords);
+            if (entry != _hover)
+            {
+                _hover = entry;
+                invalidate();
+            }
+        }
+
+        void onScrollDraw(int32_t scrollIndex, Drawing::RenderTarget& rt) override
+        {
+            GfxClear(rt, getColourMap(colours[1].colour).midLight);
+            const auto columns = GetNumColumns();
+            ScreenCoordsXY topLeft{ 0, 0 };
+            for (size_t i = 0; i < _entries.size(); i++)
+            {
+                const auto entry = _entries[i];
+                if (entry == _selected)
+                {
+                    Drawing::Rectangle::fillInset(
+                        rt, { topLeft, topLeft + ScreenCoordsXY{ kButtonWidth - 1, kButtonHeight - 1 } }, colours[1],
+                        Drawing::Rectangle::BorderStyle::inset, Drawing::Rectangle::FillBrightness::dark);
+                }
+                else if (entry == _hover)
+                {
+                    Drawing::Rectangle::fillInset(
+                        rt, { topLeft, topLeft + ScreenCoordsXY{ kButtonWidth - 1, kButtonHeight - 1 } }, colours[1],
+                        Drawing::Rectangle::BorderStyle::outset, Drawing::Rectangle::FillBrightness::dark);
+                }
+
+                Drawing::RenderTarget clipped;
+                if (ClipRenderTarget(clipped, rt, topLeft + ScreenCoordsXY{ 1, 1 }, kButtonWidth - 2, kButtonHeight - 2))
+                {
+                    auto* proto = getPrototype(entry);
+                    if (proto != nullptr)
+                    {
+                        proto->DrawPreview(clipped, kButtonWidth - 2, kButtonHeight - 2);
+                    }
+                }
+
+                topLeft.x += kButtonWidth;
+                if (topLeft.x >= columns * kButtonWidth)
+                {
+                    topLeft.y += kButtonHeight;
+                    topLeft.x = 0;
+                }
+            }
+        }
+
+        void onPrepareDraw() override
+        {
+            setWidgetDisabled(WIDX_ROTATE, _selected == kObjectEntryIndexNull);
+        }
+
+        void onDraw(Drawing::RenderTarget& rt) override
+        {
+            WindowDrawWidgets(*this, rt);
+
+            auto screenCoords = windowPos + ScreenCoordsXY{ widgets[WIDX_LIST].left + 2, widgets[WIDX_LIST].bottom + 4 };
+            auto* proto = getPrototype(_selected);
+            if (proto != nullptr)
+            {
+                auto ft = Formatter();
+                const auto name = proto->GetName();
+                ft.Add<StringId>(STR_STRING);
+                ft.Add<const char*>(name.c_str());
+                drawText(rt, screenCoords, STR_STRINGID, ft, {});
+                screenCoords.y += 12;
+            }
+            if (_cost != kMoney64Undefined && !getGameState().park.flags.has(ParkFlag::noMoney))
+            {
+                auto ft = Formatter();
+                ft.Add<money64>(_cost);
+                drawText(rt, screenCoords, STR_COST_LABEL, ft, {});
+            }
+        }
+
+    private:
+        int32_t GetNumColumns() const
+        {
+            const auto& listWidget = widgets[WIDX_LIST];
+            const auto contentWidth = listWidget.width() - 1 - kScrollBarWidth;
+            return std::max(1, contentWidth / kButtonWidth);
+        }
+
+        ObjectEntryIndex EntryAt(const ScreenCoordsXY& screenCoords) const
+        {
+            const auto columns = GetNumColumns();
+            const auto col = screenCoords.x / kButtonWidth;
+            const auto row = screenCoords.y / kButtonHeight;
+            if (col < 0 || col >= columns || row < 0)
+                return kObjectEntryIndexNull;
+            const auto index = static_cast<size_t>(row * columns + col);
+            return index < _entries.size() ? _entries[index] : kObjectEntryIndexNull;
+        }
+
+        void RefreshEntries()
+        {
+            _entries.clear();
+            auto& objectManager = GetContext()->GetObjectManager();
+            const auto count = getObjectEntryGroupCount(ObjectType::factoryPrototype);
+            for (size_t i = 0; i < count; i++)
+            {
+                auto* proto = objectManager.GetLoadedObject<FactoryPrototypeObject>(i);
+                if (proto != nullptr && proto->isPlaceable())
+                {
+                    _entries.push_back(static_cast<ObjectEntryIndex>(i));
+                }
+            }
+            if (_selected == kObjectEntryIndexNull && !_entries.empty())
+            {
+                _selected = _entries.front();
+            }
+        }
+
+        Direction PlacementDirection() const
+        {
+            return (_rotation - GetCurrentRotation()) & 3;
+        }
+
+        std::optional<CoordsXYZ> CursorTile(const ScreenCoordsXY& screenCoords) const
+        {
+            auto info = GetMapCoordinatesFromPos(screenCoords, { ViewportInteractionItem::terrain });
+            if (info.interactionType == ViewportInteractionItem::none)
+                return std::nullopt;
+            auto tile = info.Loc.toTileStart();
+            auto* surface = MapGetSurfaceElementAt(tile);
+            if (surface == nullptr)
+                return std::nullopt;
+            return CoordsXYZ{ tile, surface->getBaseZ() };
+        }
+
+        void RemoveGhost()
+        {
+            if (!_ghostPlaced)
+                return;
+            auto action = GameActions::FactoryRemoveAction(_ghostLoc);
+            action.SetFlags(
+                { GameActions::CommandFlag::ghost, GameActions::CommandFlag::allowDuringPaused,
+                  GameActions::CommandFlag::noSpend });
+            GameActions::Execute(&action, getGameState());
+            _ghostPlaced = false;
+        }
+
+        void UpdateGhost(const ScreenCoordsXY& screenCoords)
+        {
+            auto tile = CursorTile(screenCoords);
+            if (!tile.has_value() || _selected == kObjectEntryIndexNull)
+            {
+                RemoveGhost();
+                gMapSelectFlags.unset(MapSelectFlag::enable);
+                return;
+            }
+
+            const auto direction = PlacementDirection();
+            if (_ghostPlaced && _ghostLoc == *tile && _ghostDirection == direction && _ghostEntry == _selected)
+                return;
+
+            RemoveGhost();
+            gMapSelectFlags.set(MapSelectFlag::enable);
+            gMapSelectType = MapSelectType::full;
+            setMapSelectRange(*tile);
+
+            auto action = GameActions::FactoryPlaceAction(*tile, direction, _selected);
+            action.SetFlags(
+                { GameActions::CommandFlag::ghost, GameActions::CommandFlag::allowDuringPaused,
+                  GameActions::CommandFlag::noSpend });
+            auto res = GameActions::Execute(&action, getGameState());
+            money64 cost = kMoney64Undefined;
+            if (res.error == GameActions::Status::ok)
+            {
+                _ghostPlaced = true;
+                _ghostLoc = *tile;
+                _ghostDirection = direction;
+                _ghostEntry = _selected;
+                cost = res.cost;
+            }
+            if (cost != _cost)
+            {
+                _cost = cost;
+                invalidate();
+            }
+        }
+
+        void PlaceAtCursor(const ScreenCoordsXY& screenCoords)
+        {
+            if (_errorOccurred || _selected == kObjectEntryIndexNull)
+                return;
+            auto tile = CursorTile(screenCoords);
+            if (!tile.has_value())
+                return;
+
+            RemoveGhost();
+            auto action = GameActions::FactoryPlaceAction(*tile, PlacementDirection(), _selected);
+            action.SetCallback([this](const GameActions::GameAction*, const GameActions::Result* result) {
+                if (result->error == GameActions::Status::ok)
+                {
+                    if (result->cost != 0)
+                    {
+                        Audio::Play3D(Audio::SoundId::placeItem, result->position);
+                    }
+                }
+                else
+                {
+                    _errorOccurred = true;
+                }
+            });
+            GameActions::Execute(&action, getGameState());
+        }
+    };
+
+    WindowBase* FactoryBuildOpen()
+    {
+        auto* windowMgr = GetWindowManager();
+        return windowMgr->FocusOrCreate<FactoryBuildWindow>(WindowClass::factoryBuild, kWindowSize, {});
+    }
+
+    void ToggleFactoryBuildWindow()
+    {
+        auto* windowMgr = GetWindowManager();
+        if (windowMgr->FindByClass(WindowClass::factoryBuild) == nullptr)
+        {
+            ContextOpenWindow(WindowClass::factoryBuild);
+        }
+        else
+        {
+            ToolCancel();
+            windowMgr->CloseByClass(WindowClass::factoryBuild);
+        }
+    }
+} // namespace OpenRCT2::Ui::Windows

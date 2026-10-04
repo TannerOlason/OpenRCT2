@@ -45,4 +45,7 @@ namespace OpenRCT2
     constexpr int32_t WC_EDITOR_OBJECT_SELECTION__WIDX_TAB_1 = 22;
 
     constexpr int32_t WC_STAFF__WIDX_PICKUP = 9;
+
+    // FACTORY-TOUR
+    constexpr int32_t WC_FACTORY_BUILD__WIDX_ROTATE = 4;
 } // namespace OpenRCT2

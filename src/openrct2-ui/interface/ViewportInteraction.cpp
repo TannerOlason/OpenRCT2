@@ -13,6 +13,7 @@
 #include "../UiStringIds.h"
 #include "../windows/Windows.h"
 
+// FACTORY-TOUR
 #include <openrct2/Context.h>
 #include <openrct2/Game.h>
 #include <openrct2/GameState.h>
@@ -30,6 +31,9 @@
 #include <openrct2/entity/Duck.h>
 #include <openrct2/entity/EntityList.h>
 #include <openrct2/entity/Staff.h>
+#include <openrct2/factory/FactoryPrototypeObject.h>
+#include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/actions/FactoryRemoveAction.h>
 #include <openrct2/interface/Viewport.h>
 #include <openrct2/interface/WindowBase.h>
 #include <openrct2/localisation/Formatter.h>
@@ -50,6 +54,7 @@
 #include <openrct2/world/TileElementsView.h>
 #include <openrct2/world/tile_element/BannerElement.h>
 #include <openrct2/world/tile_element/EntranceElement.h>
+#include <openrct2/world/tile_element/FactoryElement.h>
 #include <openrct2/world/tile_element/LargeSceneryElement.h>
 #include <openrct2/world/tile_element/PathElement.h>
 #include <openrct2/world/tile_element/SmallSceneryElement.h>
@@ -63,6 +68,8 @@ using namespace OpenRCT2::Ui::Windows;
 namespace OpenRCT2::Ui
 {
     static void ViewportInteractionRemoveScenery(const SmallSceneryElement& smallSceneryElement, const CoordsXY& mapCoords);
+    static void ViewportInteractionRemoveFactory(
+        const FactoryElement& factoryElement, const CoordsXY& mapCoords); // FACTORY-TOUR
     static void ViewportInteractionRemoveFootpath(const PathElement& pathElement, const CoordsXY& mapCoords);
     static void ViewportInteractionRemovePathAddition(const PathElement& pathElement, const CoordsXY& mapCoords);
     static void ViewportInteractionRemoveParkWall(const WallElement& wallElement, const CoordsXY& mapCoords);
@@ -276,7 +283,8 @@ namespace OpenRCT2::Ui
                                                    ViewportInteractionItem::scenery,      ViewportInteractionItem::footpath,
                                                    ViewportInteractionItem::pathAddition, ViewportInteractionItem::parkEntrance,
                                                    ViewportInteractionItem::wall,         ViewportInteractionItem::largeScenery,
-                                                   ViewportInteractionItem::label,        ViewportInteractionItem::banner };
+                                                   ViewportInteractionItem::label,        ViewportInteractionItem::banner,
+                                                   ViewportInteractionItem::factory /* FACTORY-TOUR */ };
         info = GetMapCoordinatesFromPos(screenCoords, kFlags);
         auto tileElement = info.Element;
 
@@ -535,6 +543,18 @@ namespace OpenRCT2::Ui
                 SetMapTooltip(ft);
                 return info;
             }
+            // FACTORY-TOUR
+            case ViewportInteractionItem::factory:
+            {
+                static std::string factoryName;
+                auto* proto = Factory::getPrototype(*tileElement->asFactory());
+                factoryName = proto != nullptr ? proto->GetName() : std::string();
+                ft.Add<StringId>(STR_MAP_TOOLTIP_STRINGID_CLICK_TO_REMOVE);
+                ft.Add<StringId>(STR_STRING);
+                ft.Add<const char*>(factoryName.c_str());
+                SetMapTooltip(ft);
+                return info;
+            }
             default:
                 break;
         }
@@ -610,9 +630,20 @@ namespace OpenRCT2::Ui
             case ViewportInteractionItem::banner:
                 ContextOpenDetailWindow(WindowDetail::banner, info.Element->asBanner()->getIndex().ToUnderlying());
                 break;
+            // FACTORY-TOUR
+            case ViewportInteractionItem::factory:
+                ViewportInteractionRemoveFactory(*info.Element->asFactory(), info.Loc);
+                break;
         }
 
         return true;
+    }
+
+    // FACTORY-TOUR
+    static void ViewportInteractionRemoveFactory(const FactoryElement& factoryElement, const CoordsXY& mapCoords)
+    {
+        auto removeAction = GameActions::FactoryRemoveAction({ mapCoords.x, mapCoords.y, factoryElement.getBaseZ() });
+        GameActions::Execute(&removeAction, getGameState());
     }
 
     /**

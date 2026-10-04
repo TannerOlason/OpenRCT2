@@ -45,9 +45,22 @@ recorded, a two-client desync soak, a changelog line and an ADR for any new deci
 ### M1 Hello conveyor `[~]`
 
 Chest → inserter → belt → inserter → chest, placeable from a toolbar window with ghost preview, rotatable,
-saved and loaded, multiplayer-synced, with determinism, save/load and throughput gtests. Steps: element type,
-prototype object type with four JSON objects, FactoryState and pools, belts/inserters/containers, actions and
-registry, chunks 0x40/0x41 and the Sync Checksum, paint, UI, `.vcxproj` entries.
+saved and loaded, multiplayer-synced, with determinism, save/load and throughput gtests.
+
+- [x] Element type (`TileElementType::factory = 9`) and `FactoryElement` payload.
+- [x] `factory_prototype` object type, four content objects, placeholder art generator (palette-snapped).
+- [x] FactoryState, pools, fork chunks 0x40/0x41, composite Sync Checksum (upstream replays still pass).
+- [x] Belt lanes (15 items/s over two lanes), topology (segments join/split, curves), inserters, containers.
+- [x] Fork actions place/remove/rotate at command 10000+, `Permission::factory`, plugin names, version bumps.
+- [x] Painter: belts with shape/direction/frame, items as child images, inserter frames, chests; verified by
+  headless `openrct2-cli screenshot` renders at three rotations.
+- [x] Right-click removal via `ViewportInteractionItem::factory`; FactoryBuild window (WindowClass 142) with
+  prototype palette, rotate button (Z shortcut), ghost preview and click-to-place; toolbar button.
+- [x] Tests: element layout, pools and serialisation, prototypes, belt lanes, topology and the hello-conveyor
+  run, determinism, actions, save/load round trip with identical checksum.
+- [ ] Two-client desync soak and a fork replay recorded from the GUI (needs a human at the keyboard or input
+  automation; xdotool is not installed).
+- [ ] Changelog line added; d.ts documents the three fork actions' argument shapes.
 
 ### M2 Production chain `[ ]`
 

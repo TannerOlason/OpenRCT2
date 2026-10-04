@@ -11,22 +11,200 @@
 
 #include "Paint.Factory.h"
 
+#include "../../GameState.h"
+#include "../../drawing/ImageId.hpp"
+#include "../../factory/Belts.h"
+#include "../../factory/FactoryPrototypeObject.h"
+#include "../../factory/FactoryState.h"
+#include "../../factory/FactoryTopology.h"
+#include "../../interface/Viewport.h"
 #include "../../profiling/Profiling.h"
+#include "../../world/Map.h"
 #include "../../world/tile_element/FactoryElement.h"
 #include "../Paint.h"
+#include "Paint.TileElement.h"
 
 using namespace OpenRCT2;
+using namespace OpenRCT2::Drawing;
+using namespace OpenRCT2::Factory;
 
-/**
- * Paints a FactoryElement. M0 stub: factory records do not exist yet, so nothing is drawn. M1 draws belts
- * (shape, direction, animation frame), their items as child images, inserter arms and container boxes from the
- * prototype's object images.
- */
+namespace
+{
+    constexpr int32_t kLaneOffset = 7; // map units either side of the belt centre line
+    constexpr int32_t kItemZ = 2;      // items float just above the belt surface
+
+    /**
+     * Map-local offset (0..32 in both axes) of a point along a belt tile's centre line. `t` runs from 0 at
+     * the entry edge to 256 at the exit edge; lanes sit either side of the line.
+     */
+    CoordsXY beltPointLocal(BeltShape shape, Direction dir, int32_t t, uint8_t lane)
+    {
+        const CoordsXY centre{ kCoordsXYHalfTile, kCoordsXYHalfTile };
+        Direction travel = dir;
+        int32_t along = t; // 0..256 along the current straight piece
+        if (shape != BeltShape::straight)
+        {
+            const Direction incoming = shape == BeltShape::turnLeft ? rightOf(dir) : leftOf(dir);
+            if (t < kBeltUnitsPerTile / 2)
+            {
+                travel = incoming;
+                along = t * 2; // first half: from the entry edge to the centre
+                const auto delta = CoordsDirectionDelta[travel];
+                const auto entry = centre - CoordsXY{ delta.x / 2, delta.y / 2 };
+                const CoordsXY side = CoordsDirectionDelta[lane == kLaneLeft ? leftOf(travel) : rightOf(travel)];
+                return entry + CoordsXY{ delta.x * along / 512, delta.y * along / 512 }
+                + CoordsXY{ side.x * kLaneOffset / kCoordsXYStep, side.y * kLaneOffset / kCoordsXYStep };
+            }
+            along = (t - kBeltUnitsPerTile / 2) * 2; // second half: from the centre to the exit edge
+            const auto delta = CoordsDirectionDelta[travel];
+            const CoordsXY side = CoordsDirectionDelta[lane == kLaneLeft ? leftOf(travel) : rightOf(travel)];
+            return centre + CoordsXY{ delta.x * along / 512, delta.y * along / 512 }
+            + CoordsXY{ side.x * kLaneOffset / kCoordsXYStep, side.y * kLaneOffset / kCoordsXYStep };
+        }
+        const auto delta = CoordsDirectionDelta[travel];
+        const auto entry = centre - CoordsXY{ delta.x / 2, delta.y / 2 };
+        const CoordsXY side = CoordsDirectionDelta[lane == kLaneLeft ? leftOf(travel) : rightOf(travel)];
+        return entry + CoordsXY{ delta.x * along / kBeltUnitsPerTile, delta.y * along / kBeltUnitsPerTile }
+        + CoordsXY{ side.x * kLaneOffset / kCoordsXYStep, side.y * kLaneOffset / kCoordsXYStep };
+    }
+
+    // Paint offsets are given in the view frame; rotate a map-local tile point about the tile centre.
+    CoordsXY toViewFrame(const PaintSession& session, const CoordsXY& local)
+    {
+        const CoordsXY centre{ kCoordsXYHalfTile, kCoordsXYHalfTile };
+        return (local - centre).rotate(session.CurrentRotation) + centre;
+    }
+
+    void paintBeltItems(PaintSession& session, int32_t height, const FactoryElement& element)
+    {
+        if (session.rt.zoom_level > ZoomLevel{ 1 })
+            return;
+        auto& state = getGameState().factory;
+        auto* segment = state.beltSegments.get(element.getRecordId());
+        if (segment == nullptr)
+            return;
+        const int32_t length = segmentLength(*segment);
+        const int32_t tileStart = element.getFootprintIndex() * kBeltUnitsPerTile;
+        const auto shape = getBeltShape(element);
+        const Direction dir = element.getDirection();
+
+        for (uint8_t lane = 0; lane < kBeltLaneCount; lane++)
+        {
+            laneForEachInRange(
+                segment->lanes[lane], length, tileStart, tileStart + kBeltUnitsPerTile - 1, [&](LaneItemView view) {
+                    auto* itemProto = getPrototype(view.item);
+                    if (itemProto == nullptr)
+                        return;
+                    auto image = itemProto->getItemBeltImage();
+                    if (image == kImageIndexUndefined)
+                        return;
+                    const auto local = beltPointLocal(shape, dir, view.position - tileStart, lane);
+                    const auto offset = toViewFrame(session, local);
+                    const CoordsXYZ pos{ offset.x, offset.y, height + kItemZ };
+                    PaintAddImageAsChild(session, ImageId(image), pos, { pos, { 1, 1, 1 } });
+                });
+        }
+    }
+
+    uint8_t inserterFrame(const InserterRecord& inserter, const InserterProperties& props)
+    {
+        const int32_t last = props.frames - 1;
+        if (last <= 0)
+            return 0;
+        switch (inserter.phase)
+        {
+            case kInserterPhaseSwingingToDrop:
+                return static_cast<uint8_t>(inserter.progress * last / std::max<int32_t>(1, props.swingTicks));
+            case kInserterPhaseWaitingToDrop:
+                return static_cast<uint8_t>(last);
+            case kInserterPhaseReturning:
+                return static_cast<uint8_t>(
+                    (props.swingTicks - inserter.progress) * last / std::max<int32_t>(1, props.swingTicks));
+            default:
+                return 0;
+        }
+    }
+} // namespace
+
 void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, const FactoryElement& factoryElement)
 {
     PROFILED_FUNCTION();
-    (void)session;
-    (void)direction;
-    (void)height;
-    (void)factoryElement;
+
+    auto* proto = getPrototype(factoryElement);
+    if (proto == nullptr)
+        return;
+
+    session.InteractionType = ViewportInteractionItem::factory;
+    ImageId imageTemplate;
+    if (factoryElement.isGhost())
+    {
+        session.InteractionType = ViewportInteractionItem::none;
+        imageTemplate = ImageId().WithRemap(FilterPaletteID::paletteGhost);
+    }
+    else if (session.SelectedElement == reinterpret_cast<const TileElement*>(&factoryElement))
+    {
+        imageTemplate = ImageId().WithRemap(FilterPaletteID::paletteGhost);
+    }
+
+    const auto& state = getGameState().factory;
+    const int32_t clearance = factoryElement.getClearanceZ() - factoryElement.getBaseZ();
+    const BoundBoxXYZ fullTile{ { 0, 0, height }, { 32, 32, std::max(1, clearance - 1) } };
+    const BoundBoxXYZ centreBox{ { 8, 8, height }, { 16, 16, std::max(1, clearance - 1) } };
+
+    switch (factoryElement.getSubtype())
+    {
+        case FactoryElementSubtype::belt:
+        {
+            const auto& belt = proto->getBelt();
+            const uint32_t ticks = getGameState().currentTicks;
+            const uint8_t frame = static_cast<uint8_t>((ticks * belt.speed / 16) % belt.frames);
+            auto image = proto->getBeltImage(getBeltShape(factoryElement), direction, frame);
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);
+                if (!factoryElement.isGhost() && factoryElement.hasRecord())
+                {
+                    paintBeltItems(session, height, factoryElement);
+                }
+            }
+            break;
+        }
+        case FactoryElementSubtype::inserter:
+        {
+            uint8_t frame = 0;
+            if (factoryElement.hasRecord())
+            {
+                auto* record = state.inserters.get(factoryElement.getRecordId());
+                if (record != nullptr)
+                    frame = inserterFrame(*record, proto->getInserter());
+            }
+            auto image = proto->getInserterImage(direction, frame);
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, centreBox);
+            }
+            break;
+        }
+        case FactoryElementSubtype::container:
+        {
+            auto image = proto->getContainerImage(direction);
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, centreBox);
+            }
+            break;
+        }
+        default:
+        {
+            auto image = proto->hasImages() ? proto->GetBaseImageId() : kImageIndexUndefined;
+            if (image != kImageIndexUndefined)
+            {
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, fullTile);
+            }
+            break;
+        }
+    }
+
+    PaintUtilSetGeneralSupportHeight(session, static_cast<int16_t>(factoryElement.getClearanceZ()));
+    PaintUtilSetSegmentSupportHeight(session, kSegmentsAll, 0xFFFF, 0);
 }

@@ -95,6 +95,15 @@ static void ShortcutRotateConstructionObject()
         return;
     }
 
+    // FACTORY-TOUR: rotate the factory build selection
+    w = windowMgr->FindByClass(WindowClass::factoryBuild);
+    if (w != nullptr && !widgetIsDisabled(*w, WC_FACTORY_BUILD__WIDX_ROTATE)
+        && w->widgets[WC_FACTORY_BUILD__WIDX_ROTATE].isVisible())
+    {
+        w->onMouseUp(WC_FACTORY_BUILD__WIDX_ROTATE);
+        return;
+    }
+
     // Rotate construction track piece
     w = windowMgr->FindByClass(WindowClass::rideConstruction);
     if (w != nullptr && !widgetIsDisabled(*w, WC_RIDE_CONSTRUCTION__WIDX_ROTATE)

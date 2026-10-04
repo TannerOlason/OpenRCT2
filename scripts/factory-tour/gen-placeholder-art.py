@@ -17,6 +17,47 @@ import os
 from PIL import Image, ImageDraw
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "factory", "objects")
+PALETTE_HEADER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "openrct2", "drawing",
+                              "ImageImporter.h")
+
+
+def load_palette():
+    """Reads StandardPalette from ImageImporter.h. Object PNGs are imported in "standard" mode, which only
+    accepts exact palette colours (anything else becomes transparent), so every pixel must be snapped to it.
+    Indices 10-229 are the plain colour ramps; 0-9 and 230+ are transparent, special or animated."""
+    import re
+    text = open(PALETTE_HEADER).read()
+    start = text.index("StandardPalette")
+    # Entries are BGRAColour: { blue, green, red, alpha }.
+    entries = re.findall(r"\{\s*(\d+),\s*(\d+),\s*(\d+),\s*255\s*\}", text[start:])
+    colours = [(int(r), int(g), int(b)) for b, g, r in entries[:256]]
+    return colours[10:230]
+
+
+PALETTE = load_palette()
+_snap_cache = {}
+
+
+def snap(rgb):
+    """Nearest usable palette colour for an (r, g, b) tuple."""
+    if rgb in _snap_cache:
+        return _snap_cache[rgb]
+    best = min(PALETTE, key=lambda c: (c[0] - rgb[0]) ** 2 + (c[1] - rgb[1]) ** 2 + (c[2] - rgb[2]) ** 2)
+    _snap_cache[rgb] = best
+    return best
+
+
+def snap_image(img):
+    """Returns a copy with every opaque pixel snapped to the palette and every other pixel fully transparent."""
+    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    src = img.load()
+    dst = out.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = src[x, y]
+            if a >= 128:
+                dst[x, y] = snap((r, g, b)) + (255,)
+    return out
 AUTHOR = "Factory Tour contributors"
 SCREEN_DIR = {0: (32, -16), 1: (32, 16), 2: (-32, 16), 3: (-32, -16)}
 TILE_CENTRE = (32, 16)  # inside a 64x32 image anchored at x=-32, y=0
@@ -57,7 +98,7 @@ def write_object(name, kind, props, images, strings_name, extra=None):
 
 
 def save(img, folder, filename):
-    img.save(os.path.join(folder, "images", filename))
+    snap_image(img).save(os.path.join(folder, "images", filename))
 
 
 def belt_strip_points(shape, d, frame, frames):

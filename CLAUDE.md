@@ -87,5 +87,8 @@ export CODEX_MONITOR_AGENT=factory-tour
   killed. Use D only for read-only bulk data such as the RCT2 install; never for a build tree or ccache.
 - Upstream replays in `test/tests/ReplayTests.cpp` run every `replays/*.parkrep`; any simulation change that
   is not gated to Vanilla Mode breaks them.
+- Object PNGs are imported in "standard" mode: every opaque pixel must be an exact OpenRCT2 palette colour
+  (`StandardPalette` in `drawing/ImageImporter.h`, stored BGRA) or it becomes transparent. The art generator
+  snaps colours; any hand-made art must too.
 - The root disk has about 18 GB free. Keep the build tree small (`-g1 -gz`, ccache capped at 3 GB) and put
   large read-only downloads on D.

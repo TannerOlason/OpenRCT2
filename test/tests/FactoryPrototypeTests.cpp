@@ -14,6 +14,7 @@
 #include <openrct2/Context.h>
 #include <openrct2/OpenRCT2.h>
 #include <openrct2/core/EnumUtils.hpp>
+#include <openrct2/drawing/Drawing.Sprite.h>
 #include <openrct2/factory/FactoryPrototypeObject.h>
 #include <openrct2/object/ObjectList.h>
 #include <openrct2/object/ObjectManager.h>
@@ -93,6 +94,15 @@ TEST_F(FactoryPrototypeTests, BeltLoadsWithImagesAndProperties)
     EXPECT_EQ(belt->getBeltImage(BeltShape::turnRight, 3, 7), base + 64 + 24 + 7);
     EXPECT_EQ(belt->getBeltImage(BeltShape::straight, 0, 8), base); // frames wrap
     EXPECT_EQ(belt->GetName(), "Basic transport belt");
+
+    // The imported sprite keeps its size and the anchor from object.json.
+    const auto* g1 = GfxGetG1Element(base);
+    ASSERT_NE(g1, nullptr);
+    EXPECT_EQ(g1->width, 64);
+    EXPECT_EQ(g1->height, 34);
+    EXPECT_EQ(g1->xOffset, -32);
+    EXPECT_EQ(g1->yOffset, -2);
+    EXPECT_NE(g1->offset, nullptr);
 
     auto& objectManager = _context->GetObjectManager();
     auto index = objectManager.GetLoadedObjectEntryIndex(belt);

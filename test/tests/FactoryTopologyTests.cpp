@@ -12,6 +12,7 @@
 
 #include "TestData.h"
 
+#include <cstdlib>
 #include <gtest/gtest.h>
 #include <memory>
 #include <openrct2/Context.h>
@@ -24,6 +25,7 @@
 #include <openrct2/factory/FactoryTopology.h>
 #include <openrct2/factory/SyncChecksum.h>
 #include <openrct2/object/ObjectManager.h>
+#include <openrct2/scenario/Scenario.h>
 #include <openrct2/world/Map.h>
 #include <openrct2/world/tile_element/FactoryElement.h>
 #include <openrct2/world/tile_element/SurfaceElement.h>
@@ -297,4 +299,43 @@ TEST_F(FactoryTopologyTests, SimulationIsDeterministicAcrossRuns)
         Tick(100);
         EXPECT_EQ(computeSyncChecksum(getGameState()).toString(), first[i]) << "diverged at window " << i;
     }
+}
+
+// Writes a park with the slice mid-run when FT_SLICE_PARK_OUT names a path, so it can be rendered with
+// `openrct2-cli screenshot` to check the painter. Skipped otherwise.
+TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
+{
+    const char* out = std::getenv("FT_SLICE_PARK_OUT");
+    if (out == nullptr)
+        GTEST_SKIP() << "FT_SLICE_PARK_OUT not set";
+
+    auto& state = getGameState().factory;
+    const Direction east = 2;
+    auto* sourceChest = Place(kRowX0 + 0, east, _chest);
+    Place(kRowX0 + 1, east, _inserter);
+    for (int32_t i = 2; i <= 7; i++)
+        Place(kRowX0 + i, east, _belt);
+    // Turn south at the end, then drop into a chest.
+    Place(kRowX0 + 8, 1, _belt);
+    Place(kRowX0 + 9, east, _inserter);
+    Place(kRowX0 + 10, east, _chest);
+    ASSERT_NE(sourceChest, nullptr);
+    state.containers.get(sourceChest->getRecordId())->slots[0] = { _plate, 200 };
+    Tick(600);
+
+    ASSERT_EQ(ScenarioSave(getGameState(), out, {}), 1);
+
+    // Round trip: the park must come back with the same elements and records.
+    const auto beltsBefore = state.beltSegments.aliveCount();
+    const auto insertersBefore = state.inserters.aliveCount();
+    const auto checksumBefore = computeSyncChecksum(getGameState()).toString();
+    ASSERT_TRUE(GetContext()->LoadParkFromFile(out));
+    GameLoadInit();
+    auto& loaded = getGameState().factory;
+    EXPECT_EQ(loaded.beltSegments.aliveCount(), beltsBefore);
+    EXPECT_EQ(loaded.inserters.aliveCount(), insertersBefore);
+    EXPECT_EQ(loaded.containers.aliveCount(), 2u);
+    EXPECT_NE(findBeltElement(Tile(kRowX0 + 2)), nullptr);
+    EXPECT_NE(findFactoryElement(Tile(kRowX0 + 1)), nullptr);
+    EXPECT_EQ(computeSyncChecksum(getGameState()).toString(), checksumBefore);
 }

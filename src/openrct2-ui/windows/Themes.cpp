@@ -150,6 +150,7 @@ namespace OpenRCT2::Ui::Windows
         WindowClass::scenery,
         WindowClass::sceneryScatter,
         WindowClass::footpath,
+        WindowClass::factoryBuild, // FACTORY-TOUR
         WindowClass::rideConstruction,
         WindowClass::trackDesignPlace,
         WindowClass::constructRide,
