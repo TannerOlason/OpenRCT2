@@ -60,6 +60,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_CLOSE,
         WIDX_LIST,
         WIDX_ROTATE,
+        WIDX_POWER,
     };
     VALIDATE_GLOBAL_WIDX(WC_FACTORY_BUILD, WIDX_ROTATE);
 
@@ -67,7 +68,8 @@ namespace OpenRCT2::Ui::Windows
     static constexpr auto kWindowFactoryBuildWidgets = makeWidgets(
         makeWindowShim(kWindowTitle, kWindowSize),
         makeWidget({  2,  17}, {272, 150}, WidgetType::scroll,  WindowColour::secondary, SCROLL_VERTICAL                                 ),
-        makeWidget({276,  17}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_ROTATE_ARROW), STR_FT_ROTATE_TIP     )
+        makeWidget({276,  17}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_ROTATE_ARROW), STR_FT_ROTATE_TIP     ),
+        makeWidget({276,  43}, { 24,  24}, WidgetType::flatBtn, WindowColour::secondary, ImageId(SPR_GRAPH),        STR_FT_POWER_TIP      )
     );
     // clang-format on
 
@@ -136,6 +138,9 @@ namespace OpenRCT2::Ui::Windows
                     _rotation = (_rotation + 1) & 3;
                     RemoveGhost();
                     invalidate();
+                    break;
+                case WIDX_POWER:
+                    FactoryPowerOpen(kNullRecord);
                     break;
             }
         }
@@ -290,7 +295,7 @@ namespace OpenRCT2::Ui::Windows
                 const auto name = proto->GetName();
                 ft.Add<StringId>(STR_STRING);
                 ft.Add<const char*>(name.c_str());
-                drawText(rt, screenCoords, STR_STRINGID, ft, {});
+                drawText(rt, screenCoords, STR_BLACK_STRING, ft, {});
                 screenCoords.y += 12;
             }
             if (_cost != kMoney64Undefined && !getGameState().park.flags.has(ParkFlag::noMoney))
@@ -375,6 +380,7 @@ namespace OpenRCT2::Ui::Windows
             {
                 RemoveGhost();
                 gMapSelectFlags.unset(MapSelectFlag::enable);
+                SetCost(kMoney64Undefined);
                 return;
             }
 

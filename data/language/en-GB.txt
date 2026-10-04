@@ -3885,31 +3885,41 @@ STR_20488   :Factory element not found
 STR_20489   :Factory machinery in the way
 STR_20490   :Rotate factory object
 STR_20491   :Show ore deposits
-STR_20492   :Recipe:
+STR_20492   :{WINDOW_COLOUR_2}Recipe:
 STR_20493   :No recipe
-STR_20494   :Fuel
-STR_20495   :Inputs
-STR_20496   :Outputs
-STR_20497   :Contents
-STR_20498   :Idle
-STR_20499   :Working
-STR_20500   :Waiting for input
-STR_20501   :Output full
-STR_20502   :Out of fuel
-STR_20503   :No power
-STR_20504   :No ore in range
-STR_20505   :No recipe set
+STR_20494   :{WINDOW_COLOUR_2}Fuel
+STR_20495   :{WINDOW_COLOUR_2}Inputs
+STR_20496   :{WINDOW_COLOUR_2}Outputs
+STR_20497   :{WINDOW_COLOUR_2}Contents
+STR_20498   :{BLACK}Idle
+STR_20499   :{BLACK}Working
+STR_20500   :{BLACK}Waiting for input
+STR_20501   :{BLACK}Output full
+STR_20502   :{BLACK}Out of fuel
+STR_20503   :{BLACK}No power
+STR_20504   :{BLACK}No ore in range
+STR_20505   :{BLACK}No recipe set
 STR_20506   :Select the recipe this machine makes
 STR_20507   :The back of an offshore pump must face water
-STR_20508   :Fluid
-STR_20509   :{STRING}: {COMMA32} / {COMMA32}
-STR_20510   :Empty ({COMMA32} capacity)
-STR_20511   :Filter:
+STR_20508   :{WINDOW_COLOUR_2}Fluid
+STR_20509   :{BLACK}{STRING}: {COMMA32} / {COMMA32}
+STR_20510   :{BLACK}Empty ({COMMA32} capacity)
+STR_20511   :{WINDOW_COLOUR_2}Filter:
 STR_20512   :No filter
-STR_20513   :Input priority:
-STR_20514   :Output priority:
+STR_20513   :{WINDOW_COLOUR_2}Input priority:
+STR_20514   :{WINDOW_COLOUR_2}Output priority:
 STR_20515   :None
 STR_20516   :Left
 STR_20517   :Right
 STR_20518   :Items of this kind go to the priority side, everything else to the other
 STR_20519   :Which side the splitter prefers
+STR_20520   :Power
+STR_20521   :{BLACK}Network {COMMA16} of {COMMA16}
+STR_20522   :{BLACK}No power networks
+STR_20523   :{WINDOW_COLOUR_2}Poles: {BLACK}{COMMA16}   {WINDOW_COLOUR_2}Generators: {BLACK}{COMMA16}   {WINDOW_COLOUR_2}Consumers: {BLACK}{COMMA16}
+STR_20524   :{GREEN}Supply: {BLACK}{COMMA32}
+STR_20525   :{YELLOW}Demand: {BLACK}{COMMA32}
+STR_20526   :{WINDOW_COLOUR_2}Satisfaction: {BLACK}{COMMA16}%
+STR_20527   :Previous network
+STR_20528   :Next network
+STR_20529   :Show power networks

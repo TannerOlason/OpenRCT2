@@ -159,6 +159,18 @@ namespace OpenRCT2::Ui
                 SetMapTooltip(ft);
                 break;
             }
+            // FACTORY-TOUR: keep hits on factory elements that open a window (see ViewportInteractionLeftClick)
+            case ViewportInteractionItem::factory:
+            {
+                const auto subtype = tileElement != nullptr && tileElement->asFactory() != nullptr
+                    ? tileElement->asFactory()->getSubtype()
+                    : FactoryElementSubtype::count;
+                if (subtype != FactoryElementSubtype::machine && subtype != FactoryElementSubtype::container
+                    && subtype != FactoryElementSubtype::pipe && subtype != FactoryElementSubtype::splitter
+                    && subtype != FactoryElementSubtype::pole)
+                    info.interactionType = ViewportInteractionItem::none;
+                break;
+            }
             default:
                 info.interactionType = ViewportInteractionItem::none;
                 break;
@@ -190,6 +202,7 @@ namespace OpenRCT2::Ui
             case ViewportInteractionItem::entity:
             case ViewportInteractionItem::ride:
             case ViewportInteractionItem::parkEntrance:
+            case ViewportInteractionItem::factory: // FACTORY-TOUR
                 return true;
             default:
                 return false;
@@ -259,16 +272,19 @@ namespace OpenRCT2::Ui
             case ViewportInteractionItem::parkEntrance:
                 ContextOpenWindow(WindowClass::parkInformation);
                 return true;
-            // FACTORY-TOUR: machines, chests, pipes and splitters open their info window
+            // FACTORY-TOUR: machines, chests, pipes and splitters open their info window; poles the power overview
             case ViewportInteractionItem::factory:
             {
                 auto* factoryElement = info.Element != nullptr ? info.Element->asFactory() : nullptr;
                 if (factoryElement == nullptr)
                     return false;
                 const auto subtype = factoryElement->getSubtype();
-                if (subtype != FactoryElementSubtype::machine && subtype != FactoryElementSubtype::container
-                    && subtype != FactoryElementSubtype::pipe && subtype != FactoryElementSubtype::splitter)
-                    return false;
+                if (subtype == FactoryElementSubtype::pole)
+                {
+                    auto* pole = getGameState().factory.poles.get(factoryElement->getRecordId());
+                    FactoryPowerOpen(pole != nullptr ? pole->network : Factory::kNullRecord);
+                    return true;
+                }
                 FactoryInfoOpen(CoordsXYZ{ info.Loc.x, info.Loc.y, factoryElement->getBaseZ() });
                 return true;
             }

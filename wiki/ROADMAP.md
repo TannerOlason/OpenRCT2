@@ -86,7 +86,10 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   proportional sharing, machine fluid boxes as pass-through nodes, ADR 0009). Info window shows network contents.
 - [x] Underground belts, splitters, lane filters, sideloading. Splitters take an item filter and input/output
   priorities through `FactorySetFilterAction` (command `setFilter`), set from the info window.
-- [~] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview. (window and drag tool done)
+- [x] Machine window (recipe picker, inventories, status, fluid boxes), belt-line drag tool, power overview
+  (WindowClass 144: counts, supply, demand, satisfaction and a history graph; opened from a pole or the build
+  window). All checked in the real GUI under Xvfb (`wiki/TESTING.md`), which found and fixed left clicks on
+  factory elements never reaching the info window.
 - [ ] `factory-bench` CLI and the 8 ms per tick CI gate.
 
 ### M3 Park intertwine I `[ ]`

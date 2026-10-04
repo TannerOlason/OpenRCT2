@@ -191,6 +191,7 @@
     <ClCompile Include="windows\Footpath.cpp" />
     <ClCompile Include="windows\factory\FactoryBuild.cpp" />
     <ClCompile Include="windows\factory\FactoryInfo.cpp" />
+    <ClCompile Include="windows\factory\FactoryPower.cpp" />
     <ClCompile Include="windows\GameStatusBar.cpp" />
     <ClCompile Include="windows\Guest.cpp" />
     <ClCompile Include="windows\GuestList.cpp" />

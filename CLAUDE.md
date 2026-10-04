@@ -45,6 +45,9 @@ build/openrct2                            # run the game
 Format with `clang-format -i <files>` (upstream `.clang-format`, Allman braces, 128 columns) and run
 `scripts/run-clang-format.py` before committing. Fork C++ must pass clang-tidy with upstream's `.clang-tidy`.
 
+GUI behaviour (windows, tools, drags) can be checked headlessly under Xvfb with `scripts/factory-tour/xdrive.py`;
+see [`wiki/TESTING.md`](wiki/TESTING.md).
+
 ## Fork conventions
 
 - New code goes in fork-owned directories: `src/openrct2/factory/`, `src/openrct2-ui/windows/factory/`,

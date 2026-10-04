@@ -437,6 +437,19 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     PlaceAt(kRowX0 + 2, kRowY - 1, east, _pipe);
     PlaceAt(kRowX0 + 5, kRowY - 2, 1, _boiler);
     PlaceAt(kRowX0 + 5, kRowY - 1, 1, _steamEngine);
+    // Power: a fuelled burner generator and a pole feeding an assembler that a chest and inserter keep busy.
+    auto* generatorElement = PlaceAt(kRowX0 + 6, kRowY - 2, east, _generator);
+    PlaceAt(kRowX0 + 6, kRowY - 1, east, _pole);
+    auto* assemblerElement = PlaceAt(kRowX0 + 7, kRowY - 1, east, _assembler);
+    PlaceAt(kRowX0 + 8, kRowY - 1, 0, _inserter);
+    auto* plateChest = PlaceAt(kRowX0 + 9, kRowY - 1, east, _chest);
+    if (generatorElement != nullptr && assemblerElement != nullptr && plateChest != nullptr)
+    {
+        for (int i = 0; i < 20; i++)
+            machineInsertInput(state, *state.machines.get(generatorElement->getRecordId()), _coal);
+        state.machines.get(assemblerElement->getRecordId())->recipe = _gearRecipe;
+        state.containers.get(plateChest->getRecordId())->slots[0] = { _plate, 100 };
+    }
 
     if (drillElement != nullptr && furnaceElement != nullptr)
     {
@@ -459,8 +472,8 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     auto& loaded = getGameState().factory;
     EXPECT_EQ(loaded.beltSegments.aliveCount(), beltsBefore);
     EXPECT_EQ(loaded.inserters.aliveCount(), insertersBefore);
-    EXPECT_EQ(loaded.containers.aliveCount(), 2u);
-    EXPECT_EQ(loaded.machines.aliveCount(), 4u);
+    EXPECT_EQ(loaded.containers.aliveCount(), 3u);
+    EXPECT_EQ(loaded.machines.aliveCount(), 6u);
     EXPECT_EQ(loaded.pipes.aliveCount(), 6u);
     EXPECT_NE(findBeltElement(Tile(kRowX0 + 2)), nullptr);
     EXPECT_NE(findFactoryElement(Tile(kRowX0 + 1)), nullptr);

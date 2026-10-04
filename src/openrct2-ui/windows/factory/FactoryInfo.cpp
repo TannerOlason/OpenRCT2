@@ -184,15 +184,16 @@ namespace OpenRCT2::Ui::Windows
             const bool choosesRecipe = proto != nullptr && machine->getKind() == MachineKind::assembler;
             widgets[WIDX_RECIPE_DROPDOWN].setVisible(choosesRecipe);
             widgets[WIDX_RECIPE_DROPDOWN_BUTTON].setVisible(choosesRecipe);
-            widgets[WIDX_RECIPE_DROPDOWN].text = choosesRecipe && machine->recipe != kObjectEntryIndexNull
-                ? static_cast<StringId>(STR_STRING)
-                : static_cast<StringId>(STR_FT_NO_RECIPE);
             if (choosesRecipe && machine->recipe != kObjectEntryIndexNull)
             {
                 auto* recipeProto = getPrototype(machine->recipe);
                 static std::string recipeName;
                 recipeName = recipeProto != nullptr ? recipeProto->GetName() : std::string();
-                widgets[WIDX_RECIPE_DROPDOWN].string = recipeName.c_str();
+                widgets[WIDX_RECIPE_DROPDOWN].setString(recipeName.c_str());
+            }
+            else
+            {
+                widgets[WIDX_RECIPE_DROPDOWN].setString(STR_FT_NO_RECIPE);
             }
 
             auto* splitter = FindSplitter();
@@ -205,11 +206,12 @@ namespace OpenRCT2::Ui::Windows
                 auto* filterProto = getPrototype(splitter->filter);
                 static std::string filterName;
                 filterName = filterProto != nullptr ? filterProto->GetName() : std::string();
-                widgets[WIDX_FILTER_DROPDOWN].text = filterProto != nullptr ? static_cast<StringId>(STR_STRING)
-                                                                            : static_cast<StringId>(STR_FT_NO_FILTER);
-                widgets[WIDX_FILTER_DROPDOWN].string = filterName.c_str();
-                widgets[WIDX_INPUT_PRIORITY_DROPDOWN].text = PriorityString(splitter->inputPriority);
-                widgets[WIDX_OUTPUT_PRIORITY_DROPDOWN].text = PriorityString(splitter->outputPriority);
+                if (filterProto != nullptr)
+                    widgets[WIDX_FILTER_DROPDOWN].setString(filterName.c_str());
+                else
+                    widgets[WIDX_FILTER_DROPDOWN].setString(STR_FT_NO_FILTER);
+                widgets[WIDX_INPUT_PRIORITY_DROPDOWN].setString(PriorityString(splitter->inputPriority));
+                widgets[WIDX_OUTPUT_PRIORITY_DROPDOWN].setString(PriorityString(splitter->outputPriority));
             }
         }
 
@@ -231,7 +233,7 @@ namespace OpenRCT2::Ui::Windows
                 auto ft = Formatter();
                 ft.Add<StringId>(STR_STRING);
                 ft.Add<const char*>(name.c_str());
-                drawText(rt, pos, STR_STRINGID, ft);
+                drawText(rt, pos, STR_BLACK_STRING, ft);
             }
             pos.y += 12;
 
@@ -488,9 +490,10 @@ namespace OpenRCT2::Ui::Windows
                         }
                     }
                     auto ft = Formatter();
+                    ft.Add<StringId>(STR_COMMA16);
                     ft.Add<uint16_t>(slot.count);
                     drawText(
-                        rt, cursor + ScreenCoordsXY{ kSlotSize - 4, kSlotSize - 12 }, STR_COMMA16, ft,
+                        rt, cursor + ScreenCoordsXY{ kSlotSize - 4, kSlotSize - 12 }, STR_BLACK_STRING, ft,
                         { TextAlignment::right });
                 }
                 cursor.x += kSlotSize;

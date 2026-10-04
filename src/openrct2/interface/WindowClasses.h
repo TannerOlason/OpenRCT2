@@ -100,6 +100,7 @@ namespace OpenRCT2
         // FACTORY-TOUR: fork windows take 142-219
         factoryBuild = 142,
         factoryInfo = 143,
+        factoryPower = 144,
 
         // Only used for colour schemes
         staff = 220,
