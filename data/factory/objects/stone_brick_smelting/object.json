@@ -1,0 +1,32 @@
+{
+    "id": "factory-tour.factory_prototype.stone_brick_smelting",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "recipe",
+        "ingredients": [
+            {
+                "item": "factory-tour.factory_prototype.stone",
+                "count": 2
+            }
+        ],
+        "results": [
+            {
+                "item": "factory-tour.factory_prototype.stone_brick",
+                "count": 1
+            }
+        ],
+        "timeTicks": 200,
+        "category": "smelting"
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Stone brick"
+        }
+    }
+}

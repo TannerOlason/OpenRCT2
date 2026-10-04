@@ -1,0 +1,32 @@
+{
+    "id": "factory-tour.factory_prototype.copper_cable_recipe",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "recipe",
+        "ingredients": [
+            {
+                "item": "factory-tour.factory_prototype.copper_plate",
+                "count": 1
+            }
+        ],
+        "results": [
+            {
+                "item": "factory-tour.factory_prototype.copper_cable",
+                "count": 2
+            }
+        ],
+        "timeTicks": 20,
+        "category": "crafting"
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Copper cable"
+        }
+    }
+}

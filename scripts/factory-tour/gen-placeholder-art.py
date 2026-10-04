@@ -796,7 +796,8 @@ def write_interworld():
         img, h = draw_warehouse(*colours)
         folder = write_object(
             name, "container",
-            {"slots": 8, "rotations": 1, key: True, "price": 400, "removalPrice": -300, "clearance": 7},
+            {"slots": 8, "rotations": 1, key: True, "price": 400, "removalPrice": -300, "clearance": 7,
+             **({"launchItem": "factory-tour.factory_prototype.rocket_part"} if key == "launchPad" else {})},
             [{"path": "images/depot.png", "x": -32, "y": -h}], display)
         save(img, folder, "depot.png")
 
@@ -1056,8 +1057,12 @@ def write_research():
          [proto("inserter_fast")], [], []),
         ("tech_freight", "Freight railway", ["tech_logistics", "tech_steel"], kits, 30,
          [proto("freight_loader"), proto("freight_unloader")], ["factory-tour.ride.freight_train"], []),
-        ("tech_interworld", "Interworld logistics", ["tech_freight"], kits, 40,
-         [proto("launch_pad"), proto("landing_pad")], [], []),
+        ("tech_electronics", "Electronics", [], kit, 15,
+         [proto("copper_cable_recipe"), proto("electronic_circuit_recipe")], [], []),
+        ("tech_ride_manufacturing", "Ride manufacturing", ["tech_steel", "tech_electronics"], kits, 25,
+         [proto("track_segment_recipe"), proto("car_body_recipe")], [], []),
+        ("tech_interworld", "Interworld logistics", ["tech_freight", "tech_electronics"], kits, 40,
+         [proto("launch_pad"), proto("landing_pad"), proto("rocket_part_recipe")], [], []),
         ("tech_portals", "Portal terminals", ["tech_interworld"], kits, 50, [], ["factory-tour.ride.portal_shuttle"], []),
     ]
     for name, display, prerequisites, packs, units, unlocks, rides, scenery in technologies:
@@ -1160,6 +1165,46 @@ def main():
     # Ores and their items.
     write_ore_and_item("iron_ore_patch", "iron_ore", "Iron ore", "Iron ore", (110, 120, 140), (60, 70, 90), market_price=5)
     write_ore_and_item("coal_patch", "coal", "Coal", "Coal", (50, 50, 55), (20, 20, 25), fuel_ticks=1600, market_price=8)
+    # The rest of the basic chain: copper, cables and circuits; stone and bricks (a landscaping material).
+    write_ore_and_item("copper_ore_patch", "copper_ore", "Copper ore", "Copper ore", (200, 110, 70), (120, 60, 30),
+                       market_price=5)
+    write_ore_and_item("stone_patch", "stone", "Stone", "Stone", (150, 140, 120), (90, 85, 70), market_price=2)
+
+    def item(name, display, colour, dark, props):
+        icon, belt = draw_item_small(colour, dark)
+        folder = write_object(name, "item", {"stackSize": 100, **props},
+                              [{"path": "images/icon.png", "x": -12, "y": -12},
+                               {"path": "images/belt.png", "x": -5, "y": -4}], display)
+        save(icon, folder, "icon.png")
+        save(belt, folder, "belt.png")
+
+    def recipe(name, display, ingredients, results, ticks, category="crafting"):
+        write_object(name, "recipe", {
+            "ingredients": [{"item": f"factory-tour.factory_prototype.{i}", "count": c} for i, c in ingredients],
+            "results": [{"item": f"factory-tour.factory_prototype.{i}", "count": c} for i, c in results],
+            "timeTicks": ticks, "category": category}, [], display)
+
+    item("copper_plate", "Copper plate", (220, 130, 80), (130, 70, 40), {"marketPrice": 20})
+    recipe("copper_plate_smelting", "Copper plate", [("copper_ore", 1)], [("copper_plate", 1)], 128, "smelting")
+    item("copper_cable", "Copper cable", (230, 150, 90), (140, 80, 40), {"stackSize": 200, "marketPrice": 12})
+    recipe("copper_cable_recipe", "Copper cable", [("copper_plate", 1)], [("copper_cable", 2)], 20)
+    item("electronic_circuit", "Electronic circuit", (60, 160, 80), (20, 80, 30), {"stackSize": 200, "marketPrice": 80})
+    recipe("electronic_circuit_recipe", "Electronic circuit", [("iron_plate", 1), ("copper_cable", 3)],
+           [("electronic_circuit", 1)], 40)
+    item("stone_brick", "Stone brick", (180, 160, 130), (110, 95, 70),
+         {"marketPrice": 10, "constructionMaterial": "landscaping", "materialValue": 50})
+    recipe("stone_brick_smelting", "Stone brick", [("stone", 2)], [("stone_brick", 1)], 200, "smelting")
+    # Park goods: rides are built from track segments; car bodies and rocket parts.
+    item("track_segment", "Track segment", (120, 120, 140), (60, 60, 80),
+         {"stackSize": 50, "marketPrice": 150, "constructionMaterial": "rides", "materialValue": 250})
+    recipe("track_segment_recipe", "Track segment", [("steel_plate", 1), ("iron_plate", 2)], [("track_segment", 1)], 120)
+    item("car_body", "Car body", (200, 60, 60), (110, 25, 25), {"stackSize": 20, "marketPrice": 400})
+    recipe("car_body_recipe", "Car body", [("steel_plate", 2), ("electronic_circuit", 2), ("iron_gear", 1)],
+           [("car_body", 1)], 240)
+    item("rocket_part", "Rocket part", (230, 230, 240), (120, 120, 140), {"stackSize": 10})
+    recipe("rocket_part_recipe", "Rocket part", [("steel_plate", 2), ("electronic_circuit", 3), ("engineering_kit", 1)],
+           [("rocket_part", 1)], 400)
+
     # The weird dimension's ore (painted only in weird worlds) and what it makes.
     write_ore_and_item("void_crystal_patch", "void_crystal", "Void crystal", "Void crystal", (150, 60, 200), (70, 20, 110),
                        market_price=60)

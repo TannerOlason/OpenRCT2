@@ -46,6 +46,7 @@
 #include <openrct2/factory/Freight.h>
 #include <openrct2/factory/GuestFactory.h>
 #include <openrct2/factory/Market.h>
+#include <openrct2/factory/Materials.h>
 #include <openrct2/factory/Objectives.h>
 #include <openrct2/factory/ParkExt.h>
 #include <openrct2/factory/Planet.h>
@@ -2442,6 +2443,66 @@ TEST_F(FactoryTopologyTests, WorldPresetsSetTerrainOreWeatherAndSpeeds)
         gameStateUpdateLogic();
     EXPECT_EQ(W::state(1).weatherCurrent.weatherType, Weather::Type::thunder); // held every tick
     EXPECT_TRUE(getGameState().factory.parkExt.planet.isDefault());            // world 0 keeps its rules
+
+    W::activate(W::kPrimaryWorld);
+    W::adoptActiveAsPrimary();
+}
+
+TEST_F(FactoryTopologyTests, ParkGoodsPayForConstructionAndRocketPartsForLaunches)
+{
+    namespace W = Factory::Worlds;
+    auto& objectManager = GetContext()->GetObjectManager();
+    auto load = [&](const char* id) {
+        auto* object = objectManager.LoadObject(id);
+        return object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
+    };
+    // Without park goods every bill is in Iron plate, one per 5.00.
+    auto bill = billFromCost(1000, ExpenditureType::rideConstruction);
+    ASSERT_EQ(bill.size(), 1u);
+    EXPECT_EQ(bill.front().item, _plate);
+    EXPECT_EQ(bill.front().count, 20u);
+    // Track segments (25.00 each) build rides; stone bricks (5.00) pay for landscaping.
+    const auto segment = load("factory-tour.factory_prototype.track_segment");
+    const auto brick = load("factory-tour.factory_prototype.stone_brick");
+    ASSERT_NE(segment, kObjectEntryIndexNull);
+    ASSERT_NE(brick, kObjectEntryIndexNull);
+    bill = billFromCost(1000, ExpenditureType::rideConstruction);
+    EXPECT_EQ(bill.front().item, segment);
+    EXPECT_EQ(bill.front().count, 4u);
+    bill = billFromCost(1000, ExpenditureType::landscaping);
+    EXPECT_EQ(bill.front().item, brick);
+    EXPECT_EQ(bill.front().count, 20u);
+    objectManager.UnloadObjects(
+        { ObjectEntryDescriptor("factory-tour.factory_prototype.track_segment"),
+          ObjectEntryDescriptor("factory-tour.factory_prototype.stone_brick") });
+
+    // A launch pad with rocket parts loaded launches only when it holds one, and consumes it.
+    const auto rocketPart = load("factory-tour.factory_prototype.rocket_part");
+    const auto launchPad = load("factory-tour.factory_prototype.launch_pad");
+    const auto landingPad = load("factory-tour.factory_prototype.landing_pad");
+    ASSERT_NE(rocketPart, kObjectEntryIndexNull);
+    auto* pad = PlaceAt(kRowX0, kRowY, 0, launchPad);
+    ASSERT_NE(pad, nullptr);
+    auto& slots = getGameState().factory.containers.get(pad->getRecordId())->slots;
+    slots[0] = { _plate, 10 };
+    ASSERT_EQ(W::create({ 32, 32 }), 1);
+    {
+        W::Scope inWorld1(1);
+        const CoordsXY tile{ 8 * kCoordsXYStep, 8 * kCoordsXYStep };
+        ASSERT_NE(
+            placeElement(getGameState(), CoordsXYZ{ tile, MapGetSurfaceElementAt(tile)->getBaseZ() }, 0, landingPad, false),
+            nullptr);
+    }
+    for (uint32_t i = 0; i < kLaunchTicks + 2; i++)
+        gameStateUpdateLogic();
+    EXPECT_EQ(getGameState().factory.containers.get(pad->getRecordId())->slots[0].count, 10); // no rocket part: grounded
+    getGameState().factory.containers.get(pad->getRecordId())->slots[1] = { rocketPart, 1 };
+    for (uint32_t i = 0; i < kLaunchTicks + 2; i++)
+        gameStateUpdateLogic();
+    EXPECT_TRUE(getGameState().factory.containers.get(pad->getRecordId())->slots[0].isEmpty());
+    EXPECT_TRUE(getGameState().factory.containers.get(pad->getRecordId())->slots[1].isEmpty()); // burnt, not shipped
+    ASSERT_EQ(getGameState().factory.transfers.queue.size(), 1u);
+    EXPECT_EQ(getGameState().factory.transfers.queue.front().item, _plate);
 
     W::activate(W::kPrimaryWorld);
     W::adoptActiveAsPrimary();

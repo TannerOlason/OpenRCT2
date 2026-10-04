@@ -1,0 +1,40 @@
+{
+    "id": "factory-tour.factory_prototype.tech_ride_manufacturing",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "technology",
+        "prerequisites": [
+            "factory-tour.factory_prototype.tech_steel",
+            "factory-tour.factory_prototype.tech_electronics"
+        ],
+        "packs": [
+            {
+                "item": "factory-tour.factory_prototype.research_kit",
+                "count": 1
+            },
+            {
+                "item": "factory-tour.factory_prototype.engineering_kit",
+                "count": 1
+            }
+        ],
+        "units": 25,
+        "unitTicks": 400,
+        "unlocks": [
+            "factory-tour.factory_prototype.track_segment_recipe",
+            "factory-tour.factory_prototype.car_body_recipe"
+        ],
+        "rideEntries": [],
+        "sceneryGroups": []
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Ride manufacturing"
+        }
+    }
+}

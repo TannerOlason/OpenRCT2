@@ -9,7 +9,8 @@
     "properties": {
         "kind": "technology",
         "prerequisites": [
-            "factory-tour.factory_prototype.tech_freight"
+            "factory-tour.factory_prototype.tech_freight",
+            "factory-tour.factory_prototype.tech_electronics"
         ],
         "packs": [
             {
@@ -25,7 +26,8 @@
         "unitTicks": 400,
         "unlocks": [
             "factory-tour.factory_prototype.launch_pad",
-            "factory-tour.factory_prototype.landing_pad"
+            "factory-tour.factory_prototype.landing_pad",
+            "factory-tour.factory_prototype.rocket_part_recipe"
         ],
         "rideEntries": [],
         "sceneryGroups": []

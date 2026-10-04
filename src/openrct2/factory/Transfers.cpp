@@ -45,6 +45,29 @@ namespace OpenRCT2::Factory
                 const auto target = launchTargetOf(container.targetWorld, here, Worlds::count());
                 if (target == here)
                     return;
+                // A launch may cost an item (a rocket part), consumed rather than shipped.
+                const auto& props = proto->getContainer();
+                const auto fuel = props.launchItem.resolve();
+                if (fuel != kObjectEntryIndexNull)
+                {
+                    uint32_t held = 0;
+                    for (const auto& slot : container.slots)
+                        if (slot.item == fuel)
+                            held += slot.count;
+                    if (held < props.launchItemCount)
+                        return;
+                    uint32_t toTake = props.launchItemCount;
+                    for (auto& slot : container.slots)
+                    {
+                        if (slot.item != fuel || toTake == 0)
+                            continue;
+                        const auto take = std::min<uint32_t>(toTake, slot.count);
+                        slot.count = static_cast<uint16_t>(slot.count - take);
+                        toTake -= take;
+                        if (slot.count == 0)
+                            slot.item = kObjectEntryIndexNull;
+                    }
+                }
                 for (auto& slot : container.slots)
                 {
                     if (slot.isEmpty())

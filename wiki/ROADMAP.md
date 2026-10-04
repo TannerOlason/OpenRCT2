@@ -237,6 +237,14 @@ first weird-dimension content pack, `context.worlds` binding.
 
 Theme bible, full content pass, trailer scenarios, packaging, licensing, naming.
 
+- [x] Content pass: copper ore, plates, cables and electronic circuits; stone and bricks; park goods (track
+  segments, car bodies) and rocket parts. Construction materials are data (`constructionMaterial`, `materialValue`):
+  track segments pay for rides, bricks for landscaping, Iron plate otherwise; launch pads burn a rocket part per
+  launch (`launchItem`). Electronics and Ride manufacturing technologies.
+- [ ] Theme bible, licensing and naming review.
+- [ ] Trailer scenarios.
+- [ ] Packaging (AppImage, Windows zip).
+
 ## Verification per milestone
 
 - Build: `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITH_TESTS=on && ninja -C build`;

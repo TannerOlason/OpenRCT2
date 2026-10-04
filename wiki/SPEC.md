@@ -356,6 +356,10 @@ the north corner, ore clusters (weird: Void crystal) and the rules. Scripts: `fa
 
 ## E9 Theme, content, release
 
+As built so far: material bills pick the first loaded item whose `constructionMaterial` covers the expenditure
+(bit 0 rides, bit 1 landscaping) at its `materialValue`, falling back to Iron plate at 5.00; launch pads with a
+loaded `launchItem` launch only when they hold `launchItemCount` of it and consume it.
+
 Theme bible as content packs (terrain surface and edge objects, ore prototypes, machine skins, music,
 scenario text). Content pack `data/factory/` with a vanilla-equivalent chain plus park goods (track segments,
 car bodies, souvenirs). AppImage and Windows zip via trimmed CI; no "Factorio" or "RCT" in the product name;

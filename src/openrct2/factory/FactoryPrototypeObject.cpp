@@ -205,6 +205,14 @@ namespace OpenRCT2::Factory
                 _item.marketPrice = Json::GetNumber<money64>(properties["marketPrice"], 0);
                 _item.marketSaturation = Json::GetNumber<uint16_t>(properties["marketSaturation"], 8);
                 _item.shopItem = static_cast<uint8_t>(RideObject::ParseShopItem(Json::GetString(properties["shopItem"])));
+                {
+                    const auto material = Json::GetString(properties["constructionMaterial"]);
+                    _item.constructionMaterial = material == "rides" ? 1
+                        : material == "landscaping"                  ? 2
+                        : material == "all"                          ? 3
+                                                                     : 0;
+                    _item.materialValue = Json::GetNumber<money64>(properties["materialValue"], 0);
+                }
                 break;
             case PrototypeKind::ore:
                 _ore.item.identifier = Json::GetString(properties["item"]);
@@ -295,6 +303,8 @@ namespace OpenRCT2::Factory
                 _container.freightUnloader = Json::GetBoolean(properties["freightUnloader"], false);
                 _container.launchPad = Json::GetBoolean(properties["launchPad"], false);
                 _container.landingPad = Json::GetBoolean(properties["landingPad"], false);
+                _container.launchItem.identifier = Json::GetString(properties["launchItem"]);
+                _container.launchItemCount = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["launchItemCount"], 1));
                 break;
             case PrototypeKind::pole:
                 _pole.wireReach = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["wireReach"], 7), 1, 30);

@@ -13,7 +13,8 @@
         "launchPad": true,
         "price": 400,
         "removalPrice": -300,
-        "clearance": 7
+        "clearance": 7,
+        "launchItem": "factory-tour.factory_prototype.rocket_part"
     },
     "images": [
         {

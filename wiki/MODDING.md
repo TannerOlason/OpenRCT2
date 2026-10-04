@@ -34,14 +34,14 @@ offsets are relative to the tile's centre at ground level.
 
 | Kind | Properties | Images |
 | --- | --- | --- |
-| `item` | `stackSize`, `fuelTicks` (burner fuel), `fluid`, `marketPrice`, `marketSaturation`, `shopItem` (a ShopItem name such as `factory_model`, sold from the Warehouse) | icon (24x24), belt sprite |
+| `item` | `stackSize`, `fuelTicks` (burner fuel), `fluid`, `marketPrice`, `marketSaturation`, `shopItem` (a ShopItem name such as `factory_model`, sold from the Warehouse), `constructionMaterial` (`rides`, `landscaping` or `all`: what it pays for in hybrid/materials mode) with `materialValue` (money units per item, default 50 = 5.00) | icon (24x24), belt sprite |
 | `ore` | `item`, `defaultAmount` | ground overlay (64x32), icon |
 | `recipe` | `ingredients`, `results` (`[{ "item": id, "count": n }]`), `timeTicks` at speed 1.0, `category` | none |
 | `machine` | `machineKind` (`drill`, `furnace`, `assembler`, `boiler`, `engine`, `pump`, `lab`, `turret`), `energy` (`electric`, `burner`, `fluid`, `none`), `speedQ8` (256 = 1.0), `powerUsage`, `powerOutput`, `inputSlots`, `outputSlots`, `recipeCategories`, `miningRadius`, `miningTimeTicks`, `size` (square footprint), `frames`, `rotations` (1 or 4), `pollution`, `noise` (30 or more clanks), `photogenic`, `smoke`, `fluidBoxes`, `inputFluid`, `outputFluid`, `fluidRate`, `health` (0 = indestructible) | `[(direction * frames + frame) * size² + slice]`, frame 0 idle |
 | turret machines | `turretRange` (tiles), `turretDamage`, `turretCooldownTicks`, `shotsPerAmmo`, `ammoItem` | as machines; frame 1 is drawn while firing |
 | `belt`, `undergroundBelt`, `splitter` | `speed` (12 = 15 items/s), `frames`, `reach` (undergrounds) | see `FactoryPrototypeObject.h` |
 | `inserter` | `swingTicks`, `frames`, `reach` | `[direction * frames + frame]` |
-| `container` | `slots`, `rotations`, `warehouse`, `exportDepot` | one or four |
+| `container` | `slots`, `rotations`, `warehouse`, `exportDepot`, `freightLoader`, `freightUnloader`, `launchPad` (with optional `launchItem`/`launchItemCount` consumed per launch), `landingPad` | one or four |
 | `pole` | `wireReach`, `supplyRadius` | one |
 | `pipe` | `capacity` | 16, by connection mask |
 | `technology` | `prerequisites`, `packs` (consumed per unit), `units`, `unitTicks`, `unlocks` (factory prototypes), `rideEntries`, `sceneryGroups` | optional icon |

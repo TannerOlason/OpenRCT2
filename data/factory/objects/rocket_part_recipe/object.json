@@ -1,0 +1,40 @@
+{
+    "id": "factory-tour.factory_prototype.rocket_part_recipe",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "recipe",
+        "ingredients": [
+            {
+                "item": "factory-tour.factory_prototype.steel_plate",
+                "count": 2
+            },
+            {
+                "item": "factory-tour.factory_prototype.electronic_circuit",
+                "count": 3
+            },
+            {
+                "item": "factory-tour.factory_prototype.engineering_kit",
+                "count": 1
+            }
+        ],
+        "results": [
+            {
+                "item": "factory-tour.factory_prototype.rocket_part",
+                "count": 1
+            }
+        ],
+        "timeTicks": 400,
+        "category": "crafting"
+    },
+    "images": [],
+    "strings": {
+        "name": {
+            "en-GB": "Rocket part"
+        }
+    }
+}

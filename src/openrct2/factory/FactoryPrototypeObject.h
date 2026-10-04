@@ -90,6 +90,9 @@ namespace OpenRCT2::Factory
         money64 marketPrice = 0;       // what the Market pays for one, before saturation; 0 = not sellable
         uint16_t marketSaturation = 8; // how much each sale floods the Market (out of 1024)
         uint8_t shopItem = 255;        // ShopItem shops sell this as, in warehouse stock mode (255 = none)
+        // Construction material in hybrid/materials mode: bit 0 rides, bit 1 landscaping; one item per materialValue.
+        uint8_t constructionMaterial = 0;
+        money64 materialValue = 0; // 0 = the default (5.00)
     };
 
     /**
@@ -227,6 +230,8 @@ namespace OpenRCT2::Factory
         bool freightUnloader = false; // empties freight cars standing beside it at a station
         bool launchPad = false;       // sends its contents to another world every kLaunchTicks
         bool landingPad = false;      // receives shipments from other worlds
+        PrototypeRef launchItem;      // launch pads: consumed per launch (none when unset or not loaded)
+        uint16_t launchItemCount = 1;
     };
 
     /**

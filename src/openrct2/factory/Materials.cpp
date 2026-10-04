@@ -93,9 +93,22 @@ namespace OpenRCT2::Factory
         return gameState.factory.parkExt.constructionMode != static_cast<uint8_t>(ConstructionMode::money);
     }
 
-    static ObjectEntryIndex billItem()
+    // The first loaded item (ascending entry) marked as a construction material for this kind of work, else Iron plate.
+    static ObjectEntryIndex billItem(ExpenditureType expenditure, money64& value)
     {
         auto& objectManager = GetContext()->GetObjectManager();
+        const uint8_t bit = expenditure == ExpenditureType::rideConstruction ? 1 : 2;
+        const auto count = getObjectEntryGroupCount(ObjectType::factoryPrototype);
+        for (size_t i = 0; i < count; i++)
+        {
+            auto* proto = objectManager.GetLoadedObject<FactoryPrototypeObject>(i);
+            if (proto != nullptr && proto->getKind() == PrototypeKind::item && (proto->getItem().constructionMaterial & bit))
+            {
+                value = proto->getItem().materialValue > 0 ? proto->getItem().materialValue : kMoneyPerBillItem;
+                return static_cast<ObjectEntryIndex>(i);
+            }
+        }
+        value = kMoneyPerBillItem;
         auto* object = objectManager.GetLoadedObject(ObjectEntryDescriptor(kBillItemIdentifier));
         return object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
     }
@@ -104,10 +117,11 @@ namespace OpenRCT2::Factory
     {
         if (cost <= 0 || (expenditure != ExpenditureType::rideConstruction && expenditure != ExpenditureType::landscaping))
             return {};
-        const auto item = billItem();
+        money64 value = kMoneyPerBillItem;
+        const auto item = billItem(expenditure, value);
         if (item == kObjectEntryIndexNull)
             return {};
-        return { MaterialLine{ item, static_cast<uint32_t>((cost + kMoneyPerBillItem - 1) / kMoneyPerBillItem) } };
+        return { MaterialLine{ item, static_cast<uint32_t>((cost + value - 1) / value) } };
     }
 
     ObjectEntryIndex shopStockItem(const GameState_t& gameState, uint8_t shopItem)
