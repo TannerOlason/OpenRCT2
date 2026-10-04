@@ -1,0 +1,218 @@
+/*****************************************************************************
+ * Copyright (c) 2014-2026 OpenRCT2 developers
+ *
+ * For a complete list of all authors, please refer to contributors.md
+ * Interested in contributing? Visit https://github.com/OpenRCT2/OpenRCT2
+ *
+ * OpenRCT2 is licensed under the GNU General Public License version 3.
+ *****************************************************************************/
+
+// FACTORY-TOUR: fork-owned file. Fork game actions through the upstream runner and registry.
+
+#include "TestData.h"
+
+#include <gtest/gtest.h>
+#include <memory>
+#include <openrct2/Context.h>
+#include <openrct2/Game.h>
+#include <openrct2/GameState.h>
+#include <openrct2/OpenRCT2.h>
+#include <openrct2/actions/GameAction.hpp>
+#include <openrct2/actions/GameActionRegistry.h>
+#include <openrct2/actions/GameActionRunner.h>
+#include <openrct2/factory/FactoryPrototypeObject.h>
+#include <openrct2/factory/FactoryState.h>
+#include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/actions/FactoryActionRegistry.h>
+#include <openrct2/factory/actions/FactoryPlaceAction.h>
+#include <openrct2/factory/actions/FactoryRemoveAction.h>
+#include <openrct2/factory/actions/FactoryRotateAction.h>
+#include <openrct2/network/NetworkAction.h>
+#include <openrct2/object/ObjectManager.h>
+#include <openrct2/world/Map.h>
+#include <openrct2/world/tile_element/FactoryElement.h>
+#include <openrct2/world/tile_element/SurfaceElement.h>
+
+using namespace OpenRCT2;
+using namespace OpenRCT2::Factory;
+using namespace OpenRCT2::GameActions;
+
+class FactoryActionTests : public testing::Test
+{
+protected:
+    static void SetUpTestCase()
+    {
+        std::string parkPath = TestData::GetParkPath("tile-element-tests.sv6");
+        gOpenRCT2Headless = true;
+        gOpenRCT2NoGraphics = true;
+        _context = CreateContext();
+        ASSERT_TRUE(_context->Initialise());
+        ASSERT_TRUE(_context->LoadParkFromFile(parkPath));
+        GameLoadInit();
+
+        auto& objectManager = _context->GetObjectManager();
+        auto index = [&](const char* id) {
+            auto* object = objectManager.LoadObject(id);
+            return object != nullptr ? objectManager.GetLoadedObjectEntryIndex(object) : kObjectEntryIndexNull;
+        };
+        _belt = index("factory-tour.factory_prototype.belt_basic");
+        _chest = index("factory-tour.factory_prototype.chest_wooden");
+        _plate = index("factory-tour.factory_prototype.iron_plate");
+        ASSERT_NE(_belt, kObjectEntryIndexNull);
+        ASSERT_NE(_chest, kObjectEntryIndexNull);
+        ASSERT_NE(_plate, kObjectEntryIndexNull);
+    }
+
+    static void TearDownTestCase()
+    {
+        _context.reset();
+    }
+
+    void SetUp() override
+    {
+        auto& gameState = getGameState();
+        gameState.cheats.sandboxMode = true; // the test park's land is not all owned
+        for (int32_t tx = kX0 - 1; tx <= kX0 + 8; tx++)
+        {
+            while (auto* element = findFactoryElement(Tile(tx), true))
+                removeElement(gameState, *element, Tile(tx));
+            auto* surface = MapGetSurfaceElementAt(TileCoordsXY{ tx, kY });
+            ASSERT_NE(surface, nullptr);
+            surface->setSlope(0);
+            surface->setBaseZ(GroundZ());
+            surface->setClearanceZ(GroundZ());
+        }
+        gameState.factory.reset();
+    }
+
+    static constexpr int32_t kY = 12;
+    static constexpr int32_t kX0 = 4;
+
+    static int32_t GroundZ()
+    {
+        return MapGetSurfaceElementAt(TileCoordsXY{ kX0, kY })->getBaseZ();
+    }
+
+    static CoordsXYZ Tile(int32_t tx)
+    {
+        return CoordsXYZ{ tx * kCoordsXYStep, kY * kCoordsXYStep, GroundZ() };
+    }
+
+    template<typename TAction>
+    static Result Run(TAction& action, CommandFlags flags = {})
+    {
+        action.SetFlags(flags);
+        return ExecuteNested(&action, getGameState());
+    }
+
+    static std::shared_ptr<IContext> _context;
+    static ObjectEntryIndex _belt;
+    static ObjectEntryIndex _chest;
+    static ObjectEntryIndex _plate;
+};
+
+std::shared_ptr<IContext> FactoryActionTests::_context;
+ObjectEntryIndex FactoryActionTests::_belt = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryActionTests::_chest = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryActionTests::_plate = kObjectEntryIndexNull;
+
+TEST_F(FactoryActionTests, RegistryResolvesForkCommands)
+{
+    const auto place = toGameCommand(FactoryCommand::place);
+    EXPECT_TRUE(isFactoryCommand(place));
+    EXPECT_FALSE(isFactoryCommand(GameCommand::placeBanner));
+    EXPECT_TRUE(IsValidId(static_cast<uint32_t>(place)));
+    EXPECT_FALSE(IsValidId(static_cast<uint32_t>(kFactoryCommandBase + 99)));
+    EXPECT_STREQ(GetName(place), "FactoryPlaceAction");
+
+    auto created = Create(toGameCommand(FactoryCommand::rotate));
+    ASSERT_NE(created, nullptr);
+    EXPECT_EQ(created->GetType(), toGameCommand(FactoryCommand::rotate));
+    EXPECT_STREQ(created->GetName(), "FactoryRotateAction");
+
+    EXPECT_EQ(GameActions::Factory::commandFromScriptName("factoryremove"), toGameCommand(FactoryCommand::remove));
+    EXPECT_EQ(GameActions::Factory::scriptNameFromCommand(place), "factoryplace");
+
+#ifndef DISABLE_NETWORK
+    EXPECT_EQ(Network::NetworkActions::findCommand(place), Network::Permission::factory);
+#endif
+}
+
+TEST_F(FactoryActionTests, PlaceRemoveAndRotateRoundTrip)
+{
+    auto& state = getGameState().factory;
+    FactoryPlaceAction place(Tile(kX0), 2, _belt);
+    auto res = Run(place);
+    ASSERT_EQ(res.error, Status::ok);
+    EXPECT_EQ(res.cost, 20);
+
+    auto* element = findBeltElement(Tile(kX0));
+    ASSERT_NE(element, nullptr);
+    EXPECT_EQ(element->getDirection(), 2);
+    EXPECT_EQ(state.beltSegments.aliveCount(), 1u);
+
+    // Occupied tile is refused.
+    FactoryPlaceAction again(Tile(kX0), 2, _chest);
+    EXPECT_EQ(Run(again).error, Status::itemAlreadyPlaced);
+
+    // A non-placeable prototype is refused.
+    FactoryPlaceAction item(Tile(kX0 + 1), 0, _plate);
+    EXPECT_EQ(Run(item).error, Status::invalidParameters);
+
+    FactoryRotateAction rotate(Tile(kX0));
+    ASSERT_EQ(Run(rotate).error, Status::ok);
+    element = findBeltElement(Tile(kX0));
+    ASSERT_NE(element, nullptr);
+    EXPECT_EQ(element->getDirection(), 3);
+    EXPECT_EQ(state.beltSegments.aliveCount(), 1u);
+
+    FactoryRemoveAction remove(Tile(kX0));
+    res = Run(remove);
+    ASSERT_EQ(res.error, Status::ok);
+    EXPECT_EQ(res.cost, -15);
+    EXPECT_EQ(findBeltElement(Tile(kX0)), nullptr);
+    EXPECT_EQ(state.beltSegments.aliveCount(), 0u);
+
+    FactoryRemoveAction removeAgain(Tile(kX0));
+    EXPECT_EQ(Run(removeAgain).error, Status::invalidParameters);
+}
+
+TEST_F(FactoryActionTests, GhostsLeaveNoRecordAndRemoveOnlyGhosts)
+{
+    auto& state = getGameState().factory;
+    FactoryPlaceAction ghost(Tile(kX0), 1, _chest);
+    ASSERT_EQ(Run(ghost, { CommandFlag::ghost }).error, Status::ok);
+    auto* element = findFactoryElement(Tile(kX0), true);
+    ASSERT_NE(element, nullptr);
+    EXPECT_TRUE(element->isGhost());
+    EXPECT_TRUE(state.isEmpty());
+    EXPECT_EQ(findFactoryElement(Tile(kX0)), nullptr);
+
+    // A real placement on the same tile ignores the ghost and succeeds.
+    FactoryPlaceAction real(Tile(kX0), 1, _chest);
+    ASSERT_EQ(Run(real).error, Status::ok);
+    EXPECT_EQ(state.containers.aliveCount(), 1u);
+
+    // Ghost removal only removes ghosts.
+    FactoryRemoveAction removeGhost(Tile(kX0));
+    ASSERT_EQ(Run(removeGhost, { CommandFlag::ghost }).error, Status::ok);
+    EXPECT_EQ(state.containers.aliveCount(), 1u);
+    EXPECT_NE(findFactoryElement(Tile(kX0)), nullptr);
+    FactoryRemoveAction removeGhostAgain(Tile(kX0));
+    EXPECT_EQ(Run(removeGhostAgain, { CommandFlag::ghost }).error, Status::invalidParameters);
+}
+
+TEST_F(FactoryActionTests, SlopedOrOffMapTilesAreRefused)
+{
+    auto* surface = MapGetSurfaceElementAt(TileCoordsXY{ kX0 + 2, kY });
+    surface->setSlope(1);
+    FactoryPlaceAction sloped(Tile(kX0 + 2), 0, _belt);
+    EXPECT_EQ(Run(sloped).error, Status::invalidParameters);
+    surface->setSlope(0);
+
+    FactoryPlaceAction offMap(CoordsXYZ{ -32, -32, 0 }, 0, _belt);
+    EXPECT_EQ(Run(offMap).error, Status::invalidParameters);
+
+    FactoryPlaceAction badDirection(Tile(kX0 + 2), 7, _belt);
+    EXPECT_EQ(Run(badDirection).error, Status::invalidParameters);
+}

@@ -44,6 +44,7 @@ namespace OpenRCT2::Network
         modifyTile,
         editScenarioOptions,
         dragPathArea,
+        factory, // FACTORY-TOUR
 
         count,
     };

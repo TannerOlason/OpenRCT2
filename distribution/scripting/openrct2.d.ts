@@ -4287,7 +4287,8 @@ declare global {
         "passwordless_login" |
         "modify_tile" |
         "edit_scenario_options" |
-        "drag_path_area";
+        "drag_path_area" |
+        "factory";
 
     /**
      * Park APIs

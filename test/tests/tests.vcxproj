@@ -88,10 +88,12 @@
     <ClCompile Include="CryptTests.cpp" />
     <ClCompile Include="Endianness.cpp" />
     <ClCompile Include="EnumMapTest.cpp" />
+    <ClCompile Include="FactoryActionTests.cpp" />
     <ClCompile Include="FactoryBeltTests.cpp" />
     <ClCompile Include="FactoryElementTests.cpp" />
     <ClCompile Include="FactoryPrototypeTests.cpp" />
     <ClCompile Include="FactoryStateTests.cpp" />
+    <ClCompile Include="FactoryTopologyTests.cpp" />
     <ClCompile Include="FormattingTests.cpp" />
     <ClCompile Include="LanguagePackTest.cpp" />
     <ClCompile Include="ImageImporterTests.cpp" />

@@ -94,6 +94,8 @@
 #include "track/TrackPlaceAction.h"
 #include "track/TrackRemoveAction.h"
 #include "track/TrackSetBrakeSpeedAction.h"
+// FACTORY-TOUR
+#include "../factory/actions/FactoryActionRegistry.h"
 
 #include <array>
 
@@ -226,6 +228,9 @@ namespace OpenRCT2::GameActions
 
     std::optional<GameActionFactory> getFactory(GameCommand id)
     {
+        // FACTORY-TOUR: fork actions live at kFactoryCommandBase and up (ADR 0006).
+        if (isFactoryCommand(id))
+            return Factory::getFactory(id);
         const auto idx = static_cast<size_t>(id);
         if (idx < std::size(_registry))
         {
@@ -236,6 +241,9 @@ namespace OpenRCT2::GameActions
 
     const char* GetName(GameCommand id)
     {
+        // FACTORY-TOUR
+        if (isFactoryCommand(id))
+            return Factory::getName(id);
         const auto idx = static_cast<size_t>(id);
         Guard::IndexInRange(idx, _registry);
 
@@ -244,6 +252,9 @@ namespace OpenRCT2::GameActions
 
     bool IsValidId(uint32_t id)
     {
+        // FACTORY-TOUR
+        if (isFactoryCommand(static_cast<GameCommand>(id)))
+            return Factory::isValidId(id);
         if (id < std::size(_registry))
         {
             return _registry[id].factory != nullptr;

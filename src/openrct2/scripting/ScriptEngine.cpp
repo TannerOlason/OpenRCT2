@@ -26,6 +26,7 @@
     #include "../core/FileScanner.h"
     #include "../core/FileWatcher.h"
     #include "../core/Path.hpp"
+    #include "../factory/actions/FactoryCommand.h" // FACTORY-TOUR
     #include "../interface/InteractiveConsole.h"
     #include "../platform/Platform.h"
     #include "../ride/ted/PitchAndRoll.h"
@@ -1749,7 +1750,11 @@ const static EnumMap<GameCommand> ActionNameToType = {
     { "wallsetcolour", GameCommand::setWallColour },
     { "waterlower", GameCommand::lowerWater },
     { "waterraise", GameCommand::raiseWater },
-    { "watersetheight", GameCommand::setWaterHeight }
+    { "watersetheight", GameCommand::setWaterHeight },
+    // FACTORY-TOUR
+    { "factoryplace", GameActions::toGameCommand(GameActions::FactoryCommand::place) },
+    { "factoryremove", GameActions::toGameCommand(GameActions::FactoryCommand::remove) },
+    { "factoryrotate", GameActions::toGameCommand(GameActions::FactoryCommand::rotate) },
 };
 // clang-format on
 

@@ -740,6 +740,12 @@
     <ClInclude Include="factory\FactoryPool.hpp" />
     <ClInclude Include="factory\FactoryPrototypeObject.h" />
     <ClInclude Include="factory\FactoryStringIds.h" />
+    <ClInclude Include="factory\FactoryTopology.h" />
+    <ClInclude Include="factory\actions\FactoryActionRegistry.h" />
+    <ClInclude Include="factory\actions\FactoryCommand.h" />
+    <ClInclude Include="factory\actions\FactoryPlaceAction.h" />
+    <ClInclude Include="factory\actions\FactoryRemoveAction.h" />
+    <ClInclude Include="factory\actions\FactoryRotateAction.h" />
     <ClInclude Include="factory\FactoryRecords.h" />
     <ClInclude Include="factory\FactorySerialisation.h" />
     <ClInclude Include="factory\FactoryState.h" />
@@ -1326,6 +1332,11 @@
     <ClCompile Include="factory\FactoryPrototypeObject.cpp" />
     <ClCompile Include="factory\FactorySerialisation.cpp" />
     <ClCompile Include="factory\FactoryState.cpp" />
+    <ClCompile Include="factory\FactoryTopology.cpp" />
+    <ClCompile Include="factory\actions\FactoryActionRegistry.cpp" />
+    <ClCompile Include="factory\actions\FactoryPlaceAction.cpp" />
+    <ClCompile Include="factory\actions\FactoryRemoveAction.cpp" />
+    <ClCompile Include="factory\actions\FactoryRotateAction.cpp" />
     <ClCompile Include="factory\SyncChecksum.cpp" />
     <ClCompile Include="world\tile_element\EntranceElement.cpp" />
     <ClCompile Include="world\tile_element\LargeSceneryElement.cpp" />

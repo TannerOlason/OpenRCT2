@@ -11,6 +11,8 @@
 
     #include "NetworkAction.h"
 
+    #include "../factory/FactoryStringIds.h"              // FACTORY-TOUR
+    #include "../factory/actions/FactoryActionRegistry.h" // FACTORY-TOUR
     #include "../localisation/StringIds.h"
 
     #include <algorithm>
@@ -274,6 +276,12 @@ namespace OpenRCT2::Network
             STR_ACTION_PATH_DRAG_AREA,
             "PERMISSION_DRAG_PATH_AREA",
             {},
+        },
+        // FACTORY-TOUR
+        NetworkAction{
+            STR_FT_ACTION_FACTORY,
+            "PERMISSION_FACTORY",
+            std::vector<GameCommand>(GameActions::Factory::allCommands().begin(), GameActions::Factory::allCommands().end()),
         },
     };
 } // namespace OpenRCT2::Network
