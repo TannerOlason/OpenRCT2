@@ -35,6 +35,7 @@
 #include "../entity/PatrolArea.h"
 #include "../entity/Staff.h"
 #include "../factory/FactorySerialisation.h" // FACTORY-TOUR
+#include "../factory/WorldManager.h"         // FACTORY-TOUR
 #include "../localisation/Formatter.h"
 #include "../management/Award.h"
 #include "../management/Finance.h"
@@ -197,10 +198,16 @@ namespace OpenRCT2
             // Initial cash is currently a legacy variable. However, it should be reworked
             // so parks that share a map can start with the same amount.
             gameState.scenarioOptions.initialCash = gameState.park.cash;
+
+            // FACTORY-TOUR: nested extra worlds are imported once world 0 is complete (ADR 0015)
+            Factory::Worlds::finishImport();
         }
 
-        void Save(GameState_t& gameState, IStream& stream, int16_t compressionLevel)
+        // FACTORY-TOUR: the parameter is renamed: the top-level park is always world 0 (ADR 0015)
+        void Save(GameState_t& requestedState, IStream& stream, int16_t compressionLevel)
         {
+            Factory::Worlds::Scope saveWorld(Factory::Worlds::saveTarget());
+            auto& gameState = getGameState();
             OrcaStream os(stream, OrcaStream::Mode::writing, compressionLevel);
 
             auto& header = os.getHeader();

@@ -32,6 +32,8 @@
 #include <openrct2/core/Path.hpp>
 #include <openrct2/factory/FactoryState.h>
 #include <openrct2/factory/FactoryTopology.h>
+#include <openrct2/factory/WorldManager.h>
+#include <openrct2/factory/actions/FactoryCreateWorldAction.h>
 #include <openrct2/factory/actions/FactoryDamageAction.h>
 #include <openrct2/factory/actions/FactoryPlaceAction.h>
 #include <openrct2/factory/actions/FactoryPlaceBeltLineAction.h>
@@ -398,6 +400,54 @@ TEST(FactoryReplayTests, RecordCombatAndResearch)
     EXPECT_TRUE(damaged);
 }
 
+TEST(FactoryReplayTests, RecordTwoWorlds)
+{
+    if (!Recording())
+        GTEST_SKIP() << "FT_RECORD_REPLAYS not set";
+    auto context = OpenTestPark();
+    ASSERT_NE(context, nullptr);
+    Recorder r(*context);
+    const auto chest = r.Load("chest_wooden");
+    const auto furnace = r.Load("stone_furnace");
+    const auto crawler = r.Load("scrap_crawler");
+    r.PrepareGround();
+    namespace W = Factory::Worlds;
+    // World 1's tiles at ground level of its own flat map; actions issued in its scope are stamped with it.
+    auto at1 = [&](int32_t tx, int32_t ty) {
+        const CoordsXY loc{ tx * kCoordsXYStep, ty * kCoordsXYStep };
+        return CoordsXYZ{ loc, MapGetSurfaceElementAt(loc)->getBaseZ() };
+    };
+    auto inWorld1 = [&](auto&& fn) {
+        W::Scope scope(1);
+        fn();
+    };
+    const Direction east = 2;
+    std::map<int32_t, std::function<void()>> script = {
+        { 2, [&] { r.Do(FactoryCreateWorldAction(40)); } },
+        { 4, [&] { inWorld1([&] { r.Do(FactoryPlaceAction(at1(20, 20), east, furnace)); }); } },
+        { 5,
+          [&] {
+              inWorld1([&] { r.Do(FactoryThreatSpawnAction(crawler, 12 * kCoordsXYStep + 16, 20 * kCoordsXYStep + 16)); });
+          } },
+        { 900, [&] { inWorld1([&] { r.Do(FactoryThreatSpawnAction(crawler, 28 * kCoordsXYStep, 14 * kCoordsXYStep)); }); } },
+    };
+    // World 0 builds at the same time.
+    for (int32_t i = 0; i < 6; i++)
+        script[10 + i] = [&r, chest, east, i] { r.Do(FactoryPlaceAction(r.At(6 + i, 10), east, chest)); };
+    r.Record("FactoryTwoWorlds", 2400, script);
+    EXPECT_EQ(W::count(), 2u);
+    {
+        W::Scope scope(1);
+        // The crawlers reached the furnace and damaged it.
+        bool damaged = false;
+        getGameState().factory.machines.forEach(
+            [&](RecordId, const MachineRecord& machine) { damaged |= machine.health < 300; });
+        EXPECT_TRUE(damaged);
+    }
+    W::activate(W::kPrimaryWorld);
+    W::adoptActiveAsPrimary();
+}
+
 TEST(FactoryReplayTests, ForkReplayPackPlaysBackInSync)
 {
     gOpenRCT2Headless = true;
@@ -406,7 +456,7 @@ TEST(FactoryReplayTests, ForkReplayPackPlaysBackInSync)
     std::vector<std::string> files;
     while (scanner->next())
         files.push_back(Path::GetAbsolute(scanner->getPath()));
-    ASSERT_GE(files.size(), 4u) << "fork replay pack missing from " << ReplayDir();
+    ASSERT_GE(files.size(), 5u) << "fork replay pack missing from " << ReplayDir();
     for (const auto& file : files)
     {
         SCOPED_TRACE(file);

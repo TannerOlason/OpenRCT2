@@ -331,6 +331,17 @@ N `GameState_t` instances ticked in lockstep by `WorldManager` (`src/openrct2/wo
   ore table), per-world climate, water and terrain objects, allowed-ride mask. Rocket silo = portal with an
   item-only link. Plugin API gains `context.worlds`.
 
+## E8 as built (M7)
+
+`Factory::Worlds` (ADR 0015): world 0 plus up to seven more `GameState_t`s, one active at a time. Activation swaps
+the per-world caches (tile index, map animations, ride-use history, land-rights counters; patrol areas rebuilt) and
+copies company state from the previously active world (money and finance history, loans, park flags, scenario
+options and date, upstream and fork research, cheats, Market, production, factory options). `gameStateUpdateLogic`
+ticks every world in ascending order when there is more than one; network, replay, date and scenario, research, the
+action queue and script hooks run in world 0's pass, audio and provisional ghosts in the viewed world's. Actions
+carry their world in `CommandFlags` bits 16-23 and run with it active. Saves: world 0 top-level, others nested in
+chunk 0x44 (version 1). Not yet: item transfer between worlds (launch and landing pads), per-world guests (M8).
+
 ## E9 Theme, content, release
 
 Theme bible as content packs (terrain surface and edge objects, ore prototypes, machine skins, music,

@@ -431,6 +431,7 @@ declare global {
         queryAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorymarketsell", args: FactoryMarketSellArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorydamage", args: FactoryDamageArgs, callback?: (result: GameActionResult) => void): void;
+        queryAction(action: "factorycreateworld", args: FactoryCreateWorldArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factoryplaceblueprint", args: FactoryPlaceBlueprintArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorythreatspawn", args: FactoryThreatSpawnArgs, callback?: (result: GameActionResult) => void): void;
         queryAction(action: "factorythreatdespawn", args: FactoryThreatDespawnArgs, callback?: (result: GameActionResult) => void): void;
@@ -536,6 +537,7 @@ declare global {
         executeAction(action: "factorysetparkoption", args: FactorySetParkOptionArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorymarketsell", args: FactoryMarketSellArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorydamage", args: FactoryDamageArgs, callback?: (result: GameActionResult) => void): void;
+        executeAction(action: "factorycreateworld", args: FactoryCreateWorldArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factoryplaceblueprint", args: FactoryPlaceBlueprintArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorythreatspawn", args: FactoryThreatSpawnArgs, callback?: (result: GameActionResult) => void): void;
         executeAction(action: "factorythreatdespawn", args: FactoryThreatDespawnArgs, callback?: (result: GameActionResult) => void): void;
@@ -830,6 +832,7 @@ declare global {
         "factorysetparkoption" |
         "factorymarketsell" |
         "factorydamage" |
+        "factorycreateworld" |
         "factoryplaceblueprint" |
         "factorythreatspawn" |
         "factorythreatdespawn";
@@ -1762,6 +1765,11 @@ declare global {
         amount: number;
         /** Free for scripts; reported by the factory.damage hook. */
         damageType: number;
+    }
+
+    interface FactoryCreateWorldArgs extends GameActionArgs {
+        /** Width and height of the new, flat, fully owned world in tiles (16 to 256). */
+        size: number;
     }
 
     interface FactoryPlaceBlueprintArgs extends GameActionArgs {

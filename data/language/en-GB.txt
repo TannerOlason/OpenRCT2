@@ -4031,3 +4031,15 @@ STR_20634   :Freight Railway
 STR_20635   :Trains of cargo wagons that carry factory goods between freight loaders and unloaders built beside their stations
 STR_20636   :{WINDOW_COLOUR_2}Freight loader: fills trains at the adjacent station
 STR_20637   :{WINDOW_COLOUR_2}Freight unloader: empties trains at the adjacent station
+STR_20638   :Can’t create a world…
+STR_20639   :World size must be 16 to 256 tiles
+STR_20640   :Too many worlds
+STR_20641   :Worlds
+STR_20642   :{BLACK}World {COMMA16}
+STR_20643   :{WINDOW_COLOUR_2}(on screen)
+STR_20644   :Create world
+STR_20645   :Add an empty world of the chosen size
+STR_20646   :{WINDOW_COLOUR_2}New world size: {BLACK}{COMMA16} x {COMMA16}
+STR_20647   :Worlds: view and create worlds
+STR_20648   :Click a world to view it
+STR_20649   :{WINDOW_COLOUR_2}{COMMA16} x {COMMA16} tiles, {BLACK}{COMMA32}{WINDOW_COLOUR_2} machines

@@ -11,6 +11,7 @@
 
 #include "FactoryActionRegistry.h"
 
+#include "FactoryCreateWorldAction.h"
 #include "FactoryDamageAction.h"
 #include "FactoryMarketSellAction.h"
 #include "FactoryPlaceAction.h"
@@ -54,6 +55,7 @@ namespace OpenRCT2::GameActions::Factory
         Make<FactorySetParkOptionAction>("FactorySetParkOptionAction", "factorysetparkoption"),
         Make<FactoryMarketSellAction>("FactoryMarketSellAction", "factorymarketsell"),
         Make<FactoryDamageAction>("FactoryDamageAction", "factorydamage"),
+        Make<FactoryCreateWorldAction>("FactoryCreateWorldAction", "factorycreateworld"),
         Make<FactoryPlaceBlueprintAction>("FactoryPlaceBlueprintAction", "factoryplaceblueprint"),
         Make<FactoryThreatSpawnAction>("FactoryThreatSpawnAction", "factorythreatspawn"),
         Make<FactoryThreatDespawnAction>("FactoryThreatDespawnAction", "factorythreatdespawn"),

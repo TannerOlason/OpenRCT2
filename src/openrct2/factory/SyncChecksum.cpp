@@ -20,6 +20,7 @@
 #include "../entity/Staff.h"
 #include "../ride/Vehicle.h"
 #include "FactorySerialisation.h"
+#include "WorldManager.h"
 
 namespace OpenRCT2::Factory
 {
@@ -34,6 +35,22 @@ namespace OpenRCT2::Factory
         if (!gameState.factory.isEmpty())
         {
             serialise(gameState.factory, ds);
+        }
+
+        // Other worlds (ADR 0015) fold in after the active one, in ascending order, each with its caches swapped in.
+        if (Worlds::count() > 1)
+        {
+            const auto active = Worlds::active();
+            for (Worlds::WorldId id = 0; id < Worlds::count(); id++)
+            {
+                if (id == active)
+                    continue;
+                Worlds::Scope inWorld(id);
+                auto& other = getGameState();
+                other.entities.networkSerialiseEntityTypes<Guest, Staff, Vehicle, Litter>(ds);
+                if (!other.factory.isEmpty())
+                    serialise(other.factory, ds);
+            }
         }
 
         return checksum;

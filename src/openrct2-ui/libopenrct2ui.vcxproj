@@ -195,6 +195,7 @@
     <ClCompile Include="windows\factory\FactoryOptions.cpp" />
     <ClCompile Include="windows\factory\FactoryProduction.cpp" />
     <ClCompile Include="windows\factory\FactoryResearch.cpp" />
+    <ClCompile Include="windows\factory\FactoryWorlds.cpp" />
     <ClCompile Include="windows\factory\FactoryPower.cpp" />
     <ClCompile Include="windows\GameStatusBar.cpp" />
     <ClCompile Include="windows\Guest.cpp" />

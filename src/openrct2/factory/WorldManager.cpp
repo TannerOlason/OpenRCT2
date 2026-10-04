@@ -12,10 +12,15 @@
 #include "WorldManager.h"
 
 #include "../Context.h"
+#include "../Diagnostic.h"
 #include "../Game.h"
 #include "../GameState.h"
 #include "../OpenRCT2.h"
+#include "../ParkImporter.h"
 #include "../actions/GameAction.hpp"
+#include "../core/Compression.h"
+#include "../core/MemoryStream.h"
+#include "../core/OrcaStream.hpp"
 #include "../drawing/Drawing.Screen.h"
 #include "../entity/EntityTweener.h"
 #include "../entity/PatrolArea.h"
@@ -23,6 +28,7 @@
 #include "../interface/Window.h"
 #include "../interface/WindowBase.h"
 #include "../management/NewsItem.h"
+#include "../park/ParkFile.h"
 #include "../peep/RideUseSystem.h"
 #include "../ride/Ride.h"
 #include "../ui/WindowManager.h"
@@ -33,6 +39,7 @@
 #include "../world/Park.h"
 #include "../world/Weather.h"
 #include "../world/tile_element/SurfaceElement.h"
+#include "FactorySerialisation.h"
 
 #include <algorithm>
 #include <any>
@@ -62,6 +69,10 @@ namespace OpenRCT2::Factory::Worlds
         WorldId gViewed = kPrimaryWorld;
         bool gTicking = false;
         WorldId gTickingWorld = kPrimaryWorld;
+        bool gSavingNested = false;
+        bool gImportingNested = false;
+        std::vector<std::vector<uint8_t>> gPendingWorlds;
+        constexpr uint16_t kWorldsChunkVersion = 1;
 
         void swapCaches(Stash& stash)
         {
@@ -219,7 +230,7 @@ namespace OpenRCT2::Factory::Worlds
 
     void adoptActiveAsPrimary()
     {
-        if (gStates.size() == 1 && gActive == kPrimaryWorld)
+        if (gImportingNested || (gStates.size() == 1 && gActive == kPrimaryWorld))
             return;
         // The active world's caches are the live globals; every stash and inactive state is dropped.
         gStates.clear();
@@ -232,7 +243,9 @@ namespace OpenRCT2::Factory::Worlds
 
     bool tickAll()
     {
-        if (gStates.size() <= 1 || gTicking)
+        // Single worlds go through the loop too, so a world created during world 0's pass (by an action replayed at
+        // the start of the tick) still ticks this tick, exactly as when it existed before the tick began.
+        if (gTicking)
             return false;
         gTicking = true;
         const WorldId shown = gViewed;
@@ -269,7 +282,16 @@ namespace OpenRCT2::Factory::Worlds
         ViewportSetSavedView();
         auto* windowMgr = Ui::GetWindowManager();
         if (windowMgr != nullptr)
-            windowMgr->CloseAllExceptFlags({ WindowFlag::stickToBack, WindowFlag::stickToFront });
+        {
+            // Windows that point at things in the old world close; lists, finances and the worlds window stay.
+            windowMgr->CloseConstructionWindows();
+            for (auto cls : { WindowClass::ride, WindowClass::rideConstruction, WindowClass::peep, WindowClass::banner,
+                              WindowClass::tileInspector, WindowClass::patrolArea, WindowClass::trackDesignPlace,
+                              WindowClass::demolishRidePrompt, WindowClass::firePrompt, WindowClass::viewport, WindowClass::map,
+                              WindowClass::factoryBuild, WindowClass::factoryInfo, WindowClass::factoryPower,
+                              WindowClass::factoryBlueprint })
+                windowMgr->CloseByClass(cls);
+        }
         if (auto* mainWindow = WindowGetMain())
             WindowUnfollowSprite(*mainWindow);
         EntityTweener::get().reset();
@@ -282,6 +304,99 @@ namespace OpenRCT2::Factory::Worlds
         {
             windowMgr->SetMainView(gameState.savedView, gameState.savedViewZoom, gameState.savedViewRotation);
             Drawing::GfxInvalidateScreen();
+        }
+    }
+
+    WorldId saveTarget()
+    {
+        return gSavingNested ? gActive : kPrimaryWorld;
+    }
+
+    void writeWorldsChunk(OrcaStream& os)
+    {
+        if (gSavingNested || gStates.size() <= 1)
+            return;
+        std::vector<std::vector<uint8_t>> parks;
+        for (WorldId id = 1; id < gStates.size(); id++)
+        {
+            Scope inWorld(id);
+            gSavingNested = true;
+            MemoryStream ms;
+            ParkFileExporter exporter;
+            exporter.Export(getGameState(), ms, Compression::kNoCompressionLevel);
+            gSavingNested = false;
+            auto* data = static_cast<const uint8_t*>(ms.GetData());
+            parks.emplace_back(data, data + ms.GetLength());
+        }
+        os.readWriteChunk(ChunkType::worlds, [&](OrcaStream::ChunkStream& cs) {
+            uint16_t version = kWorldsChunkVersion;
+            cs.write(version);
+            auto worldCount = static_cast<uint32_t>(parks.size());
+            cs.write(worldCount);
+            for (const auto& park : parks)
+            {
+                auto length = static_cast<uint32_t>(park.size());
+                cs.write(length);
+                cs.write(park.data(), park.size());
+            }
+        });
+    }
+
+    void readWorldsChunk(OrcaStream& os)
+    {
+        if (gImportingNested)
+            return;
+        gPendingWorlds.clear();
+        os.readWriteChunk(ChunkType::worlds, [&](OrcaStream::ChunkStream& cs) {
+            auto version = cs.read<uint16_t>();
+            if (version > kWorldsChunkVersion)
+            {
+                LOG_ERROR("Worlds chunk version %u is newer than supported %u", version, kWorldsChunkVersion);
+                return;
+            }
+            const auto worldCount = cs.read<uint32_t>();
+            for (uint32_t i = 0; i < worldCount && i + 1 < kMaxWorlds; i++)
+            {
+                const auto length = cs.read<uint32_t>();
+                std::vector<uint8_t> park(length);
+                cs.read(park.data(), length);
+                gPendingWorlds.push_back(std::move(park));
+            }
+        });
+    }
+
+    void finishImport()
+    {
+        if (gImportingNested || gPendingWorlds.empty())
+            return;
+        auto pending = std::move(gPendingWorlds);
+        gPendingWorlds.clear();
+        auto& context = *GetContext();
+        for (auto& park : pending)
+        {
+            const auto id = create({ 32, 32 });
+            if (id >= kMaxWorlds)
+                break;
+            Scope inWorld(id);
+            gImportingNested = true;
+            try
+            {
+                MemoryStream ms(park.data(), park.size());
+                auto importer = ParkImporter::CreateParkFile(context.GetObjectRepository());
+                importer->LoadFromStream(&ms, false, true);
+                MapAnimations::ClearAll();
+                importer->Import(getGameState());
+                MapAnimations::MarkAllTiles();
+                getGameState().entities.resetEntitySpatialIndices();
+                UpdateConsolidatedPatrolAreas();
+            }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR("Unable to load world %u: %s", id, e.what());
+            }
+            gImportingNested = false;
+            // World 0 holds the company: overwrite this world's saved copy before handing back.
+            moveCompany(*gStates[kPrimaryWorld], getGameState());
         }
     }
 

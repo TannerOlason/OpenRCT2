@@ -14,6 +14,7 @@
 #include "../Diagnostic.h"
 #include "../GameState.h"
 #include "FactoryTopology.h"
+#include "WorldManager.h"
 
 #include <algorithm>
 #include <utility>
@@ -28,6 +29,17 @@ namespace OpenRCT2::Factory
     {
         auto& state = gameState.factory;
         const bool reading = os.getMode() == OrcaStream::Mode::reading;
+
+        // Extra worlds (ADR 0015): a park being read becomes world 0; nested worlds follow at the end of the import.
+        if (reading)
+        {
+            Worlds::adoptActiveAsPrimary();
+            Worlds::readWorldsChunk(os);
+        }
+        else
+        {
+            Worlds::writeWorldsChunk(os);
+        }
 
         if (!reading && state.isEmpty())
         {

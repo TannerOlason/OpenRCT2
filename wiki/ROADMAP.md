@@ -208,8 +208,12 @@ E8 stages 0–2: WorldManager, caches moved into GameState, Company state, two w
 - [x] Worlds core (ADR 0015): `Factory::Worlds` swaps whole game states with stashed per-world caches, moves company
   state (money, research, date, objectives, Market) with the active world, ticks every world in lockstep from one
   hook in `gameStateUpdateLogic`, and routes actions by a world id in their command flags.
-- [ ] Saving and network maps with several worlds.
-- [ ] World selector and creating worlds in the UI.
+- [x] Saving and network maps with several worlds: world 0 is always the top-level park (`ParkFile::Save` saves
+  `Worlds::saveTarget()`), the others are nested uncompressed park files in fork chunk 0x44, imported once world 0
+  has loaded; the network checksum folds in every other world.
+- [x] Worlds window (WindowClass 149, from the build window): lists worlds with size and machine count, views one
+  (closing windows that point into the old world), and creates flat, fully owned worlds through
+  `FactoryCreateWorldAction` (command 16).
 - [ ] Item transfer between worlds (launch and landing pads).
 
 ### M8 Multi-world II `[ ]`

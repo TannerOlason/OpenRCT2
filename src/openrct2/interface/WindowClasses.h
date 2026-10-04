@@ -105,6 +105,7 @@ namespace OpenRCT2
         factoryResearch = 146,
         factoryProduction = 147,
         factoryBlueprint = 148,
+        factoryWorlds = 149,
 
         // Only used for colour schemes
         staff = 220,

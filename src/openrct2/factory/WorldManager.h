@@ -27,6 +27,11 @@ namespace OpenRCT2::GameActions
     class GameAction;
 }
 
+namespace OpenRCT2
+{
+    class OrcaStream;
+}
+
 namespace OpenRCT2::Factory::Worlds
 {
     using WorldId = uint8_t;
@@ -62,8 +67,8 @@ namespace OpenRCT2::Factory::Worlds
     // Drops every world but the active one, which becomes world 0 (new game, park load).
     void adoptActiveAsPrimary();
 
-    // gameStateUpdateLogic hooks. tickAll runs one tick of every world in ascending order (each through
-    // gameStateUpdateLogic) and returns true; with one world it returns false and the caller ticks normally.
+    // gameStateUpdateLogic hooks. tickAll runs one tick of every world in ascending order (each through a nested
+    // gameStateUpdateLogic) and returns true; inside that loop it returns false and the caller ticks normally.
     bool tickAll();
     // False while ticking a secondary world: once-per-tick work (network, replay, date, research, action queue, hooks)
     // runs in world 0's pass only.
@@ -73,6 +78,15 @@ namespace OpenRCT2::Factory::Worlds
 
     // The world shown on screen; switching closes windows that refer to the old world.
     void setViewed(WorldId id);
+
+    // Saving: world 0 is always the top-level park; the others are nested park files in fork chunk 0x44 (worlds).
+    // ParkFileExporter saves saveTarget(): world 0, or the world being written while nested.
+    WorldId saveTarget();
+    void writeWorldsChunk(OrcaStream& os);
+    // Reading keeps the nested parks until the outer import is complete (finishImport, at the end of
+    // ParkFile::Import), then imports each into a new world.
+    void readWorldsChunk(OrcaStream& os);
+    void finishImport();
 
     // Game actions carry their world in CommandFlags bits 16-23 (0 = world 0, so upstream actions are unchanged).
     WorldId actionWorld(const GameActions::GameAction& action);

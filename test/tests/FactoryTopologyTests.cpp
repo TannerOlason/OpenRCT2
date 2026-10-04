@@ -13,6 +13,7 @@
 #include "TestData.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <gtest/gtest.h>
 #include <memory>
 #include <openrct2/Context.h>
@@ -2251,6 +2252,30 @@ TEST_F(FactoryTopologyTests, SecondWorldTicksInLockstepWithItsOwnMapAndSharedCom
         return computeSyncChecksum(getGameState()).toString();
     }();
     EXPECT_FALSE(checksum1.empty());
+
+    // Save and load: world 0 is the top-level park, world 1 rides along in the worlds chunk.
+    const auto path = (std::filesystem::temp_directory_path() / "factory-tour-worlds.park").string();
+    W::activate(1); // saving from any world writes world 0 at the top level
+    ASSERT_EQ(ScenarioSave(getGameState(), path, {}), 1);
+    W::activate(W::kPrimaryWorld);
+    const auto cash = getGameState().park.cash;
+    const auto ticks1Saved = W::state(1).currentTicks;
+    ASSERT_TRUE(GetContext()->LoadParkFromFile(path));
+    GameLoadInit();
+    ASSERT_EQ(W::count(), 2u);
+    EXPECT_EQ(W::active(), W::kPrimaryWorld);
+    EXPECT_EQ(getGameState().mapSize, mapSize0);
+    EXPECT_EQ(getGameState().park.cash, cash);
+    EXPECT_EQ(W::state(1).mapSize, (TileCoordsXY{ 48, 48 }));
+    EXPECT_EQ(W::state(1).factory.containers.aliveCount(), 2u);
+    EXPECT_EQ(W::state(1).currentTicks, ticks1Saved);
+    {
+        W::Scope inWorld1(1);
+        const CoordsXYZ at{ spot, MapGetSurfaceElementAt(spot)->getBaseZ() };
+        EXPECT_NE(findFactoryElement(at), nullptr); // the tile index was rebuilt for the loaded world
+        EXPECT_EQ(getGameState().park.cash, cash);  // company state comes from world 0
+    }
+    std::filesystem::remove(path);
 
     W::activate(W::kPrimaryWorld);
     W::adoptActiveAsPrimary();

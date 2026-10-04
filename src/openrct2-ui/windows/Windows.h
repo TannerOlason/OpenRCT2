@@ -130,6 +130,7 @@ namespace OpenRCT2::Ui::Windows
     WindowBase* FactoryResearchOpen();
     WindowBase* FactoryProductionOpen();
     WindowBase* FactoryBlueprintOpen();
+    WindowBase* FactoryWorldsOpen();
 
     // Footpath
     WindowBase* FootpathOpen();
