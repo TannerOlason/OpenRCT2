@@ -401,6 +401,19 @@ namespace OpenRCT2::Factory
                     record.outputs.assign(props.outputSlots, ItemStack{});
                     record.status = static_cast<uint8_t>(MachineStatus::idle);
                     element->setRecordId(id);
+                    if (props.energy == EnergySource::electric || proto->isGenerator())
+                        state.powerDirty = true;
+                    break;
+                }
+                case FactoryElementSubtype::pole:
+                {
+                    RecordId id;
+                    auto& record = state.poles.allocateRecord(id);
+                    record.setLocation(TileCoordsXYZ(loc));
+                    record.direction = dir & 3;
+                    record.entry = entry;
+                    element->setRecordId(id);
+                    state.powerDirty = true;
                     break;
                 }
                 default:
@@ -434,6 +447,11 @@ namespace OpenRCT2::Factory
                     break;
                 case FactoryElementSubtype::machine:
                     state.machines.release(element.getRecordId());
+                    state.powerDirty = true;
+                    break;
+                case FactoryElementSubtype::pole:
+                    state.poles.release(element.getRecordId());
+                    state.powerDirty = true;
                     break;
                 default:
                     break;
@@ -505,6 +523,19 @@ namespace OpenRCT2::Factory
             state.machines.release(id);
             changed = true;
         }
+        dead.clear();
+        state.poles.forEach([&](RecordId id, PoleRecord& record) {
+            auto* element = findFactoryElement(tileToCoords(record.location()));
+            if (element == nullptr || element->getSubtype() != FactoryElementSubtype::pole || element->getRecordId() != id)
+                dead.push_back(id);
+        });
+        for (auto id : dead)
+        {
+            state.poles.release(id);
+            changed = true;
+        }
+        if (changed)
+            state.powerDirty = true;
 
         if (changed)
         {

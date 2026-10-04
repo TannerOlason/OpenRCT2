@@ -57,6 +57,11 @@ protected:
         _drill = Index(objectManager.LoadObject("factory-tour.factory_prototype.burner_drill"));
         _furnace = Index(objectManager.LoadObject("factory-tour.factory_prototype.stone_furnace"));
         _smelting = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_plate_smelting"));
+        _pole = Index(objectManager.LoadObject("factory-tour.factory_prototype.small_pole"));
+        _generator = Index(objectManager.LoadObject("factory-tour.factory_prototype.burner_generator"));
+        _assembler = Index(objectManager.LoadObject("factory-tour.factory_prototype.assembling_machine"));
+        _gear = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_gear"));
+        _gearRecipe = Index(objectManager.LoadObject("factory-tour.factory_prototype.iron_gear_recipe"));
         ASSERT_NE(_plate, kObjectEntryIndexNull);
         ASSERT_NE(_belt, kObjectEntryIndexNull);
         ASSERT_NE(_inserter, kObjectEntryIndexNull);
@@ -124,6 +129,21 @@ protected:
         return placeElement(getGameState(), Tile(tx), dir, entry, ghost);
     }
 
+    // Places on an arbitrary tile after flattening it to the row's height.
+    static FactoryElement* PlaceAt(int32_t tx, int32_t ty, Direction dir, ObjectEntryIndex entry)
+    {
+        auto* surface = MapGetSurfaceElementAt(TileCoordsXY{ tx, ty });
+        if (surface == nullptr)
+            return nullptr;
+        surface->setSlope(0);
+        surface->setBaseZ(GroundZ(kRowX0));
+        surface->setClearanceZ(GroundZ(kRowX0));
+        while (auto* existing = findFactoryElement(CoordsXYZ{ tx * kCoordsXYStep, ty * kCoordsXYStep, GroundZ(kRowX0) }, true))
+            removeElement(getGameState(), *existing, CoordsXYZ{ tx * kCoordsXYStep, ty * kCoordsXYStep, GroundZ(kRowX0) });
+        return placeElement(
+            getGameState(), CoordsXYZ{ tx * kCoordsXYStep, ty * kCoordsXYStep, GroundZ(kRowX0) }, dir, entry, false);
+    }
+
     static void Tick(int32_t ticks)
     {
         for (int32_t i = 0; i < ticks; i++)
@@ -141,6 +161,11 @@ protected:
     static ObjectEntryIndex _drill;
     static ObjectEntryIndex _furnace;
     static ObjectEntryIndex _smelting;
+    static ObjectEntryIndex _pole;
+    static ObjectEntryIndex _generator;
+    static ObjectEntryIndex _assembler;
+    static ObjectEntryIndex _gear;
+    static ObjectEntryIndex _gearRecipe;
 };
 
 std::shared_ptr<IContext> FactoryTopologyTests::_context;
@@ -154,6 +179,11 @@ ObjectEntryIndex FactoryTopologyTests::_coal = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_drill = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_furnace = kObjectEntryIndexNull;
 ObjectEntryIndex FactoryTopologyTests::_smelting = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_pole = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_generator = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_assembler = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_gear = kObjectEntryIndexNull;
+ObjectEntryIndex FactoryTopologyTests::_gearRecipe = kObjectEntryIndexNull;
 
 TEST_F(FactoryTopologyTests, PlacingBeltsInARowFormsOneSegment)
 {
@@ -327,7 +357,8 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     if (out == nullptr)
         GTEST_SKIP() << "FT_SLICE_PARK_OUT not set";
 
-    auto& state = getGameState().factory;
+    auto& gameState = getGameState();
+    auto& state = gameState.factory;
     const Direction east = 2;
     auto* sourceChest = Place(kRowX0 + 0, east, _chest);
     Place(kRowX0 + 1, east, _inserter);
@@ -339,6 +370,25 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     Place(kRowX0 + 10, east, _chest);
     ASSERT_NE(sourceChest, nullptr);
     state.containers.get(sourceChest->getRecordId())->slots[0] = { _plate, 200 };
+
+    // A second row two tiles south: ore patch, burner drill feeding a furnace through a short belt.
+    state.ore.resize(gameState.mapSize);
+    for (int32_t dx = -1; dx <= 1; dx++)
+        for (int32_t dy = -1; dy <= 1; dy++)
+            state.ore.set({ kRowX0 + dx, kRowY + 3 + dy }, { _ironOrePatch, 0, 50 });
+    auto* drillElement = PlaceAt(kRowX0, kRowY + 3, east, _drill);
+    PlaceAt(kRowX0 + 1, kRowY + 3, east, _belt);
+    PlaceAt(kRowX0 + 2, kRowY + 3, east, _belt);
+    PlaceAt(kRowX0 + 3, kRowY + 3, east, _inserter);
+    auto* furnaceElement = PlaceAt(kRowX0 + 4, kRowY + 3, east, _furnace);
+    if (drillElement != nullptr && furnaceElement != nullptr)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            machineInsertInput(state, *state.machines.get(drillElement->getRecordId()), _coal);
+            machineInsertInput(state, *state.machines.get(furnaceElement->getRecordId()), _coal);
+        }
+    }
     Tick(600);
 
     ASSERT_EQ(ScenarioSave(getGameState(), out, {}), 1);
@@ -353,6 +403,7 @@ TEST_F(FactoryTopologyTests, SaveSliceParkForScreenshot)
     EXPECT_EQ(loaded.beltSegments.aliveCount(), beltsBefore);
     EXPECT_EQ(loaded.inserters.aliveCount(), insertersBefore);
     EXPECT_EQ(loaded.containers.aliveCount(), 2u);
+    EXPECT_EQ(loaded.machines.aliveCount(), 2u);
     EXPECT_NE(findBeltElement(Tile(kRowX0 + 2)), nullptr);
     EXPECT_NE(findFactoryElement(Tile(kRowX0 + 1)), nullptr);
     EXPECT_EQ(computeSyncChecksum(getGameState()).toString(), checksumBefore);
@@ -426,4 +477,80 @@ TEST_F(FactoryTopologyTests, DrillMinesOreAndFurnaceSmeltsIt)
     // An idle furnace forgets its auto-selected recipe until the next input arrives.
     EXPECT_EQ(furnace->getStatus(), MachineStatus::noInput);
     EXPECT_EQ(furnace->recipe, kObjectEntryIndexNull);
+}
+
+TEST_F(FactoryTopologyTests, AssemblerNeedsAPoweredNetworkAndMakesGears)
+{
+    ASSERT_NE(_pole, kObjectEntryIndexNull);
+    ASSERT_NE(_generator, kObjectEntryIndexNull);
+    ASSERT_NE(_assembler, kObjectEntryIndexNull);
+    ASSERT_NE(_gearRecipe, kObjectEntryIndexNull);
+    auto& state = getGameState().factory;
+    const Direction east = 2;
+    const int32_t ax = kRowX0 + 2; // assembler column
+
+    // Row: chest(0) -> inserter(1) -> assembler(2) -> inserter(3) -> chest(4).
+    auto* sourceChest = Place(kRowX0 + 0, east, _chest);
+    Place(kRowX0 + 1, east, _inserter);
+    auto* assemblerElement = Place(ax, east, _assembler);
+    Place(kRowX0 + 3, east, _inserter);
+    auto* sinkChest = Place(kRowX0 + 4, east, _chest);
+    ASSERT_NE(assemblerElement, nullptr);
+    auto* assembler = state.machines.get(assemblerElement->getRecordId());
+    ASSERT_NE(assembler, nullptr);
+    state.containers.get(sourceChest->getRecordId())->slots[0] = { _plate, 40 };
+
+    // Without a recipe nothing is accepted; with one and no network the machine reports noPower.
+    EXPECT_FALSE(machineAcceptsInput(state, *assembler, _plate));
+    assembler->recipe = _gearRecipe;
+    EXPECT_TRUE(machineAcceptsInput(state, *assembler, _plate));
+    Tick(200);
+    EXPECT_EQ(assembler->getStatus(), MachineStatus::noPower);
+    EXPECT_EQ(state.powerNetworks.aliveCount(), 0u);
+
+    // Pole A one tile south of the assembler (radius 2), pole B four tiles south (within wire reach 7) with
+    // the generator next to it.
+    PlaceAt(ax, kRowY + 1, east, _pole);
+    PlaceAt(ax, kRowY + 4, east, _pole);
+    auto* generatorElement = PlaceAt(ax, kRowY + 5, east, _generator);
+    ASSERT_NE(generatorElement, nullptr);
+    auto* generator = state.machines.get(generatorElement->getRecordId());
+    ASSERT_NE(generator, nullptr);
+    EXPECT_TRUE(state.powerDirty);
+    Tick(1);
+    EXPECT_FALSE(state.powerDirty);
+    EXPECT_EQ(state.powerNetworks.aliveCount(), 1u);
+    ASSERT_NE(assembler->powerNetwork, kNullRecord);
+    EXPECT_EQ(assembler->powerNetwork, generator->powerNetwork);
+    auto* network = state.powerNetworks.get(assembler->powerNetwork);
+    ASSERT_NE(network, nullptr);
+    EXPECT_EQ(network->poleCount, 2);
+    EXPECT_EQ(network->consumerCount, 1);
+    EXPECT_EQ(network->generatorCount, 1);
+
+    // The assembler has a craft waiting, so it draws power; the empty generator reports noFuel.
+    Tick(10);
+    EXPECT_EQ(generator->getStatus(), MachineStatus::noFuel);
+    EXPECT_EQ(assembler->getStatus(), MachineStatus::noPower);
+    for (int i = 0; i < 5; i++)
+        EXPECT_TRUE(machineInsertInput(state, *generator, _coal));
+
+    // 20 gears from 40 plates: each craft is 20 ticks at speed 0.5 -> 40 ticks, plus inserter cycles.
+    Tick(40 * 20 + 48 * 60 + 500);
+    int gears = 0;
+    for (auto& slot : state.containers.get(sinkChest->getRecordId())->slots)
+        if (slot.item == _gear)
+            gears += slot.count;
+    EXPECT_EQ(gears, 20);
+    EXPECT_LT(generator->fuel.count, 5);                    // it burnt something
+    EXPECT_EQ(generator->getStatus(), MachineStatus::idle); // nothing left to craft, nothing drawn
+
+    // Removing pole B splits the network: the generator is stranded and the assembler loses power.
+    removeElement(
+        getGameState(), *findFactoryElement(CoordsXYZ{ ax * kCoordsXYStep, (kRowY + 4) * kCoordsXYStep, GroundZ(kRowX0) }),
+        CoordsXYZ{ ax * kCoordsXYStep, (kRowY + 4) * kCoordsXYStep, GroundZ(kRowX0) });
+    state.containers.get(sourceChest->getRecordId())->slots[0] = { _plate, 40 };
+    Tick(300);
+    EXPECT_EQ(assembler->getStatus(), MachineStatus::noPower);
+    EXPECT_EQ(generator->powerNetwork, kNullRecord);
 }

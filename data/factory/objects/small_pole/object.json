@@ -1,0 +1,29 @@
+{
+    "id": "factory-tour.factory_prototype.small_pole",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "pole",
+        "wireReach": 7,
+        "supplyRadius": 2,
+        "price": 10,
+        "removalPrice": -7,
+        "clearance": 10
+    },
+    "images": [
+        {
+            "path": "images/pole.png",
+            "x": -32,
+            "y": -40
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Small electric pole"
+        }
+    }
+}

@@ -290,6 +290,47 @@ namespace OpenRCT2::Factory
         }
     };
 
+    struct PoleRecord : RecordBase
+    {
+        RecordId network{ kNullRecord };
+
+        template<typename V>
+        void visit(V& v)
+        {
+            visitBase(v);
+            v(network);
+        }
+    };
+
+    /**
+     * One connected component of poles. Supply and demand are totals of the previous tick; satisfaction
+     * (Q16, 65536 = fully powered) scales every consumer's progress this tick.
+     */
+    struct PowerNetworkRecord
+    {
+        uint32_t supply{};
+        uint32_t demand{};
+        uint32_t lastDemand{}; // demand of the previous tick, what generators react to
+        uint32_t satisfactionQ16{ 65536 };
+        uint16_t poleCount{};
+        uint16_t generatorCount{};
+        uint16_t consumerCount{};
+
+        template<typename V>
+        void visit(V& v)
+        {
+            v(supply);
+            v(demand);
+            v(lastDemand);
+            v(satisfactionQ16);
+            v(poleCount);
+            v(generatorCount);
+            v(consumerCount);
+        }
+    };
+
+    constexpr uint32_t kSatisfactionFull = 65536;
+
     /**
      * One tile of the ore layer. 8 bytes; a map is at most 1001 x 1001 tiles.
      */

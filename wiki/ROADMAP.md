@@ -76,7 +76,11 @@ drag, `factory-bench` CLI and the 8 ms CI gate.
   assemblers; inserters feed and empty machines. Test: ore → drill → belt → inserter → furnace → inserter →
   chest yields 90 plates from 90 ore.
 - [ ] Multi-tile footprints (machines are 1x1 until the paint pipeline slices composite sprites per tile).
-- [ ] Assembler + electric power: poles, power networks, burner generator, then steam (pump, boiler, engine).
+- [x] Assembler + electric power: pole prototypes (wire reach, supply radius), power networks rebuilt by
+  flood fill when poles or machines change, burner generators that burn fuel only under load, consumers
+  scaling progress by last tick's satisfaction. Test: plates → assembler → gears only once a fuelled
+  generator shares a network, and the assembler loses power when the linking pole is removed.
+- [ ] Steam chain (offshore pump, boiler, steam engine) once fluids exist.
 - [ ] Pipes and fluid networks.
 - [ ] Underground belts, splitters, lane filters, sideloading.
 - [ ] Machine window (recipe picker, inventories, status), belt-line drag tool, power overview.

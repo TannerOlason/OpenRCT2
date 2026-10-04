@@ -59,6 +59,7 @@ namespace OpenRCT2::Factory
      *   container: [direction] when rotations == 4, otherwise [0]
      *   machine:   [direction * frames + frame] (or [frame] when rotations == 1); frame 0 = idle
      *   ore:       [0] ground overlay (64x32 diamond), [1] icon
+     *   pole:      [0] the pole
      */
     enum class BeltShape : uint8_t
     {
@@ -110,12 +111,19 @@ namespace OpenRCT2::Factory
         std::string category;    // "smelting", "crafting", ...
     };
 
+    struct PoleProperties
+    {
+        uint8_t wireReach = 7;    // tiles between poles that connect
+        uint8_t supplyRadius = 2; // tiles around the pole that machines draw power from
+    };
+
     struct MachineProperties
     {
         MachineKind kind = MachineKind::assembler;
         EnergySource energy = EnergySource::electric;
-        uint16_t speedQ8 = 256;  // 256 = 1.0
-        uint32_t powerUsage = 0; // electric machines, arbitrary power units per tick
+        uint16_t speedQ8 = 256;   // 256 = 1.0
+        uint32_t powerUsage = 0;  // electric machines, arbitrary power units per tick
+        uint32_t powerOutput = 0; // generators (kind engine): power units per tick at full load
         uint8_t inputSlots = 1;
         uint8_t outputSlots = 1;
         std::vector<std::string> recipeCategories;
@@ -155,6 +163,7 @@ namespace OpenRCT2::Factory
         OreProperties _ore{};
         RecipeProperties _recipe{};
         MachineProperties _machine{};
+        PoleProperties _pole{};
         money64 _price = 0;
         money64 _removalPrice = 0;
         uint8_t _clearance = 8; // height of the placed element in z units (kCoordsZStep multiples)
@@ -217,6 +226,15 @@ namespace OpenRCT2::Factory
         {
             return _machine;
         }
+        const PoleProperties& getPole() const
+        {
+            return _pole;
+        }
+        bool isGenerator() const
+        {
+            return (_kind == PrototypeKind::machine || _kind == PrototypeKind::generator)
+                && _machine.kind == MachineKind::engine;
+        }
         bool machineHandlesCategory(std::string_view category) const;
 
         bool hasImages() const
@@ -237,6 +255,7 @@ namespace OpenRCT2::Factory
         ImageIndex getMachineImage(uint8_t direction, uint8_t frame) const;
         ImageIndex getOreOverlayImage() const;
         ImageIndex getOreIconImage() const;
+        ImageIndex getPoleImage() const;
 
     private:
         ImageIndex imageAt(uint32_t offset) const;

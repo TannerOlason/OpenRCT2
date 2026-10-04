@@ -193,6 +193,7 @@ namespace OpenRCT2::Factory
                 _machine.energy = energyIt != kEnergySourceMap.end() ? energyIt->second : EnergySource::electric;
                 _machine.speedQ8 = std::max<uint16_t>(1, Json::GetNumber<uint16_t>(properties["speedQ8"], 256));
                 _machine.powerUsage = Json::GetNumber<uint32_t>(properties["powerUsage"], 0);
+                _machine.powerOutput = Json::GetNumber<uint32_t>(properties["powerOutput"], 0);
                 _machine.inputSlots = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["inputSlots"], 1), 0, 16);
                 _machine.outputSlots = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["outputSlots"], 1), 0, 16);
                 _machine.miningRadius = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["miningRadius"], 1), 0, 4);
@@ -222,6 +223,10 @@ namespace OpenRCT2::Factory
             case PrototypeKind::container:
                 _container.slots = std::clamp<uint16_t>(Json::GetNumber<uint16_t>(properties["slots"], 16), 1, 256);
                 _container.rotations = Json::GetNumber<uint8_t>(properties["rotations"], 1) == 4 ? 4 : 1;
+                break;
+            case PrototypeKind::pole:
+                _pole.wireReach = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["wireReach"], 7), 1, 30);
+                _pole.supplyRadius = std::clamp<uint8_t>(Json::GetNumber<uint8_t>(properties["supplyRadius"], 2), 0, 15);
                 break;
             default:
                 // Remaining kinds are parsed when their simulation lands (M2/M5).
@@ -304,6 +309,11 @@ namespace OpenRCT2::Factory
         return imageAt(0);
     }
 
+    ImageIndex FactoryPrototypeObject::getPoleImage() const
+    {
+        return imageAt(0);
+    }
+
     ImageIndex FactoryPrototypeObject::getOreIconImage() const
     {
         auto image = imageAt(1);
@@ -333,6 +343,9 @@ namespace OpenRCT2::Factory
                 break;
             case PrototypeKind::ore:
                 image = getOreIconImage();
+                break;
+            case PrototypeKind::pole:
+                image = getPoleImage();
                 break;
             default:
                 image = imageAt(0);

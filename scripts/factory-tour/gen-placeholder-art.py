@@ -281,6 +281,49 @@ def draw_furnace(d, frame, frames):
     return draw_machine_box(d, (130, 100, 90, 255), (160, 130, 110, 255), (50, 30, 30, 255), 26, top_detail, side_detail)
 
 
+def draw_generator(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        # Flywheel: spokes rotate while working.
+        draw.ellipse([cx - 10, cy - 6, cx + 10, cy + 4], fill=(70, 70, 80, 255), outline=(30, 30, 40, 255))
+        for k in range(3):
+            ang = math.pi * (frame / max(1, frames) + k / 3)
+            draw.line([(cx - math.cos(ang) * 9, cy - 1 - math.sin(ang) * 4), (cx + math.cos(ang) * 9, cy - 1 + math.sin(ang) * 4)],
+                      fill=(220, 190, 70, 255), width=2)
+
+    def side_detail(draw, cx, cy, h, dd):
+        draw.rectangle([cx - 24, cy - 4, cx - 16, cy + 2], fill=(40, 30, 30, 255))  # firebox door
+
+    return draw_machine_box(d, (110, 60, 50, 255), (140, 90, 70, 255), (40, 20, 20, 255), 24, top_detail, side_detail)
+
+
+def draw_assembler(d, frame, frames):
+    def top_detail(draw, cx, cy):
+        # A gear outline that turns while working.
+        r = 9
+        for k in range(6):
+            ang = 2 * math.pi * (k / 6 + frame / (6 * max(1, frames)))
+            draw.line([(cx, cy), (cx + math.cos(ang) * r, cy + math.sin(ang) * r * 0.5)], fill=(90, 160, 200, 255), width=2)
+        draw.ellipse([cx - 4, cy - 2, cx + 4, cy + 2], fill=(60, 110, 150, 255))
+
+    def side_detail(draw, cx, cy, h, dd):
+        draw.rectangle([cx + 4, cy - 10, cx + 22, cy - 2], fill=(60, 90, 120, 255))  # window
+
+    return draw_machine_box(d, (90, 110, 130, 255), (120, 140, 160, 255), (30, 40, 50, 255), 24, top_detail, side_detail)
+
+
+def draw_pole():
+    h = 40
+    img = Image.new("RGBA", (64, 32 + h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = 32, 16 + h
+    draw.polygon(tile_polygon(cx, cy, 0.18), fill=(90, 80, 70, 255), outline=(40, 30, 20, 255))
+    draw.rectangle([cx - 2, cy - h + 4, cx + 2, cy], fill=(120, 90, 60, 255), outline=(50, 35, 20, 255))
+    draw.rectangle([cx - 10, cy - h + 6, cx + 10, cy - h + 9], fill=(120, 90, 60, 255), outline=(50, 35, 20, 255))
+    for x in (cx - 8, cx + 8):
+        draw.rectangle([x - 1, cy - h + 3, x + 1, cy - h + 6], fill=(200, 200, 210, 255))
+    return img
+
+
 def write_machine(name, display, props, draw_fn, frames):
     images = []
     folder = write_object(name, "machine", {**props, "frames": frames, "rotations": 4}, [], display)
@@ -333,6 +376,27 @@ def main():
     write_machine("burner_drill", "Burner mining drill", {
         "machineKind": "drill", "energy": "burner", "speedQ8": 256, "miningRadius": 1, "miningTimeTicks": 100,
         "inputSlots": 0, "outputSlots": 1, "price": 80, "removalPrice": -60, "clearance": 5}, draw_drill, 4)
+    write_machine("burner_generator", "Burner generator", {
+        "machineKind": "engine", "energy": "burner", "powerOutput": 200,
+        "inputSlots": 0, "outputSlots": 0, "price": 120, "removalPrice": -90, "clearance": 7}, draw_generator, 4)
+    write_machine("assembling_machine", "Assembling machine", {
+        "machineKind": "assembler", "energy": "electric", "speedQ8": 128, "powerUsage": 75,
+        "recipeCategories": ["crafting"], "inputSlots": 4, "outputSlots": 1,
+        "price": 150, "removalPrice": -110, "clearance": 7}, draw_assembler, 4)
+    write_object("iron_gear", "item", {"stackSize": 100},
+                 [{"path": "images/icon.png", "x": -12, "y": -12}, {"path": "images/belt.png", "x": -5, "y": -4}],
+                 "Iron gear wheel")
+    gi, gb = draw_item_small((150, 150, 160), (70, 70, 80))
+    save(gi, os.path.join(ROOT, "iron_gear"), "icon.png")
+    save(gb, os.path.join(ROOT, "iron_gear"), "belt.png")
+    write_object("iron_gear_recipe", "recipe", {
+        "ingredients": [{"item": "factory-tour.factory_prototype.iron_plate", "count": 2}],
+        "results": [{"item": "factory-tour.factory_prototype.iron_gear", "count": 1}],
+        "timeTicks": 20, "category": "crafting"}, [], "Iron gear wheel")
+    folder = write_object("small_pole", "pole", {"wireReach": 7, "supplyRadius": 2, "price": 10, "removalPrice": -7,
+                                                  "clearance": 10},
+                          [{"path": "images/pole.png", "x": -32, "y": -40}], "Small electric pole")
+    save(draw_pole(), folder, "pole.png")
     write_machine("stone_furnace", "Stone furnace", {
         "machineKind": "furnace", "energy": "burner", "speedQ8": 256, "recipeCategories": ["smelting"],
         "inputSlots": 1, "outputSlots": 1, "price": 60, "removalPrice": -45, "clearance": 7}, draw_furnace, 4)

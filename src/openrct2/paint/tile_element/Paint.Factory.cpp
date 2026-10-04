@@ -214,6 +214,16 @@ void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, cons
             }
             break;
         }
+        case FactoryElementSubtype::pole:
+        {
+            auto image = proto->getPoleImage();
+            if (image != kImageIndexUndefined)
+            {
+                const BoundBoxXYZ poleBox{ { 12, 12, height }, { 8, 8, std::max(1, clearance - 1) } };
+                PaintAddImageAsParent(session, imageTemplate.WithIndex(image), { 0, 0, height }, poleBox);
+            }
+            break;
+        }
         default:
         {
             auto image = proto->hasImages() ? proto->GetBaseImageId() : kImageIndexUndefined;

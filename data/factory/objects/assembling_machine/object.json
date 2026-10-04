@@ -1,0 +1,113 @@
+{
+    "id": "factory-tour.factory_prototype.assembling_machine",
+    "authors": [
+        "Factory Tour contributors"
+    ],
+    "version": "1.0",
+    "sourceGame": "official",
+    "objectType": "factory_prototype",
+    "properties": {
+        "kind": "machine",
+        "machineKind": "assembler",
+        "energy": "electric",
+        "speedQ8": 128,
+        "powerUsage": 75,
+        "recipeCategories": [
+            "crafting"
+        ],
+        "inputSlots": 4,
+        "outputSlots": 1,
+        "price": 150,
+        "removalPrice": -110,
+        "clearance": 7,
+        "frames": 4,
+        "rotations": 4
+    },
+    "images": [
+        {
+            "path": "images/m_d0_f0.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d0_f1.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d0_f2.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d0_f3.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d1_f0.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d1_f1.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d1_f2.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d1_f3.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d2_f0.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d2_f1.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d2_f2.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d2_f3.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d3_f0.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d3_f1.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d3_f2.png",
+            "x": -32,
+            "y": -24
+        },
+        {
+            "path": "images/m_d3_f3.png",
+            "x": -32,
+            "y": -24
+        }
+    ],
+    "strings": {
+        "name": {
+            "en-GB": "Assembling machine"
+        }
+    }
+}

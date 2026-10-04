@@ -22,6 +22,8 @@
 #include "FactoryTopology.h"
 
 #include <algorithm>
+#include <cstdlib>
+#include <vector>
 
 namespace OpenRCT2::Factory
 {
@@ -31,7 +33,10 @@ namespace OpenRCT2::Factory
         inserters.clear();
         beltSegments.clear();
         machines.clear();
+        poles.clear();
+        powerNetworks.clear();
         ore.clear();
+        powerDirty = false;
         topologyVersion = 0;
     }
 
@@ -42,7 +47,8 @@ namespace OpenRCT2::Factory
 
     size_t State::recordCount() const
     {
-        return containers.aliveCount() + inserters.aliveCount() + beltSegments.aliveCount() + machines.aliveCount();
+        return containers.aliveCount() + inserters.aliveCount() + beltSegments.aliveCount() + machines.aliveCount()
+            + poles.aliveCount();
     }
 
     static void updateBelts(State& state)
@@ -648,11 +654,18 @@ namespace OpenRCT2::Factory
             return;
         }
 
+        uint32_t satisfactionQ16 = kSatisfactionFull;
         if (props.energy == EnergySource::electric)
         {
-            // Power networks arrive with the next slice; until then electric machines run at full satisfaction
-            // only when no network exists at all, so the content pack stays testable.
-            if (machine.powerNetwork != kNullRecord)
+            auto* network = machine.powerNetwork != kNullRecord ? state.powerNetworks.get(machine.powerNetwork) : nullptr;
+            if (network == nullptr)
+            {
+                setStatus(machine, MachineStatus::noPower);
+                return;
+            }
+            network->demand += props.powerUsage;
+            satisfactionQ16 = network->satisfactionQ16;
+            if (satisfactionQ16 == 0)
             {
                 setStatus(machine, MachineStatus::noPower);
                 return;
@@ -662,11 +675,133 @@ namespace OpenRCT2::Factory
             return;
 
         setStatus(machine, MachineStatus::working);
-        machine.progress += props.speedQ8;
+        machine.progress += static_cast<uint32_t>((static_cast<uint64_t>(props.speedQ8) * satisfactionQ16) >> 16);
         if (machine.progress >= machine.craftCost)
         {
             finishCraft(machine, *recipeProto);
         }
+    }
+
+    static int32_t tileDistance(const RecordBase& a, const RecordBase& b)
+    {
+        return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y));
+    }
+
+    void rebuildPowerNetworks(State& state)
+    {
+        state.powerNetworks.clear();
+        std::vector<RecordId> poleIds;
+        state.poles.forEach([&](RecordId id, PoleRecord& pole) {
+            pole.network = kNullRecord;
+            poleIds.push_back(id);
+        });
+
+        // Connected components over "within wire reach of each other" (the longer reach wins).
+        for (auto startId : poleIds)
+        {
+            auto* start = state.poles.get(startId);
+            if (start == nullptr || start->network != kNullRecord)
+                continue;
+            RecordId networkId;
+            auto& network = state.powerNetworks.allocateRecord(networkId);
+            std::vector<RecordId> stack{ startId };
+            start->network = networkId;
+            while (!stack.empty())
+            {
+                auto currentId = stack.back();
+                stack.pop_back();
+                auto* current = state.poles.get(currentId);
+                if (current == nullptr)
+                    continue;
+                auto* currentProto = getPrototype(current->entry);
+                const int32_t currentReach = currentProto != nullptr ? currentProto->getPole().wireReach : 0;
+                network.poleCount++;
+                for (auto otherId : poleIds)
+                {
+                    auto* other = state.poles.get(otherId);
+                    if (other == nullptr || other->network != kNullRecord || other->z != current->z)
+                        continue;
+                    auto* otherProto = getPrototype(other->entry);
+                    const int32_t otherReach = otherProto != nullptr ? otherProto->getPole().wireReach : 0;
+                    if (tileDistance(*current, *other) <= std::max(currentReach, otherReach))
+                    {
+                        other->network = networkId;
+                        stack.push_back(otherId);
+                    }
+                }
+            }
+        }
+
+        // Attach machines to the first pole (lowest id) whose supply area covers them.
+        state.machines.forEach([&](RecordId, MachineRecord& machine) {
+            machine.powerNetwork = kNullRecord;
+            auto* proto = getPrototype(machine.entry);
+            if (proto == nullptr)
+                return;
+            const auto& props = proto->getMachine();
+            const bool isGenerator = proto->isGenerator();
+            if (!isGenerator && props.energy != EnergySource::electric)
+                return;
+            state.poles.forEach([&](RecordId, PoleRecord& pole) {
+                if (machine.powerNetwork != kNullRecord || pole.network == kNullRecord || pole.z != machine.z)
+                    return;
+                auto* poleProto = getPrototype(pole.entry);
+                const int32_t radius = poleProto != nullptr ? poleProto->getPole().supplyRadius : 0;
+                if (tileDistance(pole, machine) <= radius)
+                {
+                    machine.powerNetwork = pole.network;
+                    auto* network = state.powerNetworks.get(pole.network);
+                    if (network == nullptr)
+                        return;
+                    if (isGenerator)
+                        network->generatorCount++;
+                    else
+                        network->consumerCount++;
+                }
+            });
+        });
+        state.powerDirty = false;
+    }
+
+    // Generators burn fuel while the network draws power and publish their output for this tick.
+    static void updateGenerator(State& state, MachineRecord& machine, const FactoryPrototypeObject& proto)
+    {
+        const auto& props = proto.getMachine();
+        auto* network = machine.powerNetwork != kNullRecord ? state.powerNetworks.get(machine.powerNetwork) : nullptr;
+        if (network == nullptr)
+        {
+            setStatus(machine, MachineStatus::idle);
+            return;
+        }
+        if (network->consumerCount == 0 || network->lastDemand == 0)
+        {
+            // Nothing is drawing: stay available without burning fuel.
+            setStatus(machine, MachineStatus::idle);
+            network->supply += props.powerOutput;
+            return;
+        }
+        if (!burnFuel(machine, props))
+            return;
+        setStatus(machine, MachineStatus::working);
+        network->supply += props.powerOutput;
+    }
+
+    static void updatePower(State& state)
+    {
+        if (state.powerDirty)
+            rebuildPowerNetworks(state);
+
+        // Last tick's totals decide this tick's satisfaction, then the totals restart.
+        state.powerNetworks.forEach([&](RecordId, PowerNetworkRecord& network) {
+            if (network.demand == 0)
+                network.satisfactionQ16 = kSatisfactionFull;
+            else
+                network.satisfactionQ16 = static_cast<uint32_t>(
+                    std::min<uint64_t>(kSatisfactionFull, (static_cast<uint64_t>(network.supply) << 16) / network.demand));
+            network.lastDemand = network.demand;
+            network.supply = 0;
+            network.demand = 0;
+        });
     }
 
     static void updateMachines(State& state)
@@ -683,6 +818,9 @@ namespace OpenRCT2::Factory
                 case MachineKind::furnace:
                 case MachineKind::assembler:
                     updateCrafter(state, machine, *proto);
+                    break;
+                case MachineKind::engine:
+                    updateGenerator(state, machine, *proto);
                     break;
                 default:
                     setStatus(machine, MachineStatus::idle);
@@ -704,6 +842,7 @@ namespace OpenRCT2::Factory
         // per-tick behaviour.
         updateBelts(state);
         updateInserters(state);
+        updatePower(state);
         updateMachines(state);
     }
 } // namespace OpenRCT2::Factory

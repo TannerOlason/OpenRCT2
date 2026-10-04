@@ -35,7 +35,12 @@ namespace OpenRCT2::Factory
         Pool<InserterRecord> inserters;
         Pool<BeltSegmentRecord> beltSegments;
         Pool<MachineRecord> machines;
+        Pool<PoleRecord> poles;
+        Pool<PowerNetworkRecord> powerNetworks;
         OreLayer ore; // saved in its own chunk (0x42); its hash joins the sync checksum
+
+        // Set when poles, generators or consumers change; networks are rebuilt by BFS on the next tick.
+        bool powerDirty{};
 
         // Incremented whenever an element is placed, removed or rotated; records that cache references
         // to neighbours re-resolve them when this changes.
@@ -58,6 +63,11 @@ namespace OpenRCT2::Factory
             inserters.visit(v);
             beltSegments.visit(v);
             machines.visit(v);
+            poles.visit(v);
+            powerNetworks.visit(v);
+            uint8_t dirty = powerDirty ? 1 : 0;
+            v(dirty);
+            powerDirty = dirty != 0;
         }
     };
 
@@ -65,6 +75,9 @@ namespace OpenRCT2::Factory
     bool machineAcceptsInput(const State& state, const MachineRecord& machine, ObjectEntryIndex item);
     bool machineInsertInput(State& state, MachineRecord& machine, ObjectEntryIndex item);
     bool machineTakeOutput(MachineRecord& machine, ItemStack& hand);
+
+    // Rebuilds power networks from the poles (wire reach) and attaches machines within a pole's supply radius.
+    void rebuildPowerNetworks(State& state);
 
     /**
      * One simulation tick. Called from gameStateUpdateLogic between Ride::updateAll() and Park::Update so
