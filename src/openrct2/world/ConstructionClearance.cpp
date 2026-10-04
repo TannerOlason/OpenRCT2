@@ -398,5 +398,8 @@ void MapGetObstructionErrorText(TileElement* tileElement, GameActions::Result& r
         }
         case TileElementType::banner:
             break;
+        // FACTORY-TOUR: STR_OBJECT_IN_THE_WAY until prototypes carry names.
+        case TileElementType::factory:
+            break;
     }
 }

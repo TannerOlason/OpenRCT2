@@ -48,6 +48,7 @@ namespace OpenRCT2
     struct WallElement;
     struct EntranceElement;
     struct BannerElement;
+    struct FactoryElement; // FACTORY-TOUR
 
 #pragma pack(push, 1)
     struct TileElementBase
@@ -120,6 +121,9 @@ namespace OpenRCT2
         EntranceElement* asEntrance();
         const BannerElement* asBanner() const;
         BannerElement* asBanner();
+        // FACTORY-TOUR
+        const FactoryElement* asFactory() const;
+        FactoryElement* asFactory();
     };
 #pragma pack(pop)
 } // namespace OpenRCT2

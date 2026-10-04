@@ -2119,6 +2119,11 @@ namespace OpenRCT2::Ui::Windows
                     case TileElementType::banner:
                         p = TileInspectorPage::banner;
                         break;
+
+                    // FACTORY-TOUR: a dedicated inspector page arrives with the factory UI epic.
+                    case TileElementType::factory:
+                        p = TileInspectorPage::standard;
+                        break;
                 }
             }
 

@@ -1395,6 +1395,9 @@ namespace OpenRCT2
                                 }
                                 break;
                             }
+                            // FACTORY-TOUR: fork elements are versioned by their own chunks, nothing to fix up here.
+                            case TileElementType::factory:
+                                break;
                         }
                     }
 

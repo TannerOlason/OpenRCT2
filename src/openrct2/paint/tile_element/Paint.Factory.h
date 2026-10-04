@@ -7,24 +7,17 @@
  * OpenRCT2 is licensed under the GNU General Public License version 3.
  *****************************************************************************/
 
+// FACTORY-TOUR: fork-owned file.
+
 #pragma once
 
 #include <cstdint>
 
+struct PaintSession;
+
 namespace OpenRCT2
 {
-    enum class TileElementType : uint8_t
-    {
-        surface = 0,
-        path = 1,
-        track = 2,
-        smallScenery = 3,
-        entrance = 4,
-        wall = 5,
-        largeScenery = 6,
-        banner = 7,
-        // FACTORY-TOUR: 9 is the fork's factory element. 8, 14 and 15 are RCT1/RCT2 importer corruption markers
-        // and must stay unused; 10-13 are spare for the fork.
-        factory = 9,
-    };
+    struct FactoryElement;
 }
+
+void PaintFactory(PaintSession& session, uint8_t direction, int32_t height, const OpenRCT2::FactoryElement& factoryElement);

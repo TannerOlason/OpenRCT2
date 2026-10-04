@@ -13,6 +13,7 @@
 #include "../Map.h"
 #include "BannerElement.h"
 #include "EntranceElement.h"
+#include "FactoryElement.h" // FACTORY-TOUR
 #include "LargeSceneryElement.h"
 #include "PathElement.h"
 #include "SmallSceneryElement.h"
@@ -206,5 +207,15 @@ namespace OpenRCT2
     BannerElement* TileElementBase::asBanner()
     {
         return as<BannerElement>();
+    }
+
+    // FACTORY-TOUR
+    const FactoryElement* TileElementBase::asFactory() const
+    {
+        return as<FactoryElement>();
+    }
+    FactoryElement* TileElementBase::asFactory()
+    {
+        return as<FactoryElement>();
     }
 } // namespace OpenRCT2

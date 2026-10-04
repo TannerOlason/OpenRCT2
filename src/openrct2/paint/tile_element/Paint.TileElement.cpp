@@ -24,6 +24,7 @@
 #include "../VirtualFloor.h"
 #include "Paint.Banner.h"
 #include "Paint.Entrance.h"
+#include "Paint.Factory.h" // FACTORY-TOUR
 #include "Paint.LargeScenery.h"
 #include "Paint.Path.h"
 #include "Paint.SmallScenery.h"
@@ -284,6 +285,10 @@ static void PaintTileElementBase(PaintSession& session, const CoordsXY& origCoor
                 break;
             case TileElementType::banner:
                 PaintBanner(session, direction, baseZ, *(tile_element->asBanner()));
+                break;
+            // FACTORY-TOUR
+            case TileElementType::factory:
+                PaintFactory(session, direction, baseZ, *(tile_element->asFactory()));
                 break;
         }
         session.MapPosition = mapPosition;

@@ -49,6 +49,9 @@ namespace OpenRCT2::Scripting
                 return "large_scenery";
             case TileElementType::banner:
                 return "banner";
+            // FACTORY-TOUR
+            case TileElementType::factory:
+                return "factory";
             default:
                 return "unknown";
         }
@@ -95,6 +98,9 @@ namespace OpenRCT2::Scripting
             element->setType(TileElementType::largeScenery);
         else if (value == "banner")
             element->setType(TileElementType::banner);
+        // FACTORY-TOUR
+        else if (value == "factory")
+            element->setType(TileElementType::factory);
         else
         {
             auto& scriptEngine = GetContext()->GetScriptEngine();

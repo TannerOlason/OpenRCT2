@@ -276,6 +276,9 @@ namespace OpenRCT2::TileInspector
                 case TileElementType::surface:
                 case TileElementType::largeScenery:
                     break;
+                // FACTORY-TOUR: rotation of factory elements goes through FactoryRotateAction (M1).
+                case TileElementType::factory:
+                    break;
             }
         }
 
